@@ -1,0 +1,1 @@
+export default function FastenerPanel() { return null; }

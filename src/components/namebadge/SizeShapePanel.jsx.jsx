@@ -1,0 +1,1 @@
+export default function SizeShapePanel() { return null; }
