@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { useProductCategories, useProducts } from '@/hooks/useSupabaseData';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,15 +19,8 @@ export default function Products() {
   const [sortBy, setSortBy] = useState('popular');
   const [viewMode, setViewMode] = useState('grid');
 
-  const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => base44.entities.Product.filter({ is_active: true }),
-  });
-
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => base44.entities.ProductCategory.list('order'),
-  });
+  const { data: products = [], isLoading: productsLoading } = useProducts();
+  const { data: categories = [] } = useProductCategories('order');
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -37,10 +29,7 @@ export default function Products() {
     if (categorySlug) {
       const category = categories.find(c => c.slug === categorySlug);
       if (category) {
-        result = result.filter(p => 
-          p.category_id === category.id || 
-          (p.additional_category_ids && p.additional_category_ids.includes(category.id))
-        );
+        result = result.filter(p => p.category_id === category.id);
       }
     }
     
@@ -68,12 +57,7 @@ export default function Products() {
         result.sort((a, b) => (b.review_count || 0) - (a.review_count || 0));
         break;
       default:
-        // Default sort: Order -> Popular -> Name
-        result.sort((a, b) => {
-          if ((a.order || 0) !== (b.order || 0)) return (a.order || 0) - (b.order || 0);
-          if (a.is_popular !== b.is_popular) return (b.is_popular ? 1 : 0) - (a.is_popular ? 1 : 0);
-          return a.name.localeCompare(b.name);
-        });
+        result.sort((a, b) => a.name.localeCompare(b.name));
     }
     
     return result;
@@ -85,7 +69,6 @@ export default function Products() {
   const CategorySidebarItem = ({ item, currentSlug, level = 0 }) => {
     const hasChildren = item.subcategories && item.subcategories.length > 0;
     
-    // Check if this item or any of its children are active
     const checkActive = (cat) => {
         if (!currentSlug && cat.slug === 'all-products') return true;
         if (cat.slug === currentSlug) return true;
@@ -98,12 +81,10 @@ export default function Products() {
     const isSelfActive = (!currentSlug && item.slug === 'all-products') || item.slug === currentSlug;
     const isChildActive = hasChildren && checkActive(item) && !isSelfActive;
     
-    // Auto-expand if active
     const [isExpanded, setIsExpanded] = useState(
         item.expanded || isChildActive || (level === 0 && isSelfActive)
     );
 
-    // Padding based on level
     const paddingLeft = level === 0 ? 12 : 12 + (level * 12); 
 
     if (!hasChildren) {

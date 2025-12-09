@@ -1,9 +1,7 @@
-import { base44 } from '@/api/base44Client';
-import React, { useEffect } from 'react';
+import React from 'react';
 
+// Seeder component - placeholder for future data seeding functionality
 export default function Seeder() {
-    useEffect(() => {
-        base44.functions.invoke('seedVistaProducts').then(console.log).catch(console.error);
-    }, []);
-    return null;
+  // Removed Base44 seeder - use Supabase admin panel to seed data
+  return null;
 }

@@ -1,8 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useProductCategories } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { 
   Star, Truck, Clock, Shield, Award, ArrowRight, 
@@ -29,18 +28,14 @@ const FEATURES = [
 ];
 
 export default function Home() {
-  // Fetch categories directly
-  const { data: categories = [] } = useQuery({
-    queryKey: ['home-categories'],
-    queryFn: () => base44.entities.ProductCategory.list('order'),
-  });
+  const { data: categories = [] } = useProductCategories('order');
 
   // Map categories to display format
   const displayCategories = React.useMemo(() => {
     if (categories.length === 0) return FALLBACK_CATEGORIES;
     
     return categories
-      .filter(c => c.image_url) // Only show categories with images
+      .filter(c => c.image_url)
       .map(c => ({
         name: c.name,
         slug: c.slug,
