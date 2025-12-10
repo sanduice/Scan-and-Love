@@ -1,4 +1,4 @@
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 
 // Get or create a session ID for anonymous users
 export function getSessionId() {
@@ -12,52 +12,61 @@ export function getSessionId() {
 
 // Get current user or session ID for filtering
 export async function getUserOrSession() {
-  try {
-    const isAuth = await base44.auth.isAuthenticated();
-    if (isAuth) {
-      const user = await base44.auth.me();
-      return { type: 'user', email: user.email, user };
-    }
-  } catch (e) {
-    // Not logged in
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    return { type: 'user', userId: user.id, user };
   }
   return { type: 'session', sessionId: getSessionId() };
 }
 
 // Build filter for current user/session
-export async function buildOwnerFilter(additionalFilters = {}) {
+export async function buildOwnerFilter() {
   const owner = await getUserOrSession();
   if (owner.type === 'user') {
-    return { ...additionalFilters, created_by: owner.email };
+    return { user_id: owner.userId };
   }
-  return { ...additionalFilters, session_id: owner.sessionId };
+  return { session_id: owner.sessionId };
 }
 
 // Migrate session data to user account after login
-export async function migrateSessionToUser(userEmail) {
+export async function migrateSessionToUser(userId) {
   const sessionId = getSessionId();
   
-  // Migrate NameBadgeDesigns
-  const sessionDesigns = await base44.entities.NameBadgeDesign.filter({ session_id: sessionId });
-  for (const design of sessionDesigns) {
-    await base44.entities.NameBadgeDesign.update(design.id, { session_id: null });
+  try {
+    // Migrate cart items
+    await supabase
+      .from('cart_items')
+      .update({ user_id: userId, session_id: null })
+      .eq('session_id', sessionId);
+
+    // Migrate saved designs
+    await supabase
+      .from('saved_designs')
+      .update({ user_id: userId, session_id: null })
+      .eq('session_id', sessionId);
+
+    // Migrate name badge designs
+    await supabase
+      .from('name_badge_designs')
+      .update({ user_id: userId, session_id: null })
+      .eq('session_id', sessionId);
+
+    // Migrate name badge orders
+    await supabase
+      .from('name_badge_orders')
+      .update({ user_id: userId, session_id: null })
+      .eq('session_id', sessionId);
+
+    // Migrate sticker orders
+    await supabase
+      .from('sticker_orders')
+      .update({ user_id: userId, session_id: null })
+      .eq('session_id', sessionId);
+
+    console.log('Session data migrated to user account');
+    return { success: true };
+  } catch (err) {
+    console.error('Error migrating session data:', err);
+    return { success: false, error: err };
   }
-  
-  // Migrate NameBadgeOrders
-  const sessionOrders = await base44.entities.NameBadgeOrder.filter({ session_id: sessionId });
-  for (const order of sessionOrders) {
-    await base44.entities.NameBadgeOrder.update(order.id, { session_id: null });
-  }
-  
-  // Migrate SavedDesigns
-  const savedDesigns = await base44.entities.SavedDesign.filter({ session_id: sessionId });
-  for (const design of savedDesigns) {
-    await base44.entities.SavedDesign.update(design.id, { session_id: null });
-  }
-  
-  return {
-    designs: sessionDesigns.length,
-    orders: sessionOrders.length,
-    saved: savedDesigns.length,
-  };
 }
