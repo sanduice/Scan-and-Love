@@ -1,16 +1,15 @@
-
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/hooks/useSupabaseData';
 import { 
   Search, ShoppingCart, User, Menu, X, Phone, ChevronDown,
-  LogIn, Palette, FileText
+  LogIn, Palette, FileText, LogOut
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,55 +28,26 @@ import NetworkBar from '@/components/navigation/NetworkBar';
 export default function Layout({ children, currentPageName }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [user, setUser] = useState(null);
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
-
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const isAuth = await base44.auth.isAuthenticated();
-        if (isAuth) {
-          const userData = await base44.auth.me();
-          setUser(userData);
-          
-          // Migrate session data to user account
-          const { migrateSessionToUser } = await import('@/components/SessionManager');
-          const migrated = await migrateSessionToUser(userData.email);
-          if (migrated.designs > 0 || migrated.orders > 0 || migrated.saved > 0) {
-            console.log('Migrated session data to account:', migrated);
-          }
-        }
-      } catch (err) {
-        // Not logged in
-      } finally {
-        setIsLoadingUser(false);
-      }
-    };
-    loadUser();
-  }, []);
-
-  const { data: cartItems = [] } = useQuery({
-    queryKey: ['cart-count', user?.email],
-    queryFn: async () => {
-      // Get session ID from localStorage
-      let sessionId = localStorage.getItem('netrave_session_id');
-      if (!sessionId) {
-        sessionId = 'sess_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('netrave_session_id', sessionId);
-      }
-      
-      if (user) {
-        const designs = await base44.entities.SavedDesign.filter({ is_in_cart: true, created_by: user.email });
-        const badges = await base44.entities.NameBadgeOrder.filter({ is_in_cart: true, created_by: user.email });
-        return [...designs, ...badges];
-      }
-      const designs = await base44.entities.SavedDesign.filter({ is_in_cart: true, session_id: sessionId });
-      const badges = await base44.entities.NameBadgeOrder.filter({ is_in_cart: true, session_id: sessionId });
-      return [...designs, ...badges];
-    },
-  });
+  const navigate = useNavigate();
+  
+  const { user, loading: isLoadingUser, signOut } = useAuth();
+  const { data: cartItems = [] } = useCart();
 
   const cartCount = cartItems.length;
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast.error('Error signing out');
+    } else {
+      toast.success('Signed out successfully');
+      navigate(createPageUrl('Home'));
+    }
+  };
+
+  const handleLogin = () => {
+    navigate(createPageUrl('Auth'));
+  };
 
   // Don't show layout on design tool pages
   if (currentPageName === 'DesignTool' || currentPageName === 'NameBadgeDesigner' || currentPageName === 'NameBadgeNames') {
@@ -90,7 +60,7 @@ export default function Layout({ children, currentPageName }) {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <Toaster position="top-right" richColors />
       
       {/* Network Bar */}
@@ -114,7 +84,7 @@ export default function Layout({ children, currentPageName }) {
       </div>
 
       {/* Main Header */}
-      <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
+      <header className="bg-background border-b border-border sticky top-0 z-50">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="flex items-center justify-between h-16 md:h-20 gap-4">
             {/* Logo */}
@@ -124,7 +94,7 @@ export default function Layout({ children, currentPageName }) {
                   <span className="text-white font-bold text-lg md:text-xl">N</span>
                 </div>
                 <div className="hidden md:block">
-                  <span className="text-lg md:text-xl font-bold text-slate-800">Netrave</span>
+                  <span className="text-lg md:text-xl font-bold text-foreground">Netrave</span>
                   <span className="text-lg md:text-xl font-bold text-[#2196F3]">Print</span>
                 </div>
               </div>
@@ -138,17 +108,16 @@ export default function Layout({ children, currentPageName }) {
             {/* Right Actions */}
             <div className="flex items-center gap-2 md:gap-4">
               {/* Search */}
-              {/* Search */}
               <div className="hidden xl:block relative w-64">
                 <Input
                   placeholder="Search products..."
-                  className="w-full pl-9 h-9 bg-gray-50 border-gray-200 focus:bg-white text-sm rounded-full"
+                  className="w-full pl-9 h-9 bg-muted border-border focus:bg-background text-sm rounded-full"
                 />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               </div>
 
               <button 
-                className="xl:hidden p-2 text-gray-600 hover:text-gray-900"
+                className="xl:hidden p-2 text-muted-foreground hover:text-foreground"
                 onClick={() => setSearchOpen(!searchOpen)}
               >
                 <Search className="w-5 h-5" />
@@ -199,29 +168,45 @@ export default function Layout({ children, currentPageName }) {
 
               {/* Account */}
               {isLoadingUser ? (
-                <div className="w-9 h-9 rounded-full bg-gray-100 animate-pulse" />
+                <div className="w-9 h-9 rounded-full bg-muted animate-pulse" />
               ) : user ? (
-                <div className="flex items-center gap-2">
-                  {user.role === 'admin' && (
-                    <Link to={createPageUrl('Admin')}>
-                      <Button variant="outline" size="sm" className="hidden md:flex border-slate-200 text-slate-700 hover:bg-slate-50">
-                        Dashboard
-                      </Button>
-                    </Link>
-                  )}
-                  <Link to={createPageUrl('Account')}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="rounded-full">
                       <div className="w-8 h-8 rounded-full bg-[#2196F3] flex items-center justify-center text-white text-sm font-medium">
-                        {user.full_name?.charAt(0) || user.email?.charAt(0) || 'U'}
+                        {user.email?.charAt(0).toUpperCase() || 'U'}
                       </div>
                     </Button>
-                  </Link>
-                </div>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuLabel className="font-normal">
+                      <p className="text-sm font-medium">{user.email}</p>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to={createPageUrl('Account')} className="w-full cursor-pointer">
+                        <User className="w-4 h-4 mr-2" />
+                        My Account
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to={createPageUrl('Admin')} className="w-full cursor-pointer">
+                        <FileText className="w-4 h-4 mr-2" />
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  onClick={() => base44.auth.redirectToLogin(window.location.href)}
+                  onClick={handleLogin}
                   className="hidden sm:flex"
                 >
                   <LogIn className="w-4 h-4 mr-2" />
@@ -246,7 +231,7 @@ export default function Layout({ children, currentPageName }) {
 
               {/* Mobile Menu Toggle */}
               <button
-                className="lg:hidden p-2 text-gray-600 hover:text-gray-900"
+                className="lg:hidden p-2 text-muted-foreground hover:text-foreground"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
                 <Menu className="w-6 h-6" />
@@ -259,7 +244,7 @@ export default function Layout({ children, currentPageName }) {
             <div className="xl:hidden pb-4 border-t pt-4 mt-2">
               <Input
                 placeholder="Search products..."
-                className="w-full h-10 bg-gray-50"
+                className="w-full h-10 bg-muted"
                 autoFocus
               />
             </div>
@@ -271,7 +256,7 @@ export default function Layout({ children, currentPageName }) {
       <MobileMenu 
         isOpen={mobileMenuOpen} 
         onClose={() => setMobileMenuOpen(false)}
-        onLogin={() => base44.auth.redirectToLogin(window.location.href)}
+        onLogin={handleLogin}
         user={user}
       />
 
