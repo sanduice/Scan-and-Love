@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
-import moment from 'moment';
+import { format, formatDistanceToNow, isToday } from 'date-fns';
 import OrderDetailPanel from '@/components/admin/OrderDetailPanel';
 import ProductionQueue from '@/components/admin/ProductionQueue';
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
@@ -190,7 +190,7 @@ export default function Admin() {
               />
               <QuickStatCard
                 label="Today's Revenue"
-                value={`$${orders.filter(o => moment(o.created_date).isSame(moment(), 'day') && o.payment_status === 'paid').reduce((s, o) => s + (o.total || 0), 0).toFixed(0)}`}
+                value={`$${orders.filter(o => isToday(new Date(o.created_date)) && o.payment_status === 'paid').reduce((s, o) => s + (o.total || 0), 0).toFixed(0)}`}
                 icon={DollarSign}
                 color="green"
               />
@@ -230,7 +230,7 @@ export default function Admin() {
                             <p className="font-medium">#{order.order_number}</p>
                             {order.is_rush && <Badge className="bg-red-100 text-red-800 text-xs">RUSH</Badge>}
                           </div>
-                          <p className="text-sm text-gray-500">{getItemCount(order)} items • {moment(order.created_date).fromNow()}</p>
+                          <p className="text-sm text-gray-500">{getItemCount(order)} items • {formatDistanceToNow(new Date(order.created_date), { addSuffix: true })}</p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -347,7 +347,7 @@ export default function Admin() {
                         </Select>
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-500">
-                        {moment(order.created_date).format('MMM D, YYYY')}
+                        {format(new Date(order.created_date), 'MMM d, yyyy')}
                       </td>
                       <td className="px-4 py-4">
                         <Button 
