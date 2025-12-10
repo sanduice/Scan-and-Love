@@ -79,26 +79,13 @@ export default function SettingsPanel() {
   const fetchAdmins = async () => {
     setLoadingAdmins(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error } = await supabase.functions.invoke('manage-roles', {
+        method: 'GET',
+      });
       
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-roles`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      if (error) throw error;
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch admins');
-      }
-      
-      setAdmins(data.admins || []);
+      setAdmins(data?.admins || []);
     } catch (error) {
       console.error('Error fetching admins:', error);
       toast.error('Failed to load administrators');
@@ -113,25 +100,13 @@ export default function SettingsPanel() {
     
     setAddingAdmin(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error } = await supabase.functions.invoke('manage-roles', {
+        method: 'POST',
+        body: { email: newAdminEmail.trim() },
+      });
       
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-roles`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email: newAdminEmail.trim() }),
-        }
-      );
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to add admin');
-      }
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       
       toast.success(`Admin role added for ${newAdminEmail}`);
       setNewAdminEmail('');
@@ -147,25 +122,13 @@ export default function SettingsPanel() {
   const handleRemoveAdmin = async (userId) => {
     setRemovingAdminId(userId);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error } = await supabase.functions.invoke('manage-roles', {
+        method: 'DELETE',
+        body: { user_id: userId },
+      });
       
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-roles`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${session?.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ user_id: userId }),
-        }
-      );
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to remove admin');
-      }
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       
       toast.success('Admin role removed');
       fetchAdmins();
