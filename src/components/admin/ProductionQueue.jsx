@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { 
   Clock, Printer, CheckCircle, Package, AlertTriangle, Eye
 } from 'lucide-react';
-import moment from 'moment';
+import { differenceInDays } from 'date-fns';
 
 const STATUS_PRIORITY = {
   'paid': 1,
@@ -58,7 +58,7 @@ export default function ProductionQueue({ orders, onSelectOrder, onUpdateStatus 
           {productionOrders.map((order) => {
             const nextStatus = getNextStatus(order.status);
             const itemCount = getItemCount(order);
-            const daysOld = moment().diff(moment(order.created_date), 'days');
+            const daysOld = differenceInDays(new Date(), new Date(order.created_date));
             
             return (
               <div 
