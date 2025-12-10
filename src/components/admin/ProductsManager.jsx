@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
-  Plus, Search, Edit, Trash2, Image, DollarSign, Package,
-  Star, Eye, EyeOff, Loader2, MoreVertical, Upload, CheckSquare, Square, GripVertical
+  Plus, Search, Edit, Trash2, Image, DollarSign,
+  Star, Eye, EyeOff, Loader2, MoreVertical, CheckSquare, Square, GripVertical,
+  ChevronDown, ChevronRight
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
@@ -20,6 +17,155 @@ import ProductEditor from './ProductEditor';
 import BulkPriceEditor from './BulkPriceEditor';
 import { toast } from 'sonner';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+// Category hierarchy matching /products page
+const CATEGORIES_SIDEBAR = [
+  { name: 'All Products', slug: 'all-products' },
+  { 
+    name: 'Name Badges', 
+    slug: 'name-badges',
+    subcategories: [
+      { name: 'View All Name Badges', slug: 'name-badges' },
+      { name: 'Standard Name Badges', slug: 'standard-name-badges' },
+      { name: 'Premium Name Badges', slug: 'premium-name-badges' },
+      { name: 'Executive Name Badges', slug: 'executive-name-badges' },
+      { name: 'Executive Metal Name Tags', slug: 'executive-metal-name-tags' },
+      { 
+        name: 'Specialty Badges', 
+        slug: 'specialty-badges-group',
+        subcategories: [
+          { name: 'Bling Name Badges', slug: 'bling-name-badges' },
+          { name: 'Chalkboard Name Tags', slug: 'chalkboard-name-tags' },
+          { name: 'Real Wood Badges', slug: 'real-wood-badges' },
+          { name: 'Custom Color Badges', slug: 'custom-color-badges' },
+          { name: 'Glossy Name Plates', slug: 'glossy-name-plates' }
+        ]
+      },
+      { 
+        name: 'Metal & Engraved', 
+        slug: 'metal-badges-group',
+        subcategories: [
+          { name: 'Metal Name Tags', slug: 'metal-name-tags' },
+          { name: 'Engraved Metal Name Tags', slug: 'engraved-metal-name-tags' },
+          { name: 'Metal Service Name Bars', slug: 'metal-service-name-bars' }
+        ]
+      },
+      { name: 'Badge Accessories', slug: 'badge-accessories' }
+    ]
+  },
+  {
+    name: 'Signs & Banners',
+    slug: 'signs-banners-group',
+    subcategories: [
+      { name: 'Banners', slug: 'vinyl-banner' },
+      { name: 'Signs', slug: 'signs' },
+      { name: 'Yard Signs', slug: 'yard-sign' },
+      { name: 'A-Frame Signs', slug: 'a-frame-signs' },
+      { name: 'Office Signs', slug: 'office-signs' },
+      { name: 'Real Estate', slug: 'real-estate' }
+    ]
+  },
+  {
+    name: 'Stickers & Decals',
+    slug: 'stickers-decals-group',
+    subcategories: [
+      { name: 'Stickers', slug: 'stickers' },
+      { name: 'Decals', slug: 'decals' },
+      { name: 'Magnets', slug: 'magnets' },
+      { name: 'Vehicle Graphics', slug: 'vehicle-graphics' },
+      { name: 'Window Graphics', slug: 'window-graphics' },
+      { name: 'Floor Graphics', slug: 'floor-graphics' }
+    ]
+  },
+  {
+    name: 'Office & ID',
+    slug: 'office-id-group',
+    subcategories: [
+      { name: 'Desk and Wall Plates', slug: 'desk-and-wall-plates' },
+      { name: 'ID Cards', slug: 'id-cards' },
+      { name: 'Self Inking Stamps', slug: 'self-inking-stamps' }
+    ]
+  },
+  {
+    name: 'Events & Trade Show',
+    slug: 'events-group',
+    subcategories: [
+      { name: 'Trade Show & Events', slug: 'trade-show-events' },
+      { name: 'Displays & Stands', slug: 'displays-stands' },
+      { name: 'Flags & Fabric', slug: 'flags-fabric' },
+      { name: 'Event Passes', slug: 'event-passes' }
+    ]
+  },
+  { name: 'Prints', slug: 'prints' }
+];
+
+// Recursive Category Sidebar Item
+const CategorySidebarItem = ({ item, selectedSlug, onSelect, level = 0 }) => {
+  const hasChildren = item.subcategories && item.subcategories.length > 0;
+  
+  const checkActive = (cat) => {
+    if (cat.slug === selectedSlug) return true;
+    if (cat.subcategories) {
+      return cat.subcategories.some(sub => checkActive(sub));
+    }
+    return false;
+  };
+  
+  const isSelfActive = item.slug === selectedSlug;
+  const isChildActive = hasChildren && checkActive(item) && !isSelfActive;
+  
+  const [isExpanded, setIsExpanded] = useState(
+    item.expanded || isChildActive || isSelfActive
+  );
+
+  const paddingLeft = level === 0 ? 12 : 12 + (level * 12); 
+
+  if (!hasChildren) {
+    return (
+      <button 
+        onClick={() => onSelect(item.slug)}
+        className={`w-full text-left block py-2 pr-4 text-sm transition-colors rounded-r-lg border-l-2 my-1 ${
+          isSelfActive
+            ? 'border-primary text-primary font-medium bg-primary/10' 
+            : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted hover:border-muted-foreground/20'
+        }`}
+        style={{ paddingLeft: `${paddingLeft}px` }}
+      >
+        {item.name}
+      </button>
+    );
+  }
+
+  return (
+    <div className="border-b last:border-0 border-border/30">
+      <button 
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={`w-full flex items-center justify-between py-3 pr-4 text-sm font-medium transition-colors hover:bg-muted rounded-r-lg my-1 ${
+          (isSelfActive || isChildActive) ? 'text-primary' : 'text-foreground'
+        }`}
+        style={{ paddingLeft: `${paddingLeft}px` }}
+      >
+        <span className={level === 0 ? "font-bold" : ""}>{item.name}</span>
+        {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+      </button>
+      
+      {isExpanded && (
+        <div className="pb-1">
+          {item.subcategories.map((sub, idx) => (
+            <CategorySidebarItem 
+              key={sub.slug || idx} 
+              item={sub} 
+              selectedSlug={selectedSlug}
+              onSelect={onSelect}
+              level={level + 1} 
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function ProductsManager() {
   const queryClient = useQueryClient();
@@ -28,69 +174,117 @@ export default function ProductsManager() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
   const [showBulkEditor, setShowBulkEditor] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategorySlug, setSelectedCategorySlug] = useState('all-products');
   const [localProducts, setLocalProducts] = useState([]);
 
+  // Fetch products from Supabase
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['admin-products'],
-    queryFn: () => base44.entities.Product.list('order'), // Fetch sorted by order initially
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
   });
 
+  // Fetch categories from Supabase
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.ProductCategory.list('order'),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_categories')
+        .select('*')
+        .order('order', { ascending: true });
+      if (error) throw error;
+      return data;
+    },
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Product.create(data),
+    mutationFn: async (data) => {
+      const { data: newProduct, error } = await supabase
+        .from('products')
+        .insert([data])
+        .select()
+        .single();
+      if (error) throw error;
+      return newProduct;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       toast.success('Product created');
       setShowDialog(false);
       setEditingProduct(null);
     },
+    onError: (error) => {
+      toast.error('Failed to create product: ' + error.message);
+    }
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Product.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const { data: updated, error } = await supabase
+        .from('products')
+        .update(data)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return updated;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       toast.success('Product updated');
       setShowDialog(false);
       setEditingProduct(null);
     },
+    onError: (error) => {
+      toast.error('Failed to update product: ' + error.message);
+    }
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Product.delete(id),
+    mutationFn: async (id) => {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       toast.success('Product deleted');
     },
+    onError: (error) => {
+      toast.error('Failed to delete product: ' + error.message);
+    }
   });
 
-  // Update local state when products change or filtering changes
+  // Filter products based on selected category and search
   useEffect(() => {
-    let filtered = products;
+    let filtered = [...products];
 
+    // Filter by search
     if (searchQuery) {
-        filtered = filtered.filter(p => p.name?.toLowerCase().includes(searchQuery.toLowerCase()));
+      filtered = filtered.filter(p => p.name?.toLowerCase().includes(searchQuery.toLowerCase()));
     }
 
-    if (selectedCategory && selectedCategory !== 'all') {
-        filtered = filtered.filter(p => 
-            p.category_id === selectedCategory || 
-            (p.additional_category_ids && p.additional_category_ids.includes(selectedCategory))
-        );
-        // Sort by order when in a specific category for drag and drop
-        filtered.sort((a, b) => (a.order || 9999) - (b.order || 9999));
+    // Filter by category slug
+    if (selectedCategorySlug && selectedCategorySlug !== 'all-products') {
+      const category = categories.find(c => c.slug === selectedCategorySlug);
+      if (category) {
+        filtered = filtered.filter(p => p.category_id === category.id);
+      }
     }
 
     setLocalProducts(filtered);
-  }, [products, searchQuery, selectedCategory]);
+  }, [products, searchQuery, selectedCategorySlug, categories]);
 
   const handleDragEnd = (result) => {
-    if (!result.destination || selectedCategory === 'all') return;
+    if (!result.destination || selectedCategorySlug === 'all-products') return;
 
     const items = Array.from(localProducts);
     const [reorderedItem] = items.splice(result.source.index, 1);
@@ -98,15 +292,11 @@ export default function ProductsManager() {
 
     setLocalProducts(items);
 
-    // Update orders
+    // Update orders in database
     items.forEach((item, index) => {
-        if (item.order !== index + 1) {
-            updateMutation.mutate({ id: item.id, data: { order: index + 1 } });
-        }
+      updateMutation.mutate({ id: item.id, data: { order: index + 1 } });
     });
   };
-
-  const filteredProducts = localProducts; // Use local state for rendering
 
   const handleSave = (formData) => {
     if (editingProduct?.id) {
@@ -123,10 +313,10 @@ export default function ProductsManager() {
   };
 
   const toggleAll = () => {
-    if (selectedIds.length === filteredProducts.length) {
+    if (selectedIds.length === localProducts.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(filteredProducts.map(p => p.id));
+      setSelectedIds(localProducts.map(p => p.id));
     }
   };
 
@@ -137,207 +327,266 @@ export default function ProductsManager() {
     });
   };
 
-  const togglePopular = (product) => {
+  const toggleFeatured = (product) => {
     updateMutation.mutate({ 
       id: product.id, 
-      data: { is_popular: !product.is_popular } 
+      data: { is_featured: !product.is_featured } 
     });
   };
 
+  const getCategoryName = () => {
+    if (selectedCategorySlug === 'all-products') return 'All Products';
+    
+    // Find in hierarchy
+    const findName = (items) => {
+      for (const item of items) {
+        if (item.slug === selectedCategorySlug) return item.name;
+        if (item.subcategories) {
+          const found = findName(item.subcategories);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    
+    return findName(CATEGORIES_SIDEBAR) || 'Products';
+  };
+
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-4 flex-1 w-full">
-            <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input 
-                placeholder="Search products..." 
-                className="pl-10"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-            />
+    <div className="flex gap-6 h-[calc(100vh-200px)]">
+      {/* Category Sidebar */}
+      <aside className="w-64 flex-shrink-0">
+        <div className="bg-card rounded-xl border shadow-sm h-full">
+          <div className="p-4 border-b">
+            <h3 className="font-semibold text-foreground">Categories</h3>
+          </div>
+          <ScrollArea className="h-[calc(100%-60px)]">
+            <div className="p-2">
+              {CATEGORIES_SIDEBAR.map((cat, idx) => (
+                <CategorySidebarItem 
+                  key={cat.slug || idx} 
+                  item={cat} 
+                  selectedSlug={selectedCategorySlug}
+                  onSelect={setSelectedCategorySlug}
+                />
+              ))}
             </div>
-            
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-[200px]">
-                    <SelectValue placeholder="Filter by Category" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map(c => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
+          </ScrollArea>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-bold text-foreground">{getCategoryName()}</h2>
+            <div className="flex items-center gap-2">
+              {selectedCategorySlug !== 'all-products' && (
+                <Badge variant="secondary">
+                  Drag & Drop Enabled
+                </Badge>
+              )}
+              {selectedIds.length > 0 && (
+                <Button variant="outline" onClick={() => setShowBulkEditor(true)}>
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  Edit Prices ({selectedIds.length})
+                </Button>
+              )}
+              <Button onClick={() => { setEditingProduct({}); setShowDialog(true); }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Product
+              </Button>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search products..." 
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {selectedCategory !== 'all' && (
-             <Badge variant="secondary" className="mr-2">
-                 Drag & Drop Enabled
-             </Badge>
-          )}
-          {selectedIds.length > 0 && (
-            <Button variant="outline" onClick={() => setShowBulkEditor(true)} className="mr-2">
-              <DollarSign className="w-4 h-4 mr-2" />
-              Edit Prices ({selectedIds.length})
-            </Button>
-          )}
-          <Button onClick={() => { setEditingProduct({}); setShowDialog(true); }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Product
-          </Button>
-        </div>
-      </div>
-
-      {/* Selection Header */}
-      {filteredProducts.length > 0 && (
-        <div className="flex items-center gap-2 pb-2 px-1">
-          <button 
-            onClick={toggleAll}
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
-          >
-            {selectedIds.length === filteredProducts.length && filteredProducts.length > 0 ? (
-              <CheckSquare className="w-4 h-4 text-blue-600" />
-            ) : (
-              <Square className="w-4 h-4" />
+        {/* Selection Header */}
+        {localProducts.length > 0 && (
+          <div className="flex items-center gap-2 pb-2 px-1">
+            <button 
+              onClick={toggleAll}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              {selectedIds.length === localProducts.length && localProducts.length > 0 ? (
+                <CheckSquare className="w-4 h-4 text-primary" />
+              ) : (
+                <Square className="w-4 h-4" />
+              )}
+              Select All
+            </button>
+            <span className="text-xs text-muted-foreground">|</span>
+            <span className="text-sm text-muted-foreground">{localProducts.length} products</span>
+            {selectedIds.length > 0 && (
+              <>
+                <span className="text-xs text-muted-foreground">|</span>
+                <span className="text-sm text-primary font-medium">{selectedIds.length} selected</span>
+              </>
             )}
-            Select All
-          </button>
-          <span className="text-xs text-gray-400">|</span>
-          <span className="text-sm text-gray-600">{selectedIds.length} selected</span>
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* Products Grid */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
-        </div>
-      ) : (
-        <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="products-grid" direction="horizontal">
+        {/* Products Grid */}
+        <div className="flex-1 overflow-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : localProducts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <Image className="w-12 h-12 mb-4 opacity-50" />
+              <p>No products found</p>
+              {searchQuery && <p className="text-sm">Try adjusting your search</p>}
+            </div>
+          ) : (
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="products-grid" direction="horizontal">
                 {(provided) => (
-                    <div 
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-                    >
-                    {filteredProducts.map((product, index) => (
-                        <Draggable 
-                            key={product.id} 
-                            draggableId={product.id} 
-                            index={index}
-                            isDragDisabled={selectedCategory === 'all'}
-                        >
-                            {(provided, snapshot) => (
-                                <div 
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className={`bg-white rounded-xl border overflow-hidden relative group ${!product.is_active ? 'opacity-60' : ''} ${selectedIds.includes(product.id) ? 'ring-2 ring-blue-500' : ''} ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-green-500 z-50' : ''}`}
-                                >
-                                {/* Drag Handle - Only show when category selected */}
-                                {selectedCategory !== 'all' && (
-                                    <div 
-                                        {...provided.dragHandleProps}
-                                        className="absolute top-2 left-10 z-10 bg-white/90 rounded p-1 cursor-grab active:cursor-grabbing hover:bg-gray-100"
-                                    >
-                                        <GripVertical className="w-5 h-5 text-gray-500" />
-                                    </div>
-                                )}
-
-                                {/* Selection Checkbox */}
-                                <div className="absolute top-2 left-2 z-10">
-                                    <button 
-                                    onClick={(e) => { e.stopPropagation(); toggleSelection(product.id); }}
-                                    className="bg-white/90 rounded shadow-sm p-1 hover:bg-white"
-                                    >
-                                    {selectedIds.includes(product.id) ? (
-                                        <CheckSquare className="w-5 h-5 text-blue-600" />
-                                    ) : (
-                                        <Square className="w-5 h-5 text-gray-400" />
-                                    )}
-                                    </button>
-                                </div>
-
-                                <div className="aspect-video bg-gray-100 relative cursor-pointer" onClick={() => { setEditingProduct(product); setShowDialog(true); }}>
-                                    {product.image_url ? (
-                                    <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-                                    ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                        <Image className="w-12 h-12 text-gray-300" />
-                                    </div>
-                                    )}
-                                    {product.is_popular && (
-                                    <Badge className="absolute top-2 right-12 bg-yellow-100 text-yellow-800">
-                                        <Star className="w-3 h-3 mr-1 fill-current" />
-                                        Popular
-                                    </Badge>
-                                    )}
-                                    {!product.is_active && (
-                                    <Badge className="absolute top-2 right-2 bg-gray-800 text-white">
-                                        <EyeOff className="w-3 h-3 mr-1" />
-                                        Hidden
-                                    </Badge>
-                                    )}
-                                </div>
-                                <div className="p-4">
-                                    <div className="flex items-start justify-between">
-                                    <div>
-                                        <h3 className="font-medium line-clamp-1" title={product.name}>{product.name}</h3>
-                                        <p className="text-sm text-gray-500">{product.slug}</p>
-                                    </div>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="sm">
-                                            <MoreVertical className="w-4 h-4" />
-                                        </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => { setEditingProduct(product); setShowDialog(true); }}>
-                                            <Edit className="w-4 h-4 mr-2" />
-                                            Edit
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => toggleActive(product)}>
-                                            {product.is_active ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                                            {product.is_active ? 'Hide' : 'Show'}
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => togglePopular(product)}>
-                                            <Star className="w-4 h-4 mr-2" />
-                                            {product.is_popular ? 'Remove Popular' : 'Mark Popular'}
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem 
-                                            onClick={() => deleteMutation.mutate(product.id)}
-                                            className="text-red-600"
-                                        >
-                                            <Trash2 className="w-4 h-4 mr-2" />
-                                            Delete
-                                        </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                    </div>
-                                    <div className="mt-2 flex items-center justify-between">
-                                    <span className="text-lg font-bold text-green-600">
-                                        ${product.base_price?.toFixed(2) || '0.00'}
-                                    </span>
-                                    <div className="flex items-center gap-1 text-sm text-gray-500">
-                                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                                        {product.average_rating?.toFixed(1) || '0.0'}
-                                        <span>({product.review_count || 0})</span>
-                                    </div>
-                                    </div>
-                                </div>
-                                </div>
+                  <div 
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-4"
+                  >
+                    {localProducts.map((product, index) => (
+                      <Draggable 
+                        key={product.id} 
+                        draggableId={product.id} 
+                        index={index}
+                        isDragDisabled={selectedCategorySlug === 'all-products'}
+                      >
+                        {(provided, snapshot) => (
+                          <div 
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={`bg-card rounded-xl border overflow-hidden relative group ${
+                              !product.is_active ? 'opacity-60' : ''
+                            } ${
+                              selectedIds.includes(product.id) ? 'ring-2 ring-primary' : ''
+                            } ${
+                              snapshot.isDragging ? 'shadow-2xl ring-2 ring-green-500 z-50' : ''
+                            }`}
+                          >
+                            {/* Drag Handle */}
+                            {selectedCategorySlug !== 'all-products' && (
+                              <div 
+                                {...provided.dragHandleProps}
+                                className="absolute top-2 left-10 z-10 bg-background/90 rounded p-1 cursor-grab active:cursor-grabbing hover:bg-muted"
+                              >
+                                <GripVertical className="w-5 h-5 text-muted-foreground" />
+                              </div>
                             )}
-                        </Draggable>
+
+                            {/* Selection Checkbox */}
+                            <div className="absolute top-2 left-2 z-10">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); toggleSelection(product.id); }}
+                                className="bg-background/90 rounded shadow-sm p-1 hover:bg-background"
+                              >
+                                {selectedIds.includes(product.id) ? (
+                                  <CheckSquare className="w-5 h-5 text-primary" />
+                                ) : (
+                                  <Square className="w-5 h-5 text-muted-foreground" />
+                                )}
+                              </button>
+                            </div>
+
+                            {/* Product Image */}
+                            <div 
+                              className="aspect-video bg-muted relative cursor-pointer" 
+                              onClick={() => { setEditingProduct(product); setShowDialog(true); }}
+                            >
+                              {product.images?.[0] ? (
+                                <img 
+                                  src={product.images[0]} 
+                                  alt={product.name} 
+                                  className="w-full h-full object-cover" 
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Image className="w-12 h-12 text-muted-foreground/30" />
+                                </div>
+                              )}
+                              {product.is_featured && (
+                                <Badge className="absolute top-2 right-12 bg-yellow-100 text-yellow-800">
+                                  <Star className="w-3 h-3 mr-1 fill-current" />
+                                  Featured
+                                </Badge>
+                              )}
+                              {!product.is_active && (
+                                <Badge className="absolute top-2 right-2 bg-muted text-muted-foreground">
+                                  <EyeOff className="w-3 h-3 mr-1" />
+                                  Hidden
+                                </Badge>
+                              )}
+                            </div>
+
+                            {/* Product Info */}
+                            <div className="p-4">
+                              <div className="flex items-start justify-between">
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="font-medium line-clamp-1 text-foreground" title={product.name}>
+                                    {product.name}
+                                  </h3>
+                                  <p className="text-sm text-muted-foreground truncate">{product.slug}</p>
+                                </div>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      <MoreVertical className="w-4 h-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => { setEditingProduct(product); setShowDialog(true); }}>
+                                      <Edit className="w-4 h-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => toggleActive(product)}>
+                                      {product.is_active ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+                                      {product.is_active ? 'Hide' : 'Show'}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => toggleFeatured(product)}>
+                                      <Star className="w-4 h-4 mr-2" />
+                                      {product.is_featured ? 'Remove Featured' : 'Mark Featured'}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => deleteMutation.mutate(product.id)}
+                                      className="text-destructive"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                              <div className="mt-2">
+                                <span className="text-lg font-bold text-green-600">
+                                  ${product.base_price?.toFixed(2) || '0.00'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </Draggable>
                     ))}
                     {provided.placeholder}
-                    </div>
+                  </div>
                 )}
-            </Droppable>
-        </DragDropContext>
-      )}
+              </Droppable>
+            </DragDropContext>
+          )}
+        </div>
+      </div>
 
       {/* Product Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
