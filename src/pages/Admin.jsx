@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -74,29 +74,39 @@ export default function Admin() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  const { data: currentUser, isLoading: userLoading } = useQuery({
-    queryKey: ['current-user'],
-    queryFn: () => base44.auth.me(),
+  // Check if current user is admin using the is_admin() function
+  const { data: isAdmin, isLoading: adminLoading } = useQuery({
+    queryKey: ['is-admin'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('is_admin');
+      if (error) return false;
+      return data;
+    },
   });
 
   const { data: orders = [], isLoading: ordersLoading, refetch: refetchOrders } = useQuery({
     queryKey: ['admin-orders'],
-    queryFn: () => base44.entities.Order.list('-created_date'),
-  });
-
-  const { data: users = [], isLoading: usersLoading } = useQuery({
-    queryKey: ['admin-users'],
-    queryFn: () => base44.entities.User.list('-created_date'),
-    enabled: currentUser?.role === 'admin',
+    queryFn: async () => {
+      const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+      return data || [];
+    },
+    enabled: isAdmin === true,
   });
 
   const { data: designs = [] } = useQuery({
     queryKey: ['admin-designs'],
-    queryFn: () => base44.entities.SavedDesign.list('-created_date'),
+    queryFn: async () => {
+      const { data } = await supabase.from('saved_designs').select('*').order('created_at', { ascending: false });
+      return data || [];
+    },
+    enabled: isAdmin === true,
   });
 
   const updateOrderMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Order.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const { error } = await supabase.from('orders').update(data).eq('id', id);
+      if (error) throw error;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       toast.success('Order updated');
@@ -104,7 +114,7 @@ export default function Admin() {
     },
   });
 
-  if (userLoading) {
+  if (adminLoading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
@@ -112,7 +122,7 @@ export default function Admin() {
     );
   }
 
-  if (currentUser?.role !== 'admin') {
+  if (!isAdmin) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -190,7 +200,7 @@ export default function Admin() {
               />
               <QuickStatCard
                 label="Today's Revenue"
-                value={`$${orders.filter(o => isToday(new Date(o.created_date)) && o.payment_status === 'paid').reduce((s, o) => s + (o.total || 0), 0).toFixed(0)}`}
+                value={`$${orders.filter(o => isToday(new Date(o.created_at)) && o.payment_status === 'paid').reduce((s, o) => s + (o.total || 0), 0).toFixed(0)}`}
                 icon={DollarSign}
                 color="green"
               />
@@ -230,7 +240,7 @@ export default function Admin() {
                             <p className="font-medium">#{order.order_number}</p>
                             {order.is_rush && <Badge className="bg-red-100 text-red-800 text-xs">RUSH</Badge>}
                           </div>
-                          <p className="text-sm text-gray-500">{getItemCount(order)} items • {formatDistanceToNow(new Date(order.created_date), { addSuffix: true })}</p>
+                          <p className="text-sm text-gray-500">{getItemCount(order)} items • {formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}</p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -347,7 +357,7 @@ export default function Admin() {
                         </Select>
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-500">
-                        {format(new Date(order.created_date), 'MMM d, yyyy')}
+                        {format(new Date(order.created_at), 'MMM d, yyyy')}
                       </td>
                       <td className="px-4 py-4">
                         <Button 
