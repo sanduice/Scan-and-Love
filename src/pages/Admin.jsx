@@ -74,6 +74,15 @@ export default function Admin() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
+  // Get current user info
+  const { data: currentUser } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    },
+  });
+
   // Check if current user is admin using the is_admin() function
   const { data: isAdmin, isLoading: adminLoading } = useQuery({
     queryKey: ['is-admin'],
@@ -538,10 +547,10 @@ export default function Admin() {
             <div className="p-4 border-t border-slate-800">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center text-white text-sm font-medium">
-                  {currentUser?.full_name?.charAt(0) || 'A'}
+                  {currentUser?.user_metadata?.full_name?.charAt(0) || currentUser?.email?.charAt(0) || 'A'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{currentUser?.full_name}</p>
+                  <p className="text-sm font-medium text-white truncate">{currentUser?.user_metadata?.full_name || 'Admin'}</p>
                   <p className="text-xs text-slate-400 truncate">{currentUser?.email}</p>
                 </div>
               </div>
