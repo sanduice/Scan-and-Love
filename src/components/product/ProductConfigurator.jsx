@@ -168,30 +168,6 @@ const STANDARD_SIZES = {
     { label: '12" × 12"', width: 12, height: 12 },
     { label: '24" × 24"', width: 24, height: 24 },
   ],
-  'table-throw': [
-    { label: '6ft Table (3-Sided)', width: 72, height: 30 },
-    { label: '6ft Table (4-Sided)', width: 72, height: 30 },
-    { label: '8ft Table (3-Sided)', width: 96, height: 30 },
-    { label: '8ft Table (4-Sided)', width: 96, height: 30 },
-  ],
-  'pop-up-display': [
-    { label: '8ft Straight', width: 96, height: 90 },
-    { label: '10ft Straight', width: 120, height: 90 },
-    { label: '20ft Straight', width: 240, height: 90 },
-  ],
-  'real-estate-frame': [
-    { label: '18" × 24" Frame', width: 24, height: 18 },
-    { label: '24" × 36" Frame', width: 36, height: 24 },
-  ],
-  'x-banner': [
-    { label: '24" × 63"', width: 24, height: 63 },
-    { label: '32" × 71"', width: 32, height: 71 },
-  ],
-  'retractable-banner': [
-    { label: '33" × 81"', width: 33, height: 81 },
-    { label: '47" × 81"', width: 47, height: 81 },
-    { label: '36" × 92" (Premium)', width: 36, height: 92 },
-  ],
   };
 
 export default function ProductConfigurator({ product }) {
