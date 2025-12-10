@@ -8,7 +8,7 @@ import {
   Loader2, MessageSquare, Eye, ZoomIn, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
-import moment from 'moment';
+import { format } from 'date-fns';
 
 export default function ProofApproval() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -374,7 +374,7 @@ Please update the artwork and send a new proof.
                 <div className="flex justify-between">
                   <span className="text-gray-500">Proof Sent:</span>
                   <span className="font-medium">
-                    {order?.proof_sent_at ? moment(order.proof_sent_at).format('MMM D, YYYY') : '-'}
+                    {order?.proof_sent_at ? format(new Date(order.proof_sent_at), 'MMM d, yyyy') : '-'}
                   </span>
                 </div>
                 <div className="pt-3 border-t">
