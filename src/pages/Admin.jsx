@@ -428,7 +428,7 @@ export default function Admin() {
       case 'customers':
         return (
           <div className="bg-white rounded-xl shadow-sm border p-6">
-            <CustomersTable users={users} orders={orders} />
+            <CustomersTable users={[]} orders={orders} />
           </div>
         );
 
