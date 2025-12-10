@@ -13,7 +13,7 @@ import {
   FileText, DollarSign, Percent, Mail, Package, ArrowRight
 } from 'lucide-react';
 import { toast } from 'sonner';
-import moment from 'moment';
+import { format } from 'date-fns';
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -119,7 +119,7 @@ export default function QuotesManager() {
             
             <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <p><strong>Quote #:</strong> ${editedQuote.quote_number}</p>
-              <p><strong>Valid Until:</strong> ${moment(editedQuote.valid_until).format('MMMM D, YYYY')}</p>
+              <p><strong>Valid Until:</strong> ${format(new Date(editedQuote.valid_until), 'MMMM d, yyyy')}</p>
             </div>
 
             <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
@@ -271,7 +271,7 @@ export default function QuotesManager() {
                     </Badge>
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-500">
-                    {moment(quote.created_date).format('MMM D, YYYY')}
+                    {format(new Date(quote.created_date), 'MMM d, yyyy')}
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex gap-2">

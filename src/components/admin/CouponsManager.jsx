@@ -12,7 +12,7 @@ import {
   Plus, Tag, Percent, DollarSign, Truck, Trash2, Edit, Copy, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
-import moment from 'moment';
+import { format, isBefore } from 'date-fns';
 
 export default function CouponsManager() {
   const queryClient = useQueryClient();
@@ -82,7 +82,7 @@ export default function CouponsManager() {
   };
 
   const isExpired = (coupon) => {
-    return coupon.expires_at && moment(coupon.expires_at).isBefore(moment());
+    return coupon.expires_at && isBefore(new Date(coupon.expires_at), new Date());
   };
 
   const isMaxedOut = (coupon) => {
@@ -169,7 +169,7 @@ export default function CouponsManager() {
                     <td className="px-4 py-4 text-sm">
                       {coupon.expires_at ? (
                         <span className={expired ? 'text-red-500' : ''}>
-                          {moment(coupon.expires_at).format('MMM D, YYYY')}
+                          {format(new Date(coupon.expires_at), 'MMM d, yyyy')}
                         </span>
                       ) : (
                         <span className="text-gray-400">Never</span>

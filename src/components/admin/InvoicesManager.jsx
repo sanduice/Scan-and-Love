@@ -13,7 +13,7 @@ import {
   Plus, Receipt, CreditCard, Mail, Download, Printer
 } from 'lucide-react';
 import { toast } from 'sonner';
-import moment from 'moment';
+import { format, isBefore } from 'date-fns';
 
 const STATUS_COLORS = {
   draft: 'bg-gray-100 text-gray-800',
@@ -171,7 +171,7 @@ export default function InvoicesManager() {
             
             <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <p><strong>Invoice #:</strong> ${editedInvoice.invoice_number}</p>
-              <p><strong>Due Date:</strong> ${moment(editedInvoice.due_date).format('MMMM D, YYYY')}</p>
+              <p><strong>Due Date:</strong> ${format(new Date(editedInvoice.due_date), 'MMMM d, yyyy')}</p>
               <p><strong>Amount Due:</strong> <span style="font-size: 1.5em; color: #2196F3;">$${(editedInvoice.total || 0).toFixed(2)}</span></p>
             </div>
 
@@ -310,7 +310,7 @@ export default function InvoicesManager() {
             </thead>
             <tbody className="divide-y">
               {filteredInvoices.map((invoice) => {
-                const isOverdue = invoice.status === 'sent' && moment(invoice.due_date).isBefore(moment(), 'day');
+                const isOverdue = invoice.status === 'sent' && isBefore(new Date(invoice.due_date), new Date());
                 return (
                   <tr key={invoice.id} className="hover:bg-gray-50">
                     <td className="px-4 py-4 font-medium">{invoice.invoice_number}</td>
@@ -332,7 +332,7 @@ export default function InvoicesManager() {
                       </Badge>
                     </td>
                     <td className="px-4 py-4 text-sm">
-                      {invoice.due_date ? moment(invoice.due_date).format('MMM D, YYYY') : '-'}
+                      {invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : '-'}
                     </td>
                     <td className="px-4 py-4">
                       <Button variant="ghost" size="sm" onClick={() => openEditDialog(invoice)}>

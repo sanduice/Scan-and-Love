@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Download, DollarSign, TrendingUp, Map } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import moment from 'moment';
+import { format, subDays, isAfter, isSameYear, parse } from 'date-fns';
 
 export default function ReportsDashboard() {
   const [timeRange, setTimeRange] = React.useState('30d');
@@ -20,13 +20,13 @@ export default function ReportsDashboard() {
     if (!orders.length) return { salesByState: [], salesOverTime: [], totals: {} };
 
     // Filter by time range
-    const now = moment();
+    const now = new Date();
     const filteredOrders = orders.filter(order => {
-      const orderDate = moment(order.created_date);
-      if (timeRange === '7d') return orderDate.isAfter(now.clone().subtract(7, 'days'));
-      if (timeRange === '30d') return orderDate.isAfter(now.clone().subtract(30, 'days'));
-      if (timeRange === '90d') return orderDate.isAfter(now.clone().subtract(90, 'days'));
-      if (timeRange === 'ytd') return orderDate.isSame(now, 'year');
+      const orderDate = new Date(order.created_date);
+      if (timeRange === '7d') return isAfter(orderDate, subDays(now, 7));
+      if (timeRange === '30d') return isAfter(orderDate, subDays(now, 30));
+      if (timeRange === '90d') return isAfter(orderDate, subDays(now, 90));
+      if (timeRange === 'ytd') return isSameYear(orderDate, now);
       return true;
     });
 
@@ -46,7 +46,7 @@ export default function ReportsDashboard() {
     // Aggregate Sales Over Time
     const byTime = {};
     filteredOrders.forEach(order => {
-      const date = moment(order.created_date).format('MMM DD');
+      const date = format(new Date(order.created_date), 'MMM dd');
       if (!byTime[date]) byTime[date] = { date, sales: 0, tax: 0 };
       byTime[date].sales += (order.subtotal || 0);
       byTime[date].tax += (order.tax || 0);
@@ -59,7 +59,7 @@ export default function ReportsDashboard() {
 
     return {
       salesByState: Object.values(byState).sort((a, b) => b.sales - a.sales),
-      salesOverTime: Object.values(byTime).sort((a, b) => moment(a.date, 'MMM DD').diff(moment(b.date, 'MMM DD'))),
+      salesOverTime: Object.values(byTime).sort((a, b) => new Date(a.date) - new Date(b.date)),
       totals: { totalSales, totalTax, totalShipping, count: filteredOrders.length }
     };
   }, [orders, timeRange]);
@@ -76,7 +76,7 @@ export default function ReportsDashboard() {
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `tax_report_${timeRange}_${moment().format('YYYY-MM-DD')}.csv`;
+    link.download = `tax_report_${timeRange}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
     link.click();
   };
 

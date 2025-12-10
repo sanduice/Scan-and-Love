@@ -6,7 +6,7 @@ import {
   Search, Mail, ShoppingBag, DollarSign, Calendar, 
   ChevronDown, ChevronUp, User
 } from 'lucide-react';
-import moment from 'moment';
+import { format, formatDistanceToNow } from 'date-fns';
 
 export default function CustomersTable({ users, orders }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -146,10 +146,10 @@ export default function CustomersTable({ users, orders }) {
                   <span className="text-gray-600">${customer.avgOrderValue.toFixed(2)}</span>
                 </td>
                 <td className="px-4 py-4 text-sm text-gray-500">
-                  {customer.lastOrderDate ? moment(customer.lastOrderDate).fromNow() : 'Never'}
+                  {customer.lastOrderDate ? formatDistanceToNow(new Date(customer.lastOrderDate), { addSuffix: true }) : 'Never'}
                 </td>
                 <td className="px-4 py-4 text-sm text-gray-500">
-                  {moment(customer.created_date).format('MMM D, YYYY')}
+                  {format(new Date(customer.created_date), 'MMM d, yyyy')}
                 </td>
               </tr>
             ))}
