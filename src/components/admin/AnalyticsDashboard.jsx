@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar 
 } from 'recharts';
-import moment from 'moment';
+import { format, startOfDay, subDays, isAfter, isBefore, isSameDay } from 'date-fns';
 
 export default function AnalyticsDashboard() {
   const { data: orders = [] } = useQuery({
@@ -32,26 +32,32 @@ export default function AnalyticsDashboard() {
   });
 
   // Metrics Calculation
-  const today = moment().startOf('day');
-  const yesterday = moment().subtract(1, 'day').startOf('day');
+  const today = startOfDay(new Date());
+  const yesterday = startOfDay(subDays(new Date(), 1));
   
   const paidOrders = orders.filter(o => o.payment_status === 'paid');
   const todayRevenue = paidOrders
-    .filter(o => moment(o.created_date).isSameOrAfter(today))
+    .filter(o => {
+      const orderDate = new Date(o.created_date);
+      return isAfter(orderDate, today) || isSameDay(orderDate, today);
+    })
     .reduce((sum, o) => sum + (o.total || 0), 0);
     
   const yesterdayRevenue = paidOrders
-    .filter(o => moment(o.created_date).isSameOrAfter(yesterday) && moment(o.created_date).isBefore(today))
+    .filter(o => {
+      const orderDate = new Date(o.created_date);
+      return (isAfter(orderDate, yesterday) || isSameDay(orderDate, yesterday)) && isBefore(orderDate, today);
+    })
     .reduce((sum, o) => sum + (o.total || 0), 0);
 
   // Chart Data: Last 30 Days
   const chartData = Array.from({ length: 30 }, (_, i) => {
-    const date = moment().subtract(29 - i, 'days');
-    const dayOrders = paidOrders.filter(o => moment(o.created_date).isSame(date, 'day'));
-    const dayViews = analyticsEvents.filter(e => moment(e.created_date).isSame(date, 'day')).length || Math.floor(Math.random() * 100) + 20; // Fallback random for demo
+    const date = subDays(new Date(), 29 - i);
+    const dayOrders = paidOrders.filter(o => isSameDay(new Date(o.created_date), date));
+    const dayViews = analyticsEvents.filter(e => isSameDay(new Date(e.created_date), date)).length || Math.floor(Math.random() * 100) + 20; // Fallback random for demo
     
     return {
-      date: date.format('MMM DD'),
+      date: format(date, 'MMM dd'),
       revenue: dayOrders.reduce((sum, o) => sum + (o.total || 0), 0),
       orders: dayOrders.length,
       visitors: dayViews, 

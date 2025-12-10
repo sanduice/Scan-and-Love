@@ -15,7 +15,7 @@ import {
   MessageSquare, Check, XCircle, Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
-import moment from 'moment';
+import { format } from 'date-fns';
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -249,7 +249,7 @@ export default function OrderDetailPanel({ order, onUpdate, onClose }) {
 PACKING SLIP
 ============
 Order: ${order.order_number}
-Date: ${moment(order.created_date).format('MMM D, YYYY')}
+Date: ${format(new Date(order.created_date), 'MMM d, yyyy')}
 
 SHIP TO:
 ${shippingAddress.name || ''}
@@ -409,7 +409,7 @@ NetravePrint Production Team
             )}
           </div>
           <p className="text-sm text-gray-500 mt-1">
-            {moment(order.created_date).format('MMMM D, YYYY [at] h:mm A')}
+            {format(new Date(order.created_date), "MMMM d, yyyy 'at' h:mm a")}
           </p>
         </div>
         <div className="flex gap-2">
