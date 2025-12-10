@@ -1,8 +1,21 @@
-import { createClient } from '@base44/sdk';
-// import { getAccessToken } from '@base44/sdk/utils/auth-utils';
+// Base44 SDK has been replaced by Supabase/Lovable Cloud
+// This file exists for backward compatibility but is not used
 
-// Create a client with authentication required
-export const base44 = createClient({
-  appId: "6925dee8096812ba2e0c0beb", 
-  requiresAuth: true // Ensure authentication is required for all operations
-});
+export const base44 = {
+  auth: {
+    isAuthenticated: async () => false,
+    me: async () => null,
+    redirectToLogin: () => {},
+    logout: () => {},
+  },
+  entities: {},
+  integrations: {
+    Core: {
+      UploadFile: async () => ({ file_url: '' }),
+      SendEmail: async () => ({}),
+      InvokeLLM: async () => ({}),
+      GenerateImage: async () => ({}),
+    }
+  },
+  functions: {}
+};
