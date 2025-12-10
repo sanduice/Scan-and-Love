@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.calculate-tax]
 verify_jwt = false
+
+[functions.manage-roles]
+verify_jwt = false
