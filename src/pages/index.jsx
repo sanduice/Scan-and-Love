@@ -72,11 +72,19 @@ function PagesContent() {
     const location = useLocation();
     const currentPage = _getCurrentPage(location.pathname);
     
-    // Auth page doesn't use Layout
+    // Auth and Admin pages don't use Layout
     if (currentPage === 'Auth') {
         return (
             <Routes>
                 <Route path="/Auth" element={<Auth />} />
+            </Routes>
+        );
+    }
+    
+    if (currentPage === 'Admin') {
+        return (
+            <Routes>
+                <Route path="/Admin" element={<Admin />} />
             </Routes>
         );
     }
@@ -91,7 +99,6 @@ function PagesContent() {
                 <Route path="/BannerBuilder" element={<BannerBuilder />} />
                 <Route path="/DesignTool" element={<DesignTool />} />
                 <Route path="/Account" element={<Account />} />
-                <Route path="/Admin" element={<Admin />} />
                 <Route path="/Home" element={<Home />} />
                 <Route path="/Stickers" element={<Stickers />} />
                 <Route path="/StickerBuilder" element={<StickerBuilder />} />
