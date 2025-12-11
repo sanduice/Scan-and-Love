@@ -151,7 +151,7 @@ export default function MegaMenu() {
 
   return (
     <div 
-      className="hidden lg:block h-full"
+      className="relative hidden lg:block h-full"
       onMouseLeave={() => {
         setActiveMenu(null);
         setHoveredItem(null);
@@ -205,11 +205,10 @@ export default function MegaMenu() {
         </div>
       </nav>
 
-      {/* Full-Width Mega Menu Dropdown - Positioned absolutely relative to viewport */}
+      {/* Full-Width Mega Menu Dropdown - Positioned with top-full for no gap */}
       {activeMenu && activeMenuData && (
         <div 
-          className="fixed left-0 right-0 z-50 animate-in fade-in slide-in-from-top-1 duration-150"
-          style={{ top: 'var(--header-bottom, 132px)' }}
+          className="absolute top-full left-1/2 -translate-x-1/2 w-screen z-50 animate-in fade-in slide-in-from-top-1 duration-150"
         >
           {/* Full-width white background */}
           <div className="bg-background border-t border-b border-border shadow-lg">
@@ -301,8 +300,7 @@ export default function MegaMenu() {
       {/* Support Dropdown (Simple) - Also Full Width */}
       {activeMenu === 'support' && (
         <div 
-          className="fixed left-0 right-0 z-50 animate-in fade-in slide-in-from-top-1 duration-150"
-          style={{ top: 'var(--header-bottom, 132px)' }}
+          className="absolute top-full left-1/2 -translate-x-1/2 w-screen z-50 animate-in fade-in slide-in-from-top-1 duration-150"
         >
           <div className="bg-background border-t border-b border-border shadow-lg">
             <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
