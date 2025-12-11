@@ -21,7 +21,7 @@ import OrderDetailPanel from '@/components/admin/OrderDetailPanel';
 import ProductionQueue from '@/components/admin/ProductionQueue';
 import AnalyticsDashboard from '@/components/admin/AnalyticsDashboard';
 import ProductsManager from '@/components/admin/ProductsManager';
-import CatalogOrganizer from '@/components/admin/CatalogOrganizer';
+import CategoriesManager from '@/components/admin/CategoriesManager';
 import CouponsManager from '@/components/admin/CouponsManager';
 import CustomersTable from '@/components/admin/CustomersTable';
 import SettingsPanel from '@/components/admin/SettingsPanel';
@@ -421,7 +421,7 @@ export default function Admin() {
       case 'categories':
         return (
           <div className="bg-white rounded-xl shadow-sm border p-6">
-            <CatalogOrganizer />
+            <CategoriesManager />
           </div>
         );
 
