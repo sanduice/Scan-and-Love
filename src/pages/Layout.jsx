@@ -90,7 +90,7 @@ export default function Layout({ children, currentPageName }) {
           <div className="flex items-center justify-between h-16 md:h-20 gap-4">
             {/* Logo */}
             <Link to={createPageUrl('Home')} className="flex items-center flex-shrink-0 min-w-max">
-              <img src={nbLogo} alt="NetravePrint Logo" className="h-8 md:h-10 w-auto" />
+              <img src={nbLogo} alt="NetravePrint Logo" className="h-12 md:h-14 w-auto" />
             </Link>
 
             {/* Wider Search Bar for Desktop */}
