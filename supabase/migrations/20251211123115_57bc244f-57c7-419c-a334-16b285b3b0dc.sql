@@ -1,0 +1,25 @@
+-- Add missing columns to products table for ProductEditor compatibility
+ALTER TABLE products ADD COLUMN IF NOT EXISTS additional_category_ids uuid[];
+ALTER TABLE products ADD COLUMN IF NOT EXISTS long_description text;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_price numeric DEFAULT 0;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_percentage integer DEFAULT 0;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS is_on_sale boolean DEFAULT false;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS is_popular boolean DEFAULT false;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS has_design_tool boolean DEFAULT true;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url text;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS video_url text;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS gallery_images text[];
+ALTER TABLE products ADD COLUMN IF NOT EXISTS features text[];
+ALTER TABLE products ADD COLUMN IF NOT EXISTS default_width numeric DEFAULT 24;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS default_height numeric DEFAULT 18;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS min_width numeric DEFAULT 1;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS max_width numeric DEFAULT 120;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS min_height numeric DEFAULT 1;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS max_height numeric DEFAULT 120;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS turnaround_days integer DEFAULT 1;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS "order" integer DEFAULT 0;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS material_options jsonb DEFAULT '[]';
+ALTER TABLE products ADD COLUMN IF NOT EXISTS finish_options jsonb DEFAULT '[]';
+ALTER TABLE products ADD COLUMN IF NOT EXISTS tax_code text;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS is_fixed_size boolean DEFAULT false;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS hidden_options jsonb DEFAULT '[]';
