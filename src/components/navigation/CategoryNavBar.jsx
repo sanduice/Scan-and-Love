@@ -32,11 +32,11 @@ export default function CategoryNavBar() {
 
   return (
     <nav 
-      className="bg-background border-b border-border sticky top-16 md:top-20 z-40 hidden lg:block"
+      className="bg-background border-b border-border sticky top-16 md:top-20 z-40 hidden lg:block overflow-visible"
       onMouseLeave={() => setActiveDropdown(null)}
     >
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center h-12 gap-1 overflow-x-auto scrollbar-hide">
+        <div className="flex items-center h-12 gap-1">
           {parentCategories.map((category) => {
             const subcategories = getSubcategories(category.id);
             const hasSubcategories = subcategories.length > 0;
