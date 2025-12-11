@@ -150,62 +150,67 @@ export default function MegaMenu() {
   const activeMenuData = MENU_DATA.find(m => m.key === activeMenu);
 
   return (
-    <nav 
-      className="hidden lg:flex items-center justify-start h-full relative w-full" 
+    <div 
+      className="hidden lg:block h-full"
       onMouseLeave={() => {
         setActiveMenu(null);
         setHoveredItem(null);
       }}
     >
-      {MENU_DATA.map((menu) => (
+      <nav className="flex items-center justify-start h-full w-full">
+        {MENU_DATA.map((menu) => (
+          <div
+            key={menu.key}
+            className="h-full flex items-center"
+            onMouseEnter={() => {
+              setActiveMenu(menu.key);
+              setHoveredItem(null);
+            }}
+          >
+            <Link
+              to={createPageUrl('Products') + `?category=${menu.key}`}
+              className={`relative flex items-center gap-1 px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap h-10 ${
+                activeMenu === menu.key
+                  ? 'text-primary'
+                  : 'text-foreground hover:text-primary'
+              }`}
+            >
+              {menu.title}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeMenu === menu.key ? 'rotate-180' : ''}`} />
+              {/* Active indicator line */}
+              {activeMenu === menu.key && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+              )}
+            </Link>
+          </div>
+        ))}
+
+        {/* Support Menu Item */}
         <div
-          key={menu.key}
           className="h-full flex items-center"
           onMouseEnter={() => {
-            setActiveMenu(menu.key);
+            setActiveMenu('support');
             setHoveredItem(null);
           }}
         >
-          <Link
-            to={createPageUrl('Products') + `?category=${menu.key}`}
-            className={`relative flex items-center gap-1 px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap h-10 ${
-              activeMenu === menu.key
-                ? 'text-primary'
-                : 'text-foreground hover:text-primary'
-            }`}
-          >
-            {menu.title}
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeMenu === menu.key ? 'rotate-180' : ''}`} />
-            {/* Active indicator line */}
-            {activeMenu === menu.key && (
+          <button className={`relative flex items-center gap-1 px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap h-10 ${
+              activeMenu === 'support' ? 'text-primary' : 'text-foreground hover:text-primary'
+            }`}>
+            Support
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeMenu === 'support' ? 'rotate-180' : ''}`} />
+            {activeMenu === 'support' && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
-          </Link>
+          </button>
         </div>
-      ))}
+      </nav>
 
-      {/* Support Menu Item */}
-      <div
-        className="h-full flex items-center"
-        onMouseEnter={() => {
-          setActiveMenu('support');
-          setHoveredItem(null);
-        }}
-      >
-        <button className={`relative flex items-center gap-1 px-4 py-2 text-sm font-semibold transition-colors whitespace-nowrap h-10 ${
-            activeMenu === 'support' ? 'text-primary' : 'text-foreground hover:text-primary'
-          }`}>
-          Support
-          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${activeMenu === 'support' ? 'rotate-180' : ''}`} />
-          {activeMenu === 'support' && (
-            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-          )}
-        </button>
-      </div>
-
-      {/* Full-Width Mega Menu Dropdown */}
+      {/* Full-Width Mega Menu Dropdown - Positioned absolutely relative to viewport */}
       {activeMenu && activeMenuData && (
-        <div className="fixed top-[132px] left-0 right-0 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+        <div 
+          className="fixed left-0 right-0 z-50 animate-in fade-in slide-in-from-top-1 duration-150"
+          style={{ top: 'var(--header-bottom, 132px)' }}
+        >
           {/* Full-width white background */}
           <div className="bg-background border-t border-b border-border shadow-lg">
             {/* Centered content container */}
@@ -295,7 +300,10 @@ export default function MegaMenu() {
 
       {/* Support Dropdown (Simple) - Also Full Width */}
       {activeMenu === 'support' && (
-        <div className="fixed top-[132px] left-0 right-0 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+        <div 
+          className="fixed left-0 right-0 z-50 animate-in fade-in slide-in-from-top-1 duration-150"
+          style={{ top: 'var(--header-bottom, 132px)' }}
+        >
           <div className="bg-background border-t border-b border-border shadow-lg">
             <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
               <div className="flex gap-8">
@@ -323,6 +331,6 @@ export default function MegaMenu() {
           </div>
         </div>
       )}
-    </nav>
+    </div>
   );
 }
