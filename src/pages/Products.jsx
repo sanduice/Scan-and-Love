@@ -2,13 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useProductCategories, useProducts } from '@/hooks/useSupabaseData';
 import { createPageUrl } from '@/utils';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Star, Filter, Grid, List, Search, ChevronDown, ChevronRight } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Grid, List, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import ProductGrid from '@/components/home/ProductGrid';
-import NameBadgeLandingView from '@/components/product/NameBadgeLandingView';
 
 export default function Products() {
   const location = useLocation();
@@ -22,14 +19,75 @@ export default function Products() {
   const { data: products = [], isLoading: productsLoading } = useProducts();
   const { data: categories = [] } = useProductCategories('order');
 
+  // Build category tree from flat database categories
+  const categoryTree = useMemo(() => {
+    if (!categories.length) return [];
+    
+    // Create a map for quick lookup
+    const categoryMap = new Map();
+    categories.forEach(cat => {
+      categoryMap.set(cat.id, { ...cat, subcategories: [] });
+    });
+    
+    // Build tree structure
+    const rootCategories = [];
+    categories.forEach(cat => {
+      const categoryWithSubs = categoryMap.get(cat.id);
+      if (cat.parent_id) {
+        const parent = categoryMap.get(cat.parent_id);
+        if (parent) {
+          parent.subcategories.push(categoryWithSubs);
+        }
+      } else {
+        rootCategories.push(categoryWithSubs);
+      }
+    });
+    
+    // Sort by order
+    const sortByOrder = (a, b) => (a.order || 0) - (b.order || 0);
+    rootCategories.sort(sortByOrder);
+    rootCategories.forEach(cat => {
+      if (cat.subcategories.length) {
+        cat.subcategories.sort(sortByOrder);
+        cat.subcategories.forEach(sub => {
+          if (sub.subcategories.length) {
+            sub.subcategories.sort(sortByOrder);
+          }
+        });
+      }
+    });
+    
+    return [{ name: 'All Products', slug: 'all-products' }, ...rootCategories];
+  }, [categories]);
+
+  // Get all descendant category IDs for a given category (for subcategory inheritance)
+  const getDescendantIds = (categoryId) => {
+    const ids = [categoryId];
+    const findChildren = (parentId) => {
+      categories.forEach(cat => {
+        if (cat.parent_id === parentId) {
+          ids.push(cat.id);
+          findChildren(cat.id);
+        }
+      });
+    };
+    findChildren(categoryId);
+    return ids;
+  };
+
   const filteredProducts = useMemo(() => {
     let result = [...products];
     
     // Filter by category
-    if (categorySlug) {
+    if (categorySlug && categorySlug !== 'all-products') {
       const category = categories.find(c => c.slug === categorySlug);
       if (category) {
-        result = result.filter(p => p.category_id === category.id);
+        // Get this category and all its descendants
+        const categoryIds = getDescendantIds(category.id);
+        result = result.filter(p => categoryIds.includes(p.category_id));
+      } else {
+        // Category not found - return empty instead of all products
+        result = [];
       }
     }
     
@@ -132,86 +190,6 @@ export default function Products() {
     );
   };
 
-  const CATEGORIES_SIDEBAR = [
-      { name: 'All Products', slug: 'all-products' },
-      { 
-          name: 'Name Badges', 
-          slug: 'name-badges',
-          subcategories: [
-              { name: 'View All Name Badges', slug: 'name-badges' },
-              { name: 'Standard Name Badges', slug: 'standard-name-badges' },
-              { name: 'Premium Name Badges', slug: 'premium-name-badges' },
-              { name: 'Executive Name Badges', slug: 'executive-name-badges' },
-              { name: 'Executive Metal Name Tags', slug: 'executive-metal-name-tags' },
-              { 
-                  name: 'Specialty Badges', 
-                  slug: 'specialty-badges',
-                  subcategories: [
-                      { name: 'Bling Name Badges', slug: 'bling-name-badges' },
-                      { name: 'Chalkboard Name Tags', slug: 'chalkboard-name-tags' },
-                      { name: 'Real Wood Badges', slug: 'real-wood-badges' },
-                      { name: 'Custom Color Badges', slug: 'custom-color-badges' },
-                      { name: 'Glossy Name Plates', slug: 'glossy-name-plates' }
-                  ]
-              },
-              { 
-                  name: 'Metal & Engraved', 
-                  slug: 'metal--engraved',
-                  subcategories: [
-                      { name: 'Metal Name Tags', slug: 'metal-name-tags' },
-                      { name: 'Engraved Metal Name Tags', slug: 'engraved-metal-name-tags' },
-                      { name: 'Metal Service Name Bars', slug: 'metal-service-name-bars' }
-                  ]
-              },
-              { name: 'Badge Accessories', slug: 'badge-accessories' }
-          ]
-      },
-      {
-          name: 'Signs & Banners',
-          slug: 'signs-banners',
-          subcategories: [
-              { name: 'Banners', slug: 'banners' },
-              { name: 'Signs', slug: 'signs' },
-              { name: 'Yard Signs', slug: 'yard-signs' },
-              { name: 'A-Frame Signs', slug: 'a-frame-signs' },
-              { name: 'Office Signs', slug: 'office-signs' },
-              { name: 'Real Estate', slug: 'real-estate' }
-          ]
-      },
-      {
-          name: 'Stickers & Decals',
-          slug: 'stickers-decals',
-          subcategories: [
-              { name: 'Stickers', slug: 'stickers' },
-              { name: 'Decals', slug: 'decals' },
-              { name: 'Magnets', slug: 'magnets' },
-              { name: 'Vehicle Graphics', slug: 'vehicle-graphics' },
-              { name: 'Window Graphics', slug: 'window-graphics' },
-              { name: 'Floor Graphics', slug: 'floor-graphics' }
-          ]
-      },
-      {
-          name: 'Office & ID',
-          slug: 'office-id',
-          subcategories: [
-              { name: 'Desk and Wall Plates', slug: 'desk-and-wall-plates' },
-              { name: 'ID Cards', slug: 'id-cards' },
-              { name: 'Self Inking Stamps', slug: 'self-inking-stamps' }
-          ]
-      },
-      {
-          name: 'Events & Trade Show',
-          slug: 'events-trade-show',
-          subcategories: [
-              { name: 'Trade Show & Events', slug: 'trade-show--events' },
-              { name: 'Displays & Stands', slug: 'displays--stands' },
-              { name: 'Flags & Fabric', slug: 'flags-fabric' },
-              { name: 'Event Passes', slug: 'event-passes' }
-          ]
-      },
-      { name: 'Prints', slug: 'prints' }
-  ];
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -233,7 +211,7 @@ export default function Products() {
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 sticky top-24">
               <h3 className="font-semibold text-gray-900 mb-4 px-2">Categories</h3>
               <div className="space-y-1">
-                {CATEGORIES_SIDEBAR.map((cat, idx) => (
+                {categoryTree.map((cat, idx) => (
                     <CategorySidebarItem 
                         key={cat.slug || idx} 
                         item={cat} 
