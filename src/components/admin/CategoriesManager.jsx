@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
-  Plus, Edit, Trash2, Image, GripVertical, Loader2, Folder, FolderOpen, ChevronRight, ChevronDown
+  Plus, Edit, Trash2, Image, Loader2, Folder, FolderOpen, ChevronRight, ChevronDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -31,9 +31,40 @@ export default function CategoriesManager() {
     },
   });
 
-  // Organize categories into tree structure
-  const parentCategories = categories.filter(c => !c.parent_id);
-  const getSubcategories = (parentId) => categories.filter(c => c.parent_id === parentId);
+  // Get children of a category
+  const getChildren = (parentId) => categories.filter(c => c.parent_id === parentId);
+  
+  // Get all descendants recursively
+  const getAllDescendants = (categoryId) => {
+    const children = getChildren(categoryId);
+    let descendants = [...children];
+    children.forEach(child => {
+      descendants = [...descendants, ...getAllDescendants(child.id)];
+    });
+    return descendants;
+  };
+
+  // Get category depth level
+  const getCategoryLevel = (category) => {
+    let level = 0;
+    let current = category;
+    while (current?.parent_id) {
+      level++;
+      current = categories.find(c => c.id === current.parent_id);
+    }
+    return level;
+  };
+
+  // Organize categories into tree structure - root level only
+  const rootCategories = categories.filter(c => !c.parent_id);
+
+  // Stats
+  const stats = useMemo(() => {
+    const parents = categories.filter(c => !c.parent_id).length;
+    const level1 = categories.filter(c => c.parent_id && getCategoryLevel(categories.find(cat => cat.id === c.id)) === 1).length;
+    const level2Plus = categories.filter(c => getCategoryLevel(c) >= 2).length;
+    return { parents, level1, level2Plus, total: categories.length };
+  }, [categories]);
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
@@ -100,9 +131,7 @@ export default function CategoriesManager() {
       updateMutation.mutate({ id: editingCategory.id, data: formData });
     } else {
       // Calculate order: put at end of siblings
-      const siblings = formData.parent_id 
-        ? getSubcategories(formData.parent_id)
-        : parentCategories;
+      const siblings = getChildren(formData.parent_id || null);
       const newOrder = siblings.length + 1;
       
       createMutation.mutate({ 
@@ -131,11 +160,12 @@ export default function CategoriesManager() {
   };
 
   const handleDelete = (category) => {
-    const subcategories = getSubcategories(category.id);
-    if (subcategories.length > 0) {
-      if (confirm(`Delete "${category.name}" and its ${subcategories.length} subcategories?`)) {
-        // Delete subcategories first, then parent
-        subcategories.forEach(sub => deleteMutation.mutate(sub.id));
+    const descendants = getAllDescendants(category.id);
+    if (descendants.length > 0) {
+      if (confirm(`Delete "${category.name}" and its ${descendants.length} nested categories?`)) {
+        // Delete descendants first (deepest first), then parent
+        const sortedDescendants = [...descendants].sort((a, b) => getCategoryLevel(b) - getCategoryLevel(a));
+        sortedDescendants.forEach(desc => deleteMutation.mutate(desc.id));
         deleteMutation.mutate(category.id);
       }
     } else {
@@ -143,6 +173,15 @@ export default function CategoriesManager() {
         deleteMutation.mutate(category.id);
       }
     }
+  };
+
+  // Get parent name for dialog title
+  const getParentName = () => {
+    if (editingCategory?.parentName) return editingCategory.parentName;
+    if (editingCategory?.parent_id) {
+      return categories.find(c => c.id === editingCategory.parent_id)?.name || 'Unknown';
+    }
+    return null;
   };
 
   return (
@@ -163,25 +202,26 @@ export default function CategoriesManager() {
         <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
           <div className="p-4 border-b bg-muted/50 flex justify-between items-center">
             <span className="text-sm text-muted-foreground">
-              {parentCategories.length} parent categories • {categories.length - parentCategories.length} subcategories
+              {stats.parents} parent • {stats.level1} subcategories • {stats.level2Plus} nested
             </span>
           </div>
           
           <div className="divide-y divide-border">
-            {parentCategories.length === 0 ? (
+            {rootCategories.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
                 <Folder className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p>No categories yet</p>
                 <p className="text-sm">Create your first parent category to get started</p>
               </div>
             ) : (
-              parentCategories.map((category) => (
+              rootCategories.map((category) => (
                 <CategoryTreeItem
                   key={category.id}
                   category={category}
-                  subcategories={getSubcategories(category.id)}
-                  isExpanded={expandedCategories[category.id] ?? true}
-                  onToggle={() => toggleExpand(category.id)}
+                  allCategories={categories}
+                  level={0}
+                  expandedCategories={expandedCategories}
+                  onToggle={toggleExpand}
                   onEdit={(cat) => { setEditingCategory(cat); setShowDialog(true); }}
                   onDelete={handleDelete}
                   onAddSubcategory={handleAddSubcategory}
@@ -199,14 +239,14 @@ export default function CategoriesManager() {
               {editingCategory?.id 
                 ? 'Edit Category' 
                 : editingCategory?.parent_id 
-                  ? `Add Subcategory to "${editingCategory.parentName}"`
+                  ? `Add Subcategory to "${getParentName()}"`
                   : 'Add Parent Category'
               }
             </DialogTitle>
           </DialogHeader>
           <CategoryForm 
             category={editingCategory} 
-            parentCategories={parentCategories}
+            allCategories={categories}
             onSave={handleSave} 
             onCancel={() => setShowDialog(false)}
             isLoading={createMutation.isPending || updateMutation.isPending}
@@ -217,15 +257,30 @@ export default function CategoriesManager() {
   );
 }
 
-function CategoryTreeItem({ category, subcategories, isExpanded, onToggle, onEdit, onDelete, onAddSubcategory }) {
-  const hasSubcategories = subcategories.length > 0;
+function CategoryTreeItem({ category, allCategories, level, expandedCategories, onToggle, onEdit, onDelete, onAddSubcategory }) {
+  const children = allCategories.filter(c => c.parent_id === category.id);
+  const hasChildren = children.length > 0;
+  const isExpanded = expandedCategories[category.id] ?? true;
+  
+  // Allow adding subcategories up to level 1 (so we get 3 levels total: 0, 1, 2)
+  const canAddSubcategory = level <= 1;
+
+  // Visual styling based on level
+  const indentStyle = level > 0 ? { marginLeft: `${level * 32}px` } : {};
+  const iconSize = level === 0 ? 'h-10 w-10' : level === 1 ? 'h-8 w-8' : 'h-7 w-7';
+  const textSize = level === 0 ? '' : level === 1 ? 'text-sm' : 'text-xs';
+  const folderIconSize = level === 0 ? 'h-5 w-5' : 'h-4 w-4';
 
   return (
-    <Collapsible open={isExpanded} onOpenChange={onToggle}>
-      {/* Parent Category Row */}
-      <div className="flex items-center px-4 py-3 hover:bg-muted/50 group">
+    <Collapsible open={isExpanded} onOpenChange={() => onToggle(category.id)}>
+      {/* Category Row */}
+      <div 
+        className="flex items-center px-4 py-3 hover:bg-muted/50 group"
+        style={indentStyle}
+      >
+        {/* Expand/Collapse Button */}
         <CollapsibleTrigger asChild>
-          <button className="p-1 hover:bg-muted rounded mr-2">
+          <button className={`p-1 hover:bg-muted rounded mr-2 ${!hasChildren ? 'invisible' : ''}`}>
             {isExpanded ? (
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             ) : (
@@ -234,33 +289,44 @@ function CategoryTreeItem({ category, subcategories, isExpanded, onToggle, onEdi
           </button>
         </CollapsibleTrigger>
 
-        <div className="h-10 w-10 flex-shrink-0 rounded bg-muted flex items-center justify-center border mr-3">
+        {/* Tree connector line for nested items */}
+        {level > 0 && (
+          <div className="w-6 border-t border-primary/20 mr-2" />
+        )}
+
+        {/* Category Icon */}
+        <div className={`${iconSize} flex-shrink-0 rounded bg-muted flex items-center justify-center border mr-3`}>
           {category.image_url ? (
-            <img src={category.image_url} alt="" className="h-10 w-10 object-cover rounded" />
-          ) : isExpanded ? (
-            <FolderOpen className="h-5 w-5 text-primary" />
+            <img src={category.image_url} alt="" className={`${iconSize} object-cover rounded`} />
+          ) : isExpanded && hasChildren ? (
+            <FolderOpen className={`${folderIconSize} text-primary`} />
           ) : (
-            <Folder className="h-5 w-5 text-muted-foreground" />
+            <Folder className={`${folderIconSize} text-muted-foreground`} />
           )}
         </div>
 
+        {/* Category Info */}
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-foreground">{category.name}</div>
-          <div className="text-sm text-muted-foreground">
-            {category.slug} • {subcategories.length} subcategories
+          <div className={`font-medium text-foreground ${textSize}`}>{category.name}</div>
+          <div className={`text-muted-foreground ${level === 0 ? 'text-sm' : 'text-xs'}`}>
+            {category.slug}
+            {hasChildren && ` • ${children.length} ${children.length === 1 ? 'subcategory' : 'subcategories'}`}
           </div>
         </div>
 
+        {/* Action Buttons */}
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onAddSubcategory(category)}
-            className="text-primary hover:text-primary hover:bg-primary/10"
-          >
-            <Plus className="w-4 h-4 mr-1" />
-            Subcategory
-          </Button>
+          {canAddSubcategory && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onAddSubcategory(category)}
+              className="text-primary hover:text-primary hover:bg-primary/10"
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Subcategory
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -279,65 +345,42 @@ function CategoryTreeItem({ category, subcategories, isExpanded, onToggle, onEdi
         </div>
       </div>
 
-      {/* Subcategories */}
+      {/* Children (Recursive) */}
       <CollapsibleContent>
-        <div className="border-l-2 border-primary/20 ml-8">
-          {subcategories.map((sub) => (
-            <div 
-              key={sub.id} 
-              className="flex items-center px-4 py-2.5 hover:bg-muted/50 group"
-            >
-              <div className="w-6 border-t border-primary/20 mr-2" />
-              
-              <div className="h-8 w-8 flex-shrink-0 rounded bg-muted flex items-center justify-center border mr-3">
-                {sub.image_url ? (
-                  <img src={sub.image_url} alt="" className="h-8 w-8 object-cover rounded" />
-                ) : (
-                  <Folder className="h-4 w-4 text-muted-foreground" />
-                )}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-foreground text-sm">{sub.name}</div>
-                <div className="text-xs text-muted-foreground">{sub.slug}</div>
-              </div>
-
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onEdit(sub)}
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onDelete(sub)}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
+        <div className={level === 0 ? "border-l-2 border-primary/20 ml-8" : ""}>
+          {children.map((child) => (
+            <CategoryTreeItem
+              key={child.id}
+              category={child}
+              allCategories={allCategories}
+              level={level + 1}
+              expandedCategories={expandedCategories}
+              onToggle={onToggle}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onAddSubcategory={onAddSubcategory}
+            />
           ))}
           
-          {/* Add Subcategory Button at bottom */}
-          <button 
-            onClick={() => onAddSubcategory(category)}
-            className="w-full flex items-center px-4 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors"
-          >
-            <div className="w-6 border-t border-primary/20 mr-2" />
-            <Plus className="w-4 h-4 mr-2" />
-            Add Subcategory
-          </button>
+          {/* Add Subcategory Button at bottom - only for levels 0 and 1 */}
+          {canAddSubcategory && (
+            <button 
+              onClick={() => onAddSubcategory(category)}
+              className="w-full flex items-center px-4 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors"
+              style={{ marginLeft: `${(level + 1) * 32}px` }}
+            >
+              <div className="w-6 border-t border-primary/20 mr-2" />
+              <Plus className="w-4 h-4 mr-2" />
+              Add Subcategory
+            </button>
+          )}
         </div>
       </CollapsibleContent>
     </Collapsible>
   );
 }
 
-function CategoryForm({ category, parentCategories, onSave, onCancel, isLoading }) {
+function CategoryForm({ category, allCategories, onSave, onCancel, isLoading }) {
   const [formData, setFormData] = useState({
     name: category?.name || '',
     slug: category?.slug || '',
@@ -345,6 +388,61 @@ function CategoryForm({ category, parentCategories, onSave, onCancel, isLoading 
     image_url: category?.image_url || '',
     parent_id: category?.parent_id || null,
   });
+
+  // Build hierarchical options for parent selector
+  const buildHierarchicalOptions = () => {
+    const options = [];
+    
+    // Get all descendants of a category (for circular reference prevention)
+    const getDescendantIds = (categoryId) => {
+      const children = allCategories.filter(c => c.parent_id === categoryId);
+      let ids = children.map(c => c.id);
+      children.forEach(child => {
+        ids = [...ids, ...getDescendantIds(child.id)];
+      });
+      return ids;
+    };
+    
+    // IDs to exclude (self and descendants when editing)
+    const excludeIds = category?.id ? [category.id, ...getDescendantIds(category.id)] : [];
+    
+    // Recursive function to add categories with indentation
+    const addCategoryOptions = (parentId, depth) => {
+      const children = allCategories.filter(c => c.parent_id === parentId);
+      children.forEach(cat => {
+        // Skip excluded categories
+        if (excludeIds.includes(cat.id)) return;
+        
+        // Only allow nesting up to level 1 (so new category would be level 2 max)
+        const currentLevel = depth;
+        if (currentLevel > 1) return; // Don't show level 2+ as potential parents
+        
+        const prefix = '—'.repeat(depth);
+        options.push({
+          id: cat.id,
+          name: cat.name,
+          label: depth > 0 ? `${prefix} ${cat.name}` : cat.name,
+        });
+        addCategoryOptions(cat.id, depth + 1);
+      });
+    };
+    
+    // Start with root categories
+    const rootCategories = allCategories.filter(c => !c.parent_id);
+    rootCategories.forEach(cat => {
+      if (excludeIds.includes(cat.id)) return;
+      options.push({
+        id: cat.id,
+        name: cat.name,
+        label: cat.name,
+      });
+      addCategoryOptions(cat.id, 1);
+    });
+    
+    return options;
+  };
+
+  const parentOptions = buildHierarchicalOptions();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -355,18 +453,15 @@ function CategoryForm({ category, parentCategories, onSave, onCancel, isLoading 
     });
   };
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    // For now, just use URL input - storage bucket setup needed for file uploads
-    toast.info('Please enter an image URL directly');
-  };
+  // Find current parent name for display
+  const currentParentName = category?.parent_id 
+    ? allCategories.find(c => c.id === category.parent_id)?.name 
+    : null;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Parent Category Selector - only show when creating new or editing existing */}
-      {!category?.id && parentCategories.length > 0 && (
+      {/* Parent Category Selector - only show when creating new */}
+      {!category?.id && parentOptions.length > 0 && (
         <div>
           <Label>Parent Category</Label>
           <Select 
@@ -378,26 +473,24 @@ function CategoryForm({ category, parentCategories, onSave, onCancel, isLoading 
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">None (Top Level)</SelectItem>
-              {parentCategories.map((parent) => (
-                <SelectItem key={parent.id} value={parent.id}>
-                  {parent.name}
+              {parentOptions.map((option) => (
+                <SelectItem key={option.id} value={option.id}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground mt-1">
-            Leave as "None" for a parent category, or select a parent to create a subcategory
+            Select a parent to nest this category. Max 3 levels deep.
           </p>
         </div>
       )}
 
       {/* Show parent info when editing subcategory */}
-      {category?.id && category?.parent_id && (
+      {category?.id && currentParentName && (
         <div className="p-3 bg-muted rounded-lg">
           <p className="text-sm text-muted-foreground">
-            Subcategory of: <span className="font-medium text-foreground">
-              {parentCategories.find(p => p.id === category.parent_id)?.name || 'Unknown'}
-            </span>
+            Subcategory of: <span className="font-medium text-foreground">{currentParentName}</span>
           </p>
         </div>
       )}
@@ -407,7 +500,7 @@ function CategoryForm({ category, parentCategories, onSave, onCancel, isLoading 
         <Input 
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="e.g., Premium Name Badges"
+          placeholder="e.g., Bling Name Badges"
           required
         />
       </div>
@@ -442,17 +535,9 @@ function CategoryForm({ category, parentCategories, onSave, onCancel, isLoading 
             onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
             placeholder="https://example.com/image.jpg"
           />
-          <div className="relative">
-            <input 
-              type="file" 
-              className="absolute inset-0 opacity-0 cursor-pointer" 
-              onChange={handleImageUpload}
-              accept="image/*"
-            />
-            <Button type="button" variant="outline">
-              <Image className="w-4 h-4" />
-            </Button>
-          </div>
+          <Button type="button" variant="outline">
+            <Image className="w-4 h-4" />
+          </Button>
         </div>
         {formData.image_url && (
           <div className="mt-2">
