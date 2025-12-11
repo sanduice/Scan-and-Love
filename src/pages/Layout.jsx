@@ -23,8 +23,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import MobileMenu from '@/components/navigation/MobileMenu';
 import NetworkBar from '@/components/navigation/NetworkBar';
-
 import MegaMenu from '@/components/navigation/MegaMenu';
+import nbLogo from '@/assets/nb_logo.svg';
 
 export default function Layout({ children, currentPageName }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -90,15 +90,7 @@ export default function Layout({ children, currentPageName }) {
           <div className="flex items-center justify-between h-16 md:h-20 gap-4">
             {/* Logo */}
             <Link to={createPageUrl('Home')} className="flex items-center flex-shrink-0 min-w-max">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-[#2196F3] to-[#1976D2] rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg md:text-xl">N</span>
-                </div>
-                <div className="hidden md:block">
-                  <span className="text-lg md:text-xl font-bold text-foreground">Netrave</span>
-                  <span className="text-lg md:text-xl font-bold text-[#2196F3]">Print</span>
-                </div>
-              </div>
+              <img src={nbLogo} alt="NetravePrint Logo" className="h-8 md:h-10 w-auto" />
             </Link>
 
             {/* Wider Search Bar for Desktop */}
