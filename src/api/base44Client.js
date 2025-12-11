@@ -94,7 +94,28 @@ export const base44 = {
   },
   integrations: {
     Core: {
-      UploadFile: async () => ({ file_url: '' }),
+      UploadFile: async ({ file }) => {
+        if (!file) throw new Error('No file provided');
+        
+        // Generate unique filename
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `products/${fileName}`;
+        
+        // Upload to Supabase Storage
+        const { data, error } = await supabase.storage
+          .from('products')
+          .upload(filePath, file);
+        
+        if (error) throw error;
+        
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('products')
+          .getPublicUrl(filePath);
+        
+        return { file_url: publicUrl };
+      },
       SendEmail: async () => ({}),
       InvokeLLM: async () => ({}),
       GenerateImage: async () => ({}),
