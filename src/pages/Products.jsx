@@ -145,7 +145,7 @@ export default function Products() {
               { name: 'Executive Metal Name Tags', slug: 'executive-metal-name-tags' },
               { 
                   name: 'Specialty Badges', 
-                  slug: 'specialty-badges-group',
+                  slug: 'specialty-badges',
                   subcategories: [
                       { name: 'Bling Name Badges', slug: 'bling-name-badges' },
                       { name: 'Chalkboard Name Tags', slug: 'chalkboard-name-tags' },
@@ -156,7 +156,7 @@ export default function Products() {
               },
               { 
                   name: 'Metal & Engraved', 
-                  slug: 'metal-badges-group',
+                  slug: 'metal--engraved',
                   subcategories: [
                       { name: 'Metal Name Tags', slug: 'metal-name-tags' },
                       { name: 'Engraved Metal Name Tags', slug: 'engraved-metal-name-tags' },
@@ -168,11 +168,11 @@ export default function Products() {
       },
       {
           name: 'Signs & Banners',
-          slug: 'signs-banners-group',
+          slug: 'signs-banners',
           subcategories: [
-              { name: 'Banners', slug: 'vinyl-banner' },
+              { name: 'Banners', slug: 'banners' },
               { name: 'Signs', slug: 'signs' },
-              { name: 'Yard Signs', slug: 'yard-sign' },
+              { name: 'Yard Signs', slug: 'yard-signs' },
               { name: 'A-Frame Signs', slug: 'a-frame-signs' },
               { name: 'Office Signs', slug: 'office-signs' },
               { name: 'Real Estate', slug: 'real-estate' }
@@ -180,7 +180,7 @@ export default function Products() {
       },
       {
           name: 'Stickers & Decals',
-          slug: 'stickers-decals-group',
+          slug: 'stickers-decals',
           subcategories: [
               { name: 'Stickers', slug: 'stickers' },
               { name: 'Decals', slug: 'decals' },
@@ -192,7 +192,7 @@ export default function Products() {
       },
       {
           name: 'Office & ID',
-          slug: 'office-id-group',
+          slug: 'office-id',
           subcategories: [
               { name: 'Desk and Wall Plates', slug: 'desk-and-wall-plates' },
               { name: 'ID Cards', slug: 'id-cards' },
@@ -201,10 +201,10 @@ export default function Products() {
       },
       {
           name: 'Events & Trade Show',
-          slug: 'events-group',
+          slug: 'events-trade-show',
           subcategories: [
-              { name: 'Trade Show & Events', slug: 'trade-show-events' },
-              { name: 'Displays & Stands', slug: 'displays-stands' },
+              { name: 'Trade Show & Events', slug: 'trade-show--events' },
+              { name: 'Displays & Stands', slug: 'displays--stands' },
               { name: 'Flags & Fabric', slug: 'flags-fabric' },
               { name: 'Event Passes', slug: 'event-passes' }
           ]
