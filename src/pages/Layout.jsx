@@ -252,6 +252,9 @@ export default function Layout({ children, currentPageName }) {
       {/* MegaMenu Navigation */}
       <MegaMenu />
 
+      {/* Category Navigation Bar - Simple Links */}
+      <CategoryNavBar />
+
       {/* Mobile Menu */}
       <MobileMenu 
         isOpen={mobileMenuOpen} 
