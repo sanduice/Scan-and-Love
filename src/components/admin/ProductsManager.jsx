@@ -454,9 +454,9 @@ export default function ProductsManager() {
                               className="aspect-video bg-muted relative cursor-pointer" 
                               onClick={() => { setEditingProduct(product); setShowDialog(true); }}
                             >
-                              {product.images?.[0] ? (
+                              {(product.image_url || product.images?.[0] || product.gallery_images?.[0]) ? (
                                 <img 
-                                  src={product.images[0]} 
+                                  src={product.image_url || product.images?.[0] || product.gallery_images?.[0]} 
                                   alt={product.name} 
                                   className="w-full h-full object-cover" 
                                 />
