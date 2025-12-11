@@ -156,7 +156,7 @@ export default function MegaMenu() {
   const activeMenuData = MENU_DATA.find(m => m.key === activeMenu);
 
   return (
-    <nav className="hidden lg:flex items-center justify-start h-full relative w-full" onMouseLeave={() => {
+    <nav className="hidden lg:flex items-center justify-start h-full relative w-full px-4 sm:px-6 lg:px-8" onMouseLeave={() => {
       setActiveMenu(null);
       setHoveredItem(null);
     }}>
