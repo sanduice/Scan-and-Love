@@ -21,9 +21,9 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
-import MegaMenu from '@/components/navigation/MegaMenu';
 import MobileMenu from '@/components/navigation/MobileMenu';
 import NetworkBar from '@/components/navigation/NetworkBar';
+import CategoryNavBar from '@/components/navigation/CategoryNavBar';
 
 export default function Layout({ children, currentPageName }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -100,24 +100,20 @@ export default function Layout({ children, currentPageName }) {
               </div>
             </Link>
 
-            {/* Desktop Navigation - Mega Menu */}
-            <div className="hidden lg:flex items-center gap-4 flex-1 justify-center">
-              <MegaMenu />
+            {/* Wider Search Bar for Desktop */}
+            <div className="hidden lg:block relative flex-1 max-w-xl">
+              <Input
+                placeholder="Search products..."
+                className="w-full pl-10 h-10 bg-muted border-border focus:bg-background text-sm rounded-full"
+              />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             </div>
 
             {/* Right Actions */}
             <div className="flex items-center gap-2 md:gap-4">
-              {/* Search */}
-              <div className="hidden xl:block relative w-64">
-                <Input
-                  placeholder="Search products..."
-                  className="w-full pl-9 h-9 bg-muted border-border focus:bg-background text-sm rounded-full"
-                />
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              </div>
-
+              {/* Mobile Search Toggle */}
               <button 
-                className="xl:hidden p-2 text-muted-foreground hover:text-foreground"
+                className="lg:hidden p-2 text-muted-foreground hover:text-foreground"
                 onClick={() => setSearchOpen(!searchOpen)}
               >
                 <Search className="w-5 h-5" />
@@ -241,7 +237,7 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Mobile Search - Expanded */}
           {searchOpen && (
-            <div className="xl:hidden pb-4 border-t pt-4 mt-2">
+            <div className="lg:hidden pb-4 border-t pt-4 mt-2">
               <Input
                 placeholder="Search products..."
                 className="w-full h-10 bg-muted"
@@ -251,6 +247,9 @@ export default function Layout({ children, currentPageName }) {
           )}
         </div>
       </header>
+
+      {/* Category Navigation Bar - Secondary Sticky */}
+      <CategoryNavBar />
 
       {/* Mobile Menu */}
       <MobileMenu 
