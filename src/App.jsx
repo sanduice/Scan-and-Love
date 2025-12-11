@@ -1,3 +1,4 @@
+import React from 'react'
 import './App.css'
 import Pages from "@/pages/index.jsx"
 import { Toaster } from "@/components/ui/toaster"
