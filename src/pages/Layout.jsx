@@ -24,6 +24,7 @@ import {
 import MobileMenu from '@/components/navigation/MobileMenu';
 import NetworkBar from '@/components/navigation/NetworkBar';
 import CategoryNavBar from '@/components/navigation/CategoryNavBar';
+import MegaMenu from '@/components/navigation/MegaMenu';
 
 export default function Layout({ children, currentPageName }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -248,7 +249,10 @@ export default function Layout({ children, currentPageName }) {
         </div>
       </header>
 
-      {/* Category Navigation Bar - Secondary Sticky */}
+      {/* MegaMenu Navigation */}
+      <MegaMenu />
+
+      {/* Category Navigation Bar - Simple Links */}
       <CategoryNavBar />
 
       {/* Mobile Menu */}
