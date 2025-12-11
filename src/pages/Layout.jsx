@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import MobileMenu from '@/components/navigation/MobileMenu';
 import NetworkBar from '@/components/navigation/NetworkBar';
-import CategoryNavBar from '@/components/navigation/CategoryNavBar';
+
 import MegaMenu from '@/components/navigation/MegaMenu';
 
 export default function Layout({ children, currentPageName }) {
@@ -252,8 +252,6 @@ export default function Layout({ children, currentPageName }) {
       {/* MegaMenu Navigation */}
       <MegaMenu />
 
-      {/* Category Navigation Bar - Simple Links */}
-      <CategoryNavBar />
 
       {/* Mobile Menu */}
       <MobileMenu 
