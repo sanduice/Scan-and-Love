@@ -19,22 +19,28 @@ import { toast } from 'sonner';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-// Build hierarchical category tree from flat database data
+// Build hierarchical category tree from flat database data (recursive for unlimited nesting)
 const buildCategoryTree = (categories) => {
-  const parentCategories = categories.filter(c => !c.parent_id);
+  // Recursive function to build subcategories at any depth
+  const buildSubcategories = (parentId) => {
+    return categories
+      .filter(c => c.parent_id === parentId)
+      .map(cat => ({
+        name: cat.name,
+        slug: cat.slug,
+        id: cat.id,
+        subcategories: buildSubcategories(cat.id)
+      }));
+  };
+
+  const rootCategories = categories.filter(c => !c.parent_id);
   return [
     { name: 'All Products', slug: 'all-products' },
-    ...parentCategories.map(parent => ({
+    ...rootCategories.map(parent => ({
       name: parent.name,
       slug: parent.slug,
       id: parent.id,
-      subcategories: categories
-        .filter(c => c.parent_id === parent.id)
-        .map(sub => ({
-          name: sub.name,
-          slug: sub.slug,
-          id: sub.id
-        }))
+      subcategories: buildSubcategories(parent.id)
     }))
   ];
 };
