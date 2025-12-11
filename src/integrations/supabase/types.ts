@@ -532,58 +532,130 @@ export type Database = {
       }
       products: {
         Row: {
+          additional_category_ids: string[] | null
           base_price: number | null
           category_id: string | null
           created_at: string
+          default_height: number | null
+          default_width: number | null
           description: string | null
+          features: string[] | null
+          finish_options: Json | null
+          gallery_images: string[] | null
+          has_design_tool: boolean | null
+          hidden_options: Json | null
           id: string
+          image_url: string | null
           images: Json | null
           is_active: boolean | null
           is_featured: boolean | null
+          is_fixed_size: boolean | null
+          is_on_sale: boolean | null
+          is_popular: boolean | null
+          long_description: string | null
+          material_options: Json | null
+          max_height: number | null
+          max_width: number | null
           meta_description: string | null
           meta_title: string | null
+          min_height: number | null
+          min_width: number | null
           name: string
           options: Json | null
+          order: number | null
           pricing_tiers: Json | null
+          sale_percentage: number | null
+          sale_price: number | null
           short_description: string | null
           slug: string
+          tax_code: string | null
+          turnaround_days: number | null
           updated_at: string
+          video_url: string | null
         }
         Insert: {
+          additional_category_ids?: string[] | null
           base_price?: number | null
           category_id?: string | null
           created_at?: string
+          default_height?: number | null
+          default_width?: number | null
           description?: string | null
+          features?: string[] | null
+          finish_options?: Json | null
+          gallery_images?: string[] | null
+          has_design_tool?: boolean | null
+          hidden_options?: Json | null
           id?: string
+          image_url?: string | null
           images?: Json | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          is_fixed_size?: boolean | null
+          is_on_sale?: boolean | null
+          is_popular?: boolean | null
+          long_description?: string | null
+          material_options?: Json | null
+          max_height?: number | null
+          max_width?: number | null
           meta_description?: string | null
           meta_title?: string | null
+          min_height?: number | null
+          min_width?: number | null
           name: string
           options?: Json | null
+          order?: number | null
           pricing_tiers?: Json | null
+          sale_percentage?: number | null
+          sale_price?: number | null
           short_description?: string | null
           slug: string
+          tax_code?: string | null
+          turnaround_days?: number | null
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
+          additional_category_ids?: string[] | null
           base_price?: number | null
           category_id?: string | null
           created_at?: string
+          default_height?: number | null
+          default_width?: number | null
           description?: string | null
+          features?: string[] | null
+          finish_options?: Json | null
+          gallery_images?: string[] | null
+          has_design_tool?: boolean | null
+          hidden_options?: Json | null
           id?: string
+          image_url?: string | null
           images?: Json | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          is_fixed_size?: boolean | null
+          is_on_sale?: boolean | null
+          is_popular?: boolean | null
+          long_description?: string | null
+          material_options?: Json | null
+          max_height?: number | null
+          max_width?: number | null
           meta_description?: string | null
           meta_title?: string | null
+          min_height?: number | null
+          min_width?: number | null
           name?: string
           options?: Json | null
+          order?: number | null
           pricing_tiers?: Json | null
+          sale_percentage?: number | null
+          sale_price?: number | null
           short_description?: string | null
           slug?: string
+          tax_code?: string | null
+          turnaround_days?: number | null
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: [
           {
