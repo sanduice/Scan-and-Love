@@ -65,17 +65,17 @@ export default function CategoryNavBar() {
 
                 {/* Dropdown for subcategories */}
                 {hasSubcategories && activeDropdown === category.id && (
-                  <div className="absolute top-full left-0 pt-1 z-50">
-                    <div className="bg-background border border-border rounded-lg shadow-lg py-2 min-w-[220px] animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute top-full left-0 pt-1 z-[100]">
+                    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-2 min-w-[220px] animate-in fade-in slide-in-from-top-2 duration-200">
                       {/* View All link */}
                       <Link
                         to={createPageUrl('Products') + `?category=${category.slug}`}
-                        className="flex items-center px-4 py-2.5 text-sm font-semibold text-primary hover:bg-muted transition-colors"
+                        className="flex items-center px-4 py-2.5 text-sm font-semibold text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                         onClick={() => setActiveDropdown(null)}
                       >
                         All {category.name}
                       </Link>
-                      <div className="h-px bg-border my-1" />
+                      <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
                       
                       {subcategories.map((sub) => {
                         const subSubcategories = getSubcategories(sub.id);
@@ -85,7 +85,7 @@ export default function CategoryNavBar() {
                           <div key={sub.id} className="relative group">
                             <Link
                               to={createPageUrl('Products') + `?category=${sub.slug}`}
-                              className="flex items-center justify-between px-4 py-2.5 text-sm text-foreground hover:text-primary hover:bg-muted transition-colors"
+                              className="flex items-center justify-between px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                               onClick={() => setActiveDropdown(null)}
                             >
                               {sub.name}
@@ -94,13 +94,13 @@ export default function CategoryNavBar() {
 
                             {/* Sub-subcategories flyout */}
                             {hasSubSub && (
-                              <div className="absolute left-full top-0 pl-1 hidden group-hover:block">
-                                <div className="bg-background border border-border rounded-lg shadow-lg py-2 min-w-[200px]">
+                              <div className="absolute left-full top-0 pl-1 hidden group-hover:block z-[100]">
+                                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl py-2 min-w-[200px]">
                                   {subSubcategories.map((subSub) => (
                                     <Link
                                       key={subSub.id}
                                       to={createPageUrl('Products') + `?category=${subSub.slug}`}
-                                      className="block px-4 py-2.5 text-sm text-foreground hover:text-primary hover:bg-muted transition-colors"
+                                      className="block px-4 py-2.5 text-sm text-gray-900 dark:text-gray-100 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                                       onClick={() => setActiveDropdown(null)}
                                     >
                                       {subSub.name}
