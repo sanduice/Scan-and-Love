@@ -429,7 +429,7 @@ export default function ProductsManager() {
                             {selectedCategorySlug !== 'all-products' && (
                               <div 
                                 {...provided.dragHandleProps}
-                                className="absolute top-2 left-10 z-10 bg-background/90 rounded p-1 cursor-grab active:cursor-grabbing hover:bg-muted"
+                                className="absolute top-2 left-12 z-10 bg-background/90 rounded p-1 cursor-grab active:cursor-grabbing hover:bg-muted"
                               >
                                 <GripVertical className="w-5 h-5 text-muted-foreground" />
                               </div>
