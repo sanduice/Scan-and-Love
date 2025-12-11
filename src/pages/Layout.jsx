@@ -246,7 +246,6 @@ export default function Layout({ children, currentPageName }) {
               />
             </div>
           )}
-        </div>
 
           {/* MegaMenu Navigation - Inside container for alignment */}
           <MegaMenu />
