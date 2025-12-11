@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -19,86 +19,25 @@ import { toast } from 'sonner';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-// Category hierarchy matching /products page
-const CATEGORIES_SIDEBAR = [
-  { name: 'All Products', slug: 'all-products' },
-  { 
-    name: 'Name Badges', 
-    slug: 'name-badges',
-    subcategories: [
-      { name: 'View All Name Badges', slug: 'name-badges' },
-      { name: 'Standard Name Badges', slug: 'standard-name-badges' },
-      { name: 'Premium Name Badges', slug: 'premium-name-badges' },
-      { name: 'Executive Name Badges', slug: 'executive-name-badges' },
-      { name: 'Executive Metal Name Tags', slug: 'executive-metal-name-tags' },
-      { 
-        name: 'Specialty Badges', 
-        slug: 'specialty-badges-group',
-        subcategories: [
-          { name: 'Bling Name Badges', slug: 'bling-name-badges' },
-          { name: 'Chalkboard Name Tags', slug: 'chalkboard-name-tags' },
-          { name: 'Real Wood Badges', slug: 'real-wood-badges' },
-          { name: 'Custom Color Badges', slug: 'custom-color-badges' },
-          { name: 'Glossy Name Plates', slug: 'glossy-name-plates' }
-        ]
-      },
-      { 
-        name: 'Metal & Engraved', 
-        slug: 'metal-badges-group',
-        subcategories: [
-          { name: 'Metal Name Tags', slug: 'metal-name-tags' },
-          { name: 'Engraved Metal Name Tags', slug: 'engraved-metal-name-tags' },
-          { name: 'Metal Service Name Bars', slug: 'metal-service-name-bars' }
-        ]
-      },
-      { name: 'Badge Accessories', slug: 'badge-accessories' }
-    ]
-  },
-  {
-    name: 'Signs & Banners',
-    slug: 'signs-banners-group',
-    subcategories: [
-      { name: 'Banners', slug: 'vinyl-banner' },
-      { name: 'Signs', slug: 'signs' },
-      { name: 'Yard Signs', slug: 'yard-sign' },
-      { name: 'A-Frame Signs', slug: 'a-frame-signs' },
-      { name: 'Office Signs', slug: 'office-signs' },
-      { name: 'Real Estate', slug: 'real-estate' }
-    ]
-  },
-  {
-    name: 'Stickers & Decals',
-    slug: 'stickers-decals-group',
-    subcategories: [
-      { name: 'Stickers', slug: 'stickers' },
-      { name: 'Decals', slug: 'decals' },
-      { name: 'Magnets', slug: 'magnets' },
-      { name: 'Vehicle Graphics', slug: 'vehicle-graphics' },
-      { name: 'Window Graphics', slug: 'window-graphics' },
-      { name: 'Floor Graphics', slug: 'floor-graphics' }
-    ]
-  },
-  {
-    name: 'Office & ID',
-    slug: 'office-id-group',
-    subcategories: [
-      { name: 'Desk and Wall Plates', slug: 'desk-and-wall-plates' },
-      { name: 'ID Cards', slug: 'id-cards' },
-      { name: 'Self Inking Stamps', slug: 'self-inking-stamps' }
-    ]
-  },
-  {
-    name: 'Events & Trade Show',
-    slug: 'events-group',
-    subcategories: [
-      { name: 'Trade Show & Events', slug: 'trade-show-events' },
-      { name: 'Displays & Stands', slug: 'displays-stands' },
-      { name: 'Flags & Fabric', slug: 'flags-fabric' },
-      { name: 'Event Passes', slug: 'event-passes' }
-    ]
-  },
-  { name: 'Prints', slug: 'prints' }
-];
+// Build hierarchical category tree from flat database data
+const buildCategoryTree = (categories) => {
+  const parentCategories = categories.filter(c => !c.parent_id);
+  return [
+    { name: 'All Products', slug: 'all-products' },
+    ...parentCategories.map(parent => ({
+      name: parent.name,
+      slug: parent.slug,
+      id: parent.id,
+      subcategories: categories
+        .filter(c => c.parent_id === parent.id)
+        .map(sub => ({
+          name: sub.name,
+          slug: sub.slug,
+          id: sub.id
+        }))
+    }))
+  ];
+};
 
 // Recursive Category Sidebar Item
 const CategorySidebarItem = ({ item, selectedSlug, onSelect, level = 0 }) => {
@@ -334,10 +273,13 @@ export default function ProductsManager() {
     });
   };
 
+  // Build dynamic category tree from database
+  const categoryTree = useMemo(() => buildCategoryTree(categories), [categories]);
+
   const getCategoryName = () => {
     if (selectedCategorySlug === 'all-products') return 'All Products';
     
-    // Find in hierarchy
+    // Find in dynamic category tree
     const findName = (items) => {
       for (const item of items) {
         if (item.slug === selectedCategorySlug) return item.name;
@@ -349,7 +291,7 @@ export default function ProductsManager() {
       return null;
     };
     
-    return findName(CATEGORIES_SIDEBAR) || 'Products';
+    return findName(categoryTree) || 'Products';
   };
 
   return (
@@ -362,7 +304,7 @@ export default function ProductsManager() {
           </div>
           <ScrollArea className="h-[calc(100%-60px)]">
             <div className="p-2">
-              {CATEGORIES_SIDEBAR.map((cat, idx) => (
+              {categoryTree.map((cat, idx) => (
                 <CategorySidebarItem 
                   key={cat.slug || idx} 
                   item={cat} 
