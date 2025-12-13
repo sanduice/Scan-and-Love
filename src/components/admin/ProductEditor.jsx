@@ -251,7 +251,7 @@ export default function ProductEditor({ product, categories, onSave, onCancel })
               <TabsTrigger value="general" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300">General</TabsTrigger>
               <TabsTrigger value="media" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300">Media</TabsTrigger>
               <TabsTrigger value="details" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300">Details</TabsTrigger>
-              <TabsTrigger value="calculator" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300">Calculator</TabsTrigger>
+              <TabsTrigger value="calculator" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300">Sizes</TabsTrigger>
               <TabsTrigger value="options" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all duration-300">Options</TabsTrigger>
             </TabsList>
 
