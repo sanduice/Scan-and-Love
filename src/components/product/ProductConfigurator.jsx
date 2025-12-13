@@ -275,12 +275,26 @@ export default function ProductConfigurator({ product }) {
     };
   }, [basePricing, width, height, quantity, selectedOptions, product]);
 
-  // Get standard sizes
+  // Get standard sizes - prioritize database preset_sizes, then legacy, then hardcoded fallbacks
   const standardSizes = useMemo(() => {
-    if (product.standard_sizes?.length > 0) return product.standard_sizes;
-    const slug = product.slug || '';
+    // Priority 1: New preset_sizes from database (admin-configured)
+    if (product.preset_sizes && Array.isArray(product.preset_sizes) && product.preset_sizes.length > 0) {
+      return product.preset_sizes
+        .filter(size => size.is_active !== false)
+        .map(size => ({
+          label: size.label || `${size.width}" × ${size.height}"`,
+          width: parseFloat(size.width),
+          height: parseFloat(size.height),
+          price: size.price ? parseFloat(size.price) : undefined,
+          key: size.key
+        }));
+    }
     
-    // Return product specific sizes or intelligent fallbacks
+    // Priority 2: Legacy standard_sizes field
+    if (product.standard_sizes?.length > 0) return product.standard_sizes;
+    
+    // Priority 3: Hardcoded fallbacks based on slug
+    const slug = product.slug || '';
     if (STANDARD_SIZES[slug]) return STANDARD_SIZES[slug];
     if (slug.includes('banner')) return STANDARD_SIZES['vinyl-banner'];
     if (slug.includes('yard')) return STANDARD_SIZES['yard-sign'];
@@ -299,22 +313,25 @@ export default function ProductConfigurator({ product }) {
     if (slug.includes('mesh')) return STANDARD_SIZES['mesh-banner'];
     if (slug.includes('fabric')) return STANDARD_SIZES['fabric-banner'];
     if (slug.includes('pole')) return STANDARD_SIZES['pole-banner'];
-    if (slug.includes('kiss')) return STANDARD_SIZES['kiss-cut-sticker'];
-    if (slug.includes('clear')) return STANDARD_SIZES['clear-sticker'];
-    if (slug.includes('holographic')) return STANDARD_SIZES['holographic-sticker'];
-    if (slug.includes('bumper')) return STANDARD_SIZES['bumper-sticker'];
-    if (slug.includes('safety')) return STANDARD_SIZES['safety-sign'];
-    if (slug.includes('canvas')) return STANDARD_SIZES['canvas-print'];
-    if (slug.includes('poster')) return STANDARD_SIZES['poster-print'];
-    if (slug.includes('frosted')) return STANDARD_SIZES['frosted-decal'];
-    if (slug.includes('table')) return STANDARD_SIZES['table-throw'];
-    if (slug.includes('pop-up')) return STANDARD_SIZES['pop-up-display'];
-    if (slug.includes('frame')) return STANDARD_SIZES['real-estate-frame'];
-    if (slug.includes('x-banner')) return STANDARD_SIZES['x-banner'];
     if (slug.includes('retractable')) return STANDARD_SIZES['retractable-banner'];
 
     return STANDARD_SIZES['default'];
   }, [product]);
+
+  // Determine if custom sizes are allowed
+  const allowCustomSize = useMemo(() => {
+    // New field takes priority, then fall back to legacy is_fixed_size check
+    if (product.allow_custom_size !== undefined && product.allow_custom_size !== null) {
+      return product.allow_custom_size;
+    }
+    return !product.is_fixed_size;
+  }, [product]);
+
+  // Get size unit label
+  const sizeUnitLabel = useMemo(() => {
+    const unit = product.size_unit || 'inches';
+    return unit === 'feet' ? 'in Feet' : 'in Inches';
+  }, [product.size_unit]);
 
   // Handle file upload
   const handleFileUpload = async (e) => {
@@ -482,7 +499,7 @@ export default function ProductConfigurator({ product }) {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         {/* Size Section */}
         <div className="p-6 border-b border-gray-100">
-          <h3 className="font-semibold text-gray-900 mb-4">Size (in Inches)</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">Size ({sizeUnitLabel})</h3>
           
           {/* Quick Sizes */}
           <div className="flex flex-wrap gap-2 mb-4">
@@ -501,9 +518,12 @@ export default function ProductConfigurator({ product }) {
                 }`}
               >
                 {size.label}
+                {size.price !== undefined && (
+                  <span className="ml-1 text-xs opacity-75">(${size.price})</span>
+                )}
               </button>
             ))}
-            {!product.is_fixed_size && (
+            {allowCustomSize && (
               <button
                 className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200"
               >
@@ -515,7 +535,7 @@ export default function ProductConfigurator({ product }) {
           {/* Custom Size Inputs */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <Label className="text-sm text-gray-600">W:</Label>
+              <Label className="text-sm text-gray-600">W ({product.size_unit === 'feet' ? 'ft' : 'in'}):</Label>
               <Input
                 type="number"
                 value={width}
@@ -523,12 +543,12 @@ export default function ProductConfigurator({ product }) {
                   setWidth(Math.max(1, Number(e.target.value)));
                   setSizeKey(null); // Custom size invalidates key
                 }}
-                disabled={product.is_fixed_size}
+                disabled={!allowCustomSize}
                 className="mt-1 h-12 text-lg disabled:opacity-50 disabled:bg-gray-100"
               />
             </div>
             <div>
-              <Label className="text-sm text-gray-600">H:</Label>
+              <Label className="text-sm text-gray-600">H ({product.size_unit === 'feet' ? 'ft' : 'in'}):</Label>
               <Input
                 type="number"
                 value={height}
@@ -536,7 +556,7 @@ export default function ProductConfigurator({ product }) {
                   setHeight(Math.max(1, Number(e.target.value)));
                   setSizeKey(null); // Custom size invalidates key
                 }}
-                disabled={product.is_fixed_size}
+                disabled={!allowCustomSize}
                 className="mt-1 h-12 text-lg disabled:opacity-50 disabled:bg-gray-100"
               />
             </div>
