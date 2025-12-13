@@ -14,7 +14,7 @@ export default function PresetSizesManager({
   const addSize = () => {
     onSizesChange([
       ...presetSizes,
-      { width: 24, height: 36, label: '', price: 0, is_active: true }
+      { width: 24, height: 36, price: 0, is_active: true }
     ]);
   };
 
@@ -88,10 +88,9 @@ export default function PresetSizesManager({
         {presetSizes.length > 0 ? (
           <div className="space-y-3">
             {/* Header Row */}
-            <div className="grid grid-cols-12 gap-3 px-3 text-xs text-slate-500 font-medium">
+            <div className="grid grid-cols-9 gap-3 px-3 text-xs text-slate-500 font-medium">
               <div className="col-span-2">Width ({sizeUnit === 'feet' ? 'ft' : 'in'})</div>
               <div className="col-span-2">Height ({sizeUnit === 'feet' ? 'ft' : 'in'})</div>
-              <div className="col-span-3">Display Label</div>
               <div className="col-span-2">Price</div>
               <div className="col-span-2">Active</div>
               <div className="col-span-1"></div>
@@ -100,7 +99,7 @@ export default function PresetSizesManager({
             {presetSizes.map((size, idx) => (
               <div 
                 key={idx} 
-                className={`grid grid-cols-12 gap-3 items-center p-3 rounded-xl border transition-colors ${
+                className={`grid grid-cols-9 gap-3 items-center p-3 rounded-xl border transition-colors ${
                   size.is_active 
                     ? 'bg-white border-slate-200 hover:border-blue-300' 
                     : 'bg-slate-100 border-slate-200 opacity-60'
@@ -124,15 +123,6 @@ export default function PresetSizesManager({
                     onChange={(e) => updateSize(idx, 'height', e.target.value)}
                     className="h-9 text-sm bg-slate-50/50"
                     placeholder="36"
-                  />
-                </div>
-                <div className="col-span-3">
-                  <Input
-                    type="text"
-                    value={size.label || ''}
-                    onChange={(e) => updateSize(idx, 'label', e.target.value)}
-                    className="h-9 text-sm bg-slate-50/50"
-                    placeholder="2' x 3'"
                   />
                 </div>
                 <div className="col-span-2">
