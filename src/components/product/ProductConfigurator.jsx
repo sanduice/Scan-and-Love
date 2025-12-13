@@ -196,12 +196,34 @@ export default function ProductConfigurator({ product }) {
     options: false,
   });
 
+  // Initialize selected options from product.product_options when product loads
+  useEffect(() => {
+    if (product.product_options && Array.isArray(product.product_options) && product.product_options.length > 0) {
+      const initialOptions = {};
+      product.product_options.forEach(group => {
+        if (group.is_visible === false) return;
+        const visibleChoices = (group.choices || []).filter(c => c.is_visible !== false);
+        // Find default choice or first visible choice
+        const defaultChoice = visibleChoices.find(c => c.is_default) || visibleChoices[0];
+        if (defaultChoice) {
+          initialOptions[group.id] = defaultChoice;
+        }
+      });
+      setSelectedOptions(prev => ({ ...prev, ...initialOptions }));
+    }
+  }, [product.product_options]);
+
   const toggleSection = (section) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
   const updateOption = (key, value) => {
     setSelectedOptions(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Update dynamic option with full choice object (including price)
+  const updateDynamicOption = (groupId, choice) => {
+    setSelectedOptions(prev => ({ ...prev, [groupId]: choice }));
   };
 
   // Use dynamic pricing hook
@@ -227,38 +249,50 @@ export default function ProductConfigurator({ product }) {
        regularUnitPrice = unitPrice;
     }
 
-    // Apply modifiers (to both sale and regular)
-    if (selectedOptions.printSide === 'Double Sided') {
-      unitPrice *= 1.6;
-      regularUnitPrice *= 1.6;
-    }
-    
-    // Add option prices
-    // Helper to find price modifier in options arrays
-    const getModifier = (options, selectedName) => {
-      const opt = options?.find(o => o.name === selectedName);
-      return opt?.price_modifier || opt?.price || 0;
-    };
+    // NEW: Add price modifiers from product_options structure (dynamic options)
+    Object.values(selectedOptions).forEach(option => {
+      if (option && typeof option === 'object' && option.price !== undefined) {
+        const priceModifier = parseFloat(option.price) || 0;
+        unitPrice += priceModifier;
+        regularUnitPrice += priceModifier;
+      }
+    });
 
-    const modifiers = 
-      getModifier(product.finish_options, selectedOptions.finish) +
-      getModifier(product.grommet_options, selectedOptions.grommets) +
-      getModifier(product.pole_pocket_options, selectedOptions.polePockets);
+    // LEGACY: Apply modifiers for backwards compatibility (for products not yet using product_options)
+    // Only apply legacy modifiers if product_options is not defined
+    if (!product.product_options || product.product_options.length === 0) {
+      // Apply modifiers (to both sale and regular)
+      if (selectedOptions.printSide === 'Double Sided') {
+        unitPrice *= 1.6;
+        regularUnitPrice *= 1.6;
+      }
+      
+      // Add option prices from legacy arrays
+      const getModifier = (options, selectedName) => {
+        const opt = options?.find(o => o.name === selectedName);
+        return opt?.price_modifier || opt?.price || 0;
+      };
 
-    unitPrice += modifiers;
-    regularUnitPrice += modifiers;
-    
-    // Accessories are per unit? usually fixed per item
-    const accessoryPrices = {
-      'Bungees (8)': 9.99,
-      'Zip Ties (10)': 4.99,
-      'Rope (4)': 12.99,
-      'Hanging Clips (6)': 14.99,
-      'Suction Cups (8)': 11.99,
-    };
-    if (accessoryPrices[selectedOptions.accessory]) {
-      unitPrice += accessoryPrices[selectedOptions.accessory];
-      regularUnitPrice += accessoryPrices[selectedOptions.accessory];
+      const modifiers = 
+        getModifier(product.finish_options, selectedOptions.finish) +
+        getModifier(product.grommet_options, selectedOptions.grommets) +
+        getModifier(product.pole_pocket_options, selectedOptions.polePockets);
+
+      unitPrice += modifiers;
+      regularUnitPrice += modifiers;
+      
+      // Accessories are per unit
+      const accessoryPrices = {
+        'Bungees (8)': 9.99,
+        'Zip Ties (10)': 4.99,
+        'Rope (4)': 12.99,
+        'Hanging Clips (6)': 14.99,
+        'Suction Cups (8)': 11.99,
+      };
+      if (accessoryPrices[selectedOptions.accessory]) {
+        unitPrice += accessoryPrices[selectedOptions.accessory];
+        regularUnitPrice += accessoryPrices[selectedOptions.accessory];
+      }
     }
 
     const total = unitPrice * quantity;
@@ -454,6 +488,52 @@ export default function ProductConfigurator({ product }) {
     );
   };
 
+  // NEW: Render dynamic product options from admin-configured product_options JSONB
+  const renderDynamicProductOptions = () => {
+    const options = product.product_options || [];
+    
+    return options
+      .filter(group => group.is_visible !== false)
+      .map(group => {
+        const visibleChoices = (group.choices || []).filter(c => c.is_visible !== false);
+        if (visibleChoices.length === 0) return null;
+        
+        const selectedChoice = selectedOptions[group.id];
+        
+        return (
+          <div key={group.id} className="py-4 border-b border-gray-100">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-medium text-gray-700">{group.name}:</span>
+              <span className="text-sm text-blue-600 font-medium">
+                {selectedChoice?.title || visibleChoices[0]?.title}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {visibleChoices.map((choice) => (
+                <button
+                  key={choice.id}
+                  onClick={() => updateDynamicOption(group.id, choice)}
+                  className={`p-3 text-left rounded-lg border-2 transition-all ${
+                    selectedChoice?.id === choice.id
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="font-medium text-sm">{choice.title}</div>
+                  {choice.hint && (
+                    <div className="text-xs text-gray-500 mt-1">{choice.hint}</div>
+                  )}
+                  {parseFloat(choice.price) > 0 && (
+                    <div className="text-xs text-green-600 mt-1">+${parseFloat(choice.price).toFixed(2)}</div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -584,43 +664,51 @@ export default function ProductConfigurator({ product }) {
             {openSections.options ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
           </CollapsibleTrigger>
           <CollapsibleContent className="px-6">
-            {!product.hidden_options?.includes('thickness') && renderOptionGroup('Material', product.material_options || product.thickness_options || [
-              { name: 'Standard Material', description: 'High quality print' },
-            ], selectedOptions.thickness, 'thickness')}
-            
-            {!product.hidden_options?.includes('printSide') && renderOptionGroup('Printed Sides', product.print_side_options || [
-              { name: 'Single Sided', description: 'Print on one side' },
-              { name: 'Double Sided', description: 'Print on both sides', price_modifier: 0 },
-            ], selectedOptions.printSide, 'printSide')}
-            
-            {!product.hidden_options?.includes('finish') && renderOptionGroup('Edge Finish', product.finish_options || [
-              { name: 'Welded Hem', description: 'Heat welded for durability' },
-              { name: 'Sewn Hem', description: 'Sewn edges for extra strength', price_modifier: 5 },
-              { name: 'None (Flush Cut)', description: 'No hem, exact size cut' },
-            ], selectedOptions.finish, 'finish')}
-            
-            {!product.hidden_options?.includes('grommets') && renderOptionGroup('Grommets', product.grommet_options || [
-              { name: 'Every 2-3 ft', description: 'Corners + evenly spaced' },
-              { name: 'Every 12-18 in', description: 'More hanging points' },
-              { name: '4 Corners', description: 'Just corner grommets' },
-              { name: 'None', description: 'No grommets' },
-            ], selectedOptions.grommets, 'grommets')}
-            
-            {!product.hidden_options?.includes('polePockets') && renderOptionGroup('Pole Pockets', product.pole_pocket_options || [
-              { name: 'None', description: 'No pole pockets' },
-              { name: '3" Top & Bottom', description: 'Fits 1.5" poles', price_modifier: 8 },
-              { name: '3" Top Only', description: 'Top pocket only', price_modifier: 5 },
-            ], selectedOptions.polePockets, 'polePockets')}
-            
-            {/* Only show accessories if not a sticker/label/decal/cling */}
-            {!(product.slug?.includes('sticker') || product.slug?.includes('label') || product.slug?.includes('decal') || product.slug?.includes('cling')) && !product.hidden_options?.includes('accessory') && renderOptionGroup('Accessories', [
-              { name: 'None', description: 'No accessories' },
-              { name: 'Bungees (8)', description: '12" rubber bungee cords', price: 9.99 },
-              { name: 'Zip Ties (10)', description: 'Black zip ties', price: 4.99 },
-              { name: 'Rope (4)', description: '10ft nylon rope pieces', price: 12.99 },
-              { name: 'Hanging Clips (6)', description: 'Steel carabiners', price: 14.99 },
-              { name: 'Suction Cups (8)', description: '2" cups with hooks', price: 11.99 },
-            ], selectedOptions.accessory, 'accessory')}
+            {/* NEW: Render from product_options if available */}
+            {product.product_options && product.product_options.length > 0 ? (
+              renderDynamicProductOptions()
+            ) : (
+              // LEGACY: Keep old hardcoded options for products not yet configured
+              <>
+                {!product.hidden_options?.includes('thickness') && renderOptionGroup('Material', product.material_options || product.thickness_options || [
+                  { name: 'Standard Material', description: 'High quality print' },
+                ], selectedOptions.thickness, 'thickness')}
+                
+                {!product.hidden_options?.includes('printSide') && renderOptionGroup('Printed Sides', product.print_side_options || [
+                  { name: 'Single Sided', description: 'Print on one side' },
+                  { name: 'Double Sided', description: 'Print on both sides', price_modifier: 0 },
+                ], selectedOptions.printSide, 'printSide')}
+                
+                {!product.hidden_options?.includes('finish') && renderOptionGroup('Edge Finish', product.finish_options || [
+                  { name: 'Welded Hem', description: 'Heat welded for durability' },
+                  { name: 'Sewn Hem', description: 'Sewn edges for extra strength', price_modifier: 5 },
+                  { name: 'None (Flush Cut)', description: 'No hem, exact size cut' },
+                ], selectedOptions.finish, 'finish')}
+                
+                {!product.hidden_options?.includes('grommets') && renderOptionGroup('Grommets', product.grommet_options || [
+                  { name: 'Every 2-3 ft', description: 'Corners + evenly spaced' },
+                  { name: 'Every 12-18 in', description: 'More hanging points' },
+                  { name: '4 Corners', description: 'Just corner grommets' },
+                  { name: 'None', description: 'No grommets' },
+                ], selectedOptions.grommets, 'grommets')}
+                
+                {!product.hidden_options?.includes('polePockets') && renderOptionGroup('Pole Pockets', product.pole_pocket_options || [
+                  { name: 'None', description: 'No pole pockets' },
+                  { name: '3" Top & Bottom', description: 'Fits 1.5" poles', price_modifier: 8 },
+                  { name: '3" Top Only', description: 'Top pocket only', price_modifier: 5 },
+                ], selectedOptions.polePockets, 'polePockets')}
+                
+                {/* Only show accessories if not a sticker/label/decal/cling */}
+                {!(product.slug?.includes('sticker') || product.slug?.includes('label') || product.slug?.includes('decal') || product.slug?.includes('cling')) && !product.hidden_options?.includes('accessory') && renderOptionGroup('Accessories', [
+                  { name: 'None', description: 'No accessories' },
+                  { name: 'Bungees (8)', description: '12" rubber bungee cords', price: 9.99 },
+                  { name: 'Zip Ties (10)', description: 'Black zip ties', price: 4.99 },
+                  { name: 'Rope (4)', description: '10ft nylon rope pieces', price: 12.99 },
+                  { name: 'Hanging Clips (6)', description: 'Steel carabiners', price: 14.99 },
+                  { name: 'Suction Cups (8)', description: '2" cups with hooks', price: 11.99 },
+                ], selectedOptions.accessory, 'accessory')}
+              </>
+            )}
           </CollapsibleContent>
         </Collapsible>
 
