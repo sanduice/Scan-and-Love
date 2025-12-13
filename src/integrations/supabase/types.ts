@@ -533,6 +533,7 @@ export type Database = {
       products: {
         Row: {
           additional_category_ids: string[] | null
+          allow_custom_size: boolean | null
           base_price: number | null
           category_id: string | null
           created_at: string
@@ -563,10 +564,13 @@ export type Database = {
           name: string
           options: Json | null
           order: number | null
+          preset_sizes: Json | null
           pricing_tiers: Json | null
+          product_options: Json | null
           sale_percentage: number | null
           sale_price: number | null
           short_description: string | null
+          size_unit: string | null
           slug: string
           tax_code: string | null
           turnaround_days: number | null
@@ -575,6 +579,7 @@ export type Database = {
         }
         Insert: {
           additional_category_ids?: string[] | null
+          allow_custom_size?: boolean | null
           base_price?: number | null
           category_id?: string | null
           created_at?: string
@@ -605,10 +610,13 @@ export type Database = {
           name: string
           options?: Json | null
           order?: number | null
+          preset_sizes?: Json | null
           pricing_tiers?: Json | null
+          product_options?: Json | null
           sale_percentage?: number | null
           sale_price?: number | null
           short_description?: string | null
+          size_unit?: string | null
           slug: string
           tax_code?: string | null
           turnaround_days?: number | null
@@ -617,6 +625,7 @@ export type Database = {
         }
         Update: {
           additional_category_ids?: string[] | null
+          allow_custom_size?: boolean | null
           base_price?: number | null
           category_id?: string | null
           created_at?: string
@@ -647,10 +656,13 @@ export type Database = {
           name?: string
           options?: Json | null
           order?: number | null
+          preset_sizes?: Json | null
           pricing_tiers?: Json | null
+          product_options?: Json | null
           sale_percentage?: number | null
           sale_price?: number | null
           short_description?: string | null
+          size_unit?: string | null
           slug?: string
           tax_code?: string | null
           turnaround_days?: number | null
