@@ -536,14 +536,14 @@ export default function ProductConfigurator({ product }) {
                 <button
                   key={choice.id}
                   onClick={() => updateDynamicOption(group.id, choice)}
-                  className={`p-3 text-left rounded-lg border-2 transition-all ${
+                  className={`p-3 text-left rounded-lg border-2 transition-all flex items-start gap-3 ${
                     selectedChoice?.id === choice.id
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   {choice.image_url && (
-                    <div className="w-10 h-10 mb-2 overflow-hidden rounded-md flex-shrink-0">
+                    <div className="w-14 h-14 overflow-hidden rounded-md flex-shrink-0">
                       <img 
                         src={choice.image_url} 
                         alt={choice.title}
@@ -551,13 +551,15 @@ export default function ProductConfigurator({ product }) {
                       />
                     </div>
                   )}
-                  <div className="font-medium text-sm text-left">{choice.title}</div>
-                  {choice.hint && (
-                    <div className="text-xs text-muted-foreground mt-1 text-left">{choice.hint}</div>
-                  )}
-                  {parseFloat(choice.price) > 0 && (
-                    <div className="text-xs text-green-600 mt-1 text-left">+${parseFloat(choice.price).toFixed(2)}</div>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm">{choice.title}</div>
+                    {choice.hint && (
+                      <div className="text-xs text-muted-foreground mt-1">{choice.hint}</div>
+                    )}
+                    {parseFloat(choice.price) > 0 && (
+                      <div className="text-xs text-green-600 mt-1">+${parseFloat(choice.price).toFixed(2)}</div>
+                    )}
+                  </div>
                 </button>
               ))}
             </div>
