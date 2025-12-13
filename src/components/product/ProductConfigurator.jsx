@@ -213,6 +213,16 @@ export default function ProductConfigurator({ product }) {
     }
   }, [product.product_options]);
 
+  // Initialize with first size when standardSizes are available
+  useEffect(() => {
+    if (standardSizes && standardSizes.length > 0) {
+      const firstSize = standardSizes[0];
+      setWidth(firstSize.width);
+      setHeight(firstSize.height);
+      setSizeKey(firstSize.key || null);
+    }
+  }, [standardSizes]);
+
   const toggleSection = (section) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
