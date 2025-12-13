@@ -536,7 +536,7 @@ export default function ProductConfigurator({ product }) {
                 <button
                   key={choice.id}
                   onClick={() => updateDynamicOption(group.id, choice)}
-                  className={`p-3 text-center rounded-lg border-2 transition-all ${
+                  className={`p-3 text-left rounded-lg border-2 transition-all ${
                     selectedChoice?.id === choice.id
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
@@ -551,12 +551,12 @@ export default function ProductConfigurator({ product }) {
                       />
                     </div>
                   )}
-                  <div className="font-medium text-sm">{choice.title}</div>
+                  <div className="font-medium text-sm text-left">{choice.title}</div>
                   {choice.hint && (
-                    <div className="text-xs text-gray-500 mt-1">{choice.hint}</div>
+                    <div className="text-xs text-muted-foreground mt-1 text-left">{choice.hint}</div>
                   )}
                   {parseFloat(choice.price) > 0 && (
-                    <div className="text-xs text-green-600 mt-1">+${parseFloat(choice.price).toFixed(2)}</div>
+                    <div className="text-xs text-green-600 mt-1 text-left">+${parseFloat(choice.price).toFixed(2)}</div>
                   )}
                 </button>
               ))}
