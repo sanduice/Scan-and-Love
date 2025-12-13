@@ -598,9 +598,6 @@ export default function ProductConfigurator({ product }) {
                 }`}
               >
                 {size.label}
-                {size.price !== undefined && (
-                  <span className="ml-1 text-xs opacity-75">(${size.price})</span>
-                )}
               </button>
             ))}
             {allowCustomSize && (
