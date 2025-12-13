@@ -543,7 +543,7 @@ export default function ProductConfigurator({ product }) {
                   }`}
                 >
                   {choice.image_url && (
-                    <div className="w-full aspect-square mb-2 overflow-hidden rounded-md">
+                    <div className="w-10 h-10 mb-2 overflow-hidden rounded-md flex-shrink-0">
                       <img 
                         src={choice.image_url} 
                         alt={choice.title}
