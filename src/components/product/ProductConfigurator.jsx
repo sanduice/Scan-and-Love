@@ -175,6 +175,7 @@ export default function ProductConfigurator({ product }) {
   const [width, setWidth] = useState(product.default_width || 72);
   const [height, setHeight] = useState(product.default_height || 36);
   const [sizeKey, setSizeKey] = useState(product.default_size_key || null);
+  const [selectedPresetPrice, setSelectedPresetPrice] = useState(null); // Track preset's fixed price
   const [quantity, setQuantity] = useState(1);
   const [isUploading, setIsUploading] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -236,17 +237,26 @@ export default function ProductConfigurator({ product }) {
 
   // Calculate final price with options/modifiers
   const calculatedPrice = useMemo(() => {
-    // Start with base unit price from calculator (includes qty breaks)
-    let unitPrice = parseFloat(basePricing.unitPrice) || 0;
-    let regularUnitPrice = parseFloat(basePricing.regularUnitPrice) || unitPrice;
+    let unitPrice = 0;
+    let regularUnitPrice = 0;
     
-    // If pricing hook returns 0 (no tier found), use product base price as fallback
-    if (unitPrice === 0 && product.base_price) {
-       // Simple fallback: base price * sqft (if not fixed)
-       const sqft = (width * height) / 144;
-       const multiplier = basePricing.tier?.pricing_method === 'fixed' ? 1 : sqft;
-       unitPrice = product.base_price * multiplier;
-       regularUnitPrice = unitPrice;
+    // PRIORITY 1: Use preset size price if a preset with price is selected
+    if (selectedPresetPrice !== null && selectedPresetPrice !== undefined) {
+      unitPrice = parseFloat(selectedPresetPrice);
+      regularUnitPrice = unitPrice;
+    } else {
+      // PRIORITY 2: Use calculated pricing from usePricing hook
+      unitPrice = parseFloat(basePricing.unitPrice) || 0;
+      regularUnitPrice = parseFloat(basePricing.regularUnitPrice) || unitPrice;
+      
+      // If pricing hook returns 0 (no tier found), use product base price as fallback
+      if (unitPrice === 0 && product.base_price) {
+         // Simple fallback: base price * sqft (if not fixed)
+         const sqft = (width * height) / 144;
+         const multiplier = basePricing.tier?.pricing_method === 'fixed' ? 1 : sqft;
+         unitPrice = product.base_price * multiplier;
+         regularUnitPrice = unitPrice;
+      }
     }
 
     // NEW: Add price modifiers from product_options structure (dynamic options)
@@ -307,7 +317,7 @@ export default function ProductConfigurator({ product }) {
       sqft: basePricing.sqft?.toFixed(2) || '0.00',
       perSqFt: basePricing.pricePerUnit?.toFixed(2) || '0.00',
     };
-  }, [basePricing, width, height, quantity, selectedOptions, product]);
+  }, [basePricing, width, height, quantity, selectedOptions, product, selectedPresetPrice]);
 
   // Get standard sizes - prioritize database preset_sizes, then legacy, then hardcoded fallbacks
   const standardSizes = useMemo(() => {
@@ -359,6 +369,7 @@ export default function ProductConfigurator({ product }) {
       setWidth(firstSize.width);
       setHeight(firstSize.height);
       setSizeKey(firstSize.key || null);
+      setSelectedPresetPrice(firstSize.price !== undefined ? firstSize.price : null);
     }
   }, [standardSizes]);
 
@@ -599,7 +610,8 @@ export default function ProductConfigurator({ product }) {
                 onClick={() => { 
                   setWidth(size.width); 
                   setHeight(size.height);
-                  setSizeKey(size.key || null); 
+                  setSizeKey(size.key || null);
+                  setSelectedPresetPrice(size.price !== undefined ? size.price : null);
                 }}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   width === size.width && height === size.height && (size.key ? sizeKey === size.key : true)
@@ -629,6 +641,7 @@ export default function ProductConfigurator({ product }) {
                 onChange={(e) => {
                   setWidth(Math.max(1, Number(e.target.value)));
                   setSizeKey(null); // Custom size invalidates key
+                  setSelectedPresetPrice(null); // Clear preset price for custom sizes
                 }}
                 disabled={!allowCustomSize}
                 className="mt-1 h-12 text-lg disabled:opacity-50 disabled:bg-gray-100"
@@ -642,6 +655,7 @@ export default function ProductConfigurator({ product }) {
                 onChange={(e) => {
                   setHeight(Math.max(1, Number(e.target.value)));
                   setSizeKey(null); // Custom size invalidates key
+                  setSelectedPresetPrice(null); // Clear preset price for custom sizes
                 }}
                 disabled={!allowCustomSize}
                 className="mt-1 h-12 text-lg disabled:opacity-50 disabled:bg-gray-100"
