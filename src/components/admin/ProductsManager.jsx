@@ -518,8 +518,9 @@ export default function ProductsManager() {
                                 </DropdownMenu>
                               </div>
                               <div className="mt-2">
+                                <span className="text-sm text-muted-foreground">Starts at: </span>
                                 <span className="text-lg font-bold text-green-600">
-                                  ${product.base_price?.toFixed(2) || '0.00'}
+                                  ${(product.preset_sizes?.[0]?.price || product.base_price)?.toFixed(2) || '0.00'}
                                 </span>
                               </div>
                             </div>
