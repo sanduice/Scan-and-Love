@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { 
   Plus, Trash2, DollarSign, ChevronDown, ChevronUp, 
-  GripVertical, Eye, EyeOff, Settings2
+  GripVertical, Eye, EyeOff, Settings2, ImagePlus, X, Loader2
 } from 'lucide-react';
 import {
   Collapsible,
@@ -13,6 +13,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 export default function ProductOptionsConfigurator({ 
   productOptions = [], 
@@ -62,13 +64,51 @@ export default function ProductOptionsConfigurator({
           ...group,
           choices: [
             ...group.choices,
-            { id: generateId(), title: '', hint: '', price: 0, is_visible: true, is_default: false }
+            { id: generateId(), title: '', hint: '', price: 0, image_url: null, is_visible: true, is_default: false }
           ]
         };
       }
       return group;
     });
     onOptionsChange(updated);
+  };
+
+  // Track uploading state for choices
+  const [uploadingChoiceId, setUploadingChoiceId] = useState(null);
+
+  // Handle image upload for a choice
+  const handleChoiceImageUpload = async (groupId, choiceId, file) => {
+    if (!file) return;
+    
+    setUploadingChoiceId(choiceId);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `choice-${choiceId}-${Date.now()}.${fileExt}`;
+      const filePath = `options/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('products')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('products')
+        .getPublicUrl(filePath);
+
+      updateChoice(groupId, choiceId, 'image_url', publicUrl);
+      toast.success('Image uploaded');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload image');
+    } finally {
+      setUploadingChoiceId(null);
+    }
+  };
+
+  // Remove image from choice
+  const removeChoiceImage = (groupId, choiceId) => {
+    updateChoice(groupId, choiceId, 'image_url', null);
   };
 
   // Update choice in group
@@ -252,7 +292,7 @@ export default function ProductOptionsConfigurator({
                                           <div
                                             ref={provided.innerRef}
                                             {...provided.draggableProps}
-                                            className={`grid grid-cols-12 gap-2 items-center p-3 rounded-lg border transition-all ${
+                                            className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
                                               snapshot.isDragging 
                                                 ? 'shadow-lg ring-2 ring-blue-400 bg-white' 
                                                 : choice.is_visible
@@ -260,11 +300,45 @@ export default function ProductOptionsConfigurator({
                                                   : 'bg-slate-100 border-slate-200 opacity-60'
                                             }`}
                                           >
-                                            <div {...provided.dragHandleProps} className="col-span-1 cursor-grab text-slate-400">
+                                            <div {...provided.dragHandleProps} className="cursor-grab text-slate-400 flex-shrink-0">
                                               <GripVertical className="w-4 h-4" />
                                             </div>
                                             
-                                            <div className="col-span-3">
+                                            {/* Image Upload Thumbnail */}
+                                            <div className="flex-shrink-0">
+                                              {choice.image_url ? (
+                                                <div className="relative group w-10 h-10">
+                                                  <img 
+                                                    src={choice.image_url} 
+                                                    alt={choice.title || 'Choice'} 
+                                                    className="w-10 h-10 object-cover rounded-md border border-slate-200"
+                                                  />
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => removeChoiceImage(group.id, choice.id)}
+                                                    className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                                  >
+                                                    <X className="w-2.5 h-2.5" />
+                                                  </button>
+                                                </div>
+                                              ) : (
+                                                <label className="w-10 h-10 flex items-center justify-center border-2 border-dashed border-slate-300 rounded-md cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                                                  {uploadingChoiceId === choice.id ? (
+                                                    <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                                                  ) : (
+                                                    <ImagePlus className="w-4 h-4 text-slate-400" />
+                                                  )}
+                                                  <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={(e) => handleChoiceImageUpload(group.id, choice.id, e.target.files?.[0])}
+                                                  />
+                                                </label>
+                                              )}
+                                            </div>
+                                            
+                                            <div className="flex-1 min-w-0">
                                               <Input
                                                 value={choice.title}
                                                 onChange={(e) => updateChoice(group.id, choice.id, 'title', e.target.value)}
@@ -273,7 +347,7 @@ export default function ProductOptionsConfigurator({
                                               />
                                             </div>
 
-                                            <div className="col-span-4">
+                                            <div className="flex-1 min-w-0">
                                               <Input
                                                 value={choice.hint || ''}
                                                 onChange={(e) => updateChoice(group.id, choice.id, 'hint', e.target.value)}
@@ -282,7 +356,7 @@ export default function ProductOptionsConfigurator({
                                               />
                                             </div>
 
-                                            <div className="col-span-2">
+                                            <div className="w-24 flex-shrink-0">
                                               <div className="relative">
                                                 <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
                                                 <Input
@@ -296,7 +370,7 @@ export default function ProductOptionsConfigurator({
                                               </div>
                                             </div>
 
-                                            <div className="col-span-2 flex items-center justify-end gap-1">
+                                            <div className="flex items-center gap-1 flex-shrink-0">
                                               <button
                                                 type="button"
                                                 onClick={() => updateChoice(group.id, choice.id, 'is_visible', !choice.is_visible)}

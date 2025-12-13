@@ -520,6 +520,8 @@ export default function ProductConfigurator({ product }) {
         if (visibleChoices.length === 0) return null;
         
         const selectedChoice = selectedOptions[group.id];
+        // Check if any choice in this group has an image
+        const hasImages = visibleChoices.some(c => c.image_url);
         
         return (
           <div key={group.id} className="py-4 border-b border-gray-100">
@@ -529,17 +531,26 @@ export default function ProductConfigurator({ product }) {
                 {selectedChoice?.title || visibleChoices[0]?.title}
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className={`grid gap-2 ${hasImages ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-2'}`}>
               {visibleChoices.map((choice) => (
                 <button
                   key={choice.id}
                   onClick={() => updateDynamicOption(group.id, choice)}
-                  className={`p-3 text-left rounded-lg border-2 transition-all ${
+                  className={`p-3 text-center rounded-lg border-2 transition-all ${
                     selectedChoice?.id === choice.id
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
+                  {choice.image_url && (
+                    <div className="w-full aspect-square mb-2 overflow-hidden rounded-md">
+                      <img 
+                        src={choice.image_url} 
+                        alt={choice.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
                   <div className="font-medium text-sm">{choice.title}</div>
                   {choice.hint && (
                     <div className="text-xs text-gray-500 mt-1">{choice.hint}</div>
