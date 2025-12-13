@@ -28,7 +28,7 @@ export default function ProductGrid({ products, isLoading }) {
         // Sale Logic
         const isOnSale = product.is_on_sale;
         const salePercent = product.sale_percentage || 0;
-        const originalPrice = product.base_price || 0;
+        const originalPrice = product.preset_sizes?.[0]?.price || product.base_price || 0;
         const displayPrice = isOnSale && salePercent > 0 
           ? (originalPrice * (1 - salePercent / 100)).toFixed(2) 
           : originalPrice.toFixed(2);
