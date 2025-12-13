@@ -531,7 +531,7 @@ export default function ProductConfigurator({ product }) {
                 {selectedChoice?.title || visibleChoices[0]?.title}
               </span>
             </div>
-            <div className={`grid gap-2 ${hasImages ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-2'}`}>
+            <div className="grid gap-2 grid-cols-2">
               {visibleChoices.map((choice) => (
                 <button
                   key={choice.id}
