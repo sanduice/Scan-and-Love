@@ -172,9 +172,9 @@ export default function ProductEditor({ product, categories, onSave, onCancel })
   };
 
   return (
-    <div className="flex flex-col h-full bg-white text-slate-900">
+    <div className="flex flex-col h-full min-h-0 bg-white text-slate-900">
       <div className="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
-        <form id="product-form" onSubmit={handleSubmit} className="space-y-8 max-w-5xl mx-auto">
+        <form id="product-form" onSubmit={handleSubmit} className="space-y-8 max-w-5xl mx-auto pb-16">
           
           <div className="flex items-center justify-between mb-6">
             <div>
