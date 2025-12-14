@@ -195,57 +195,41 @@ export default function ProductEditor({ product, categories, onSave, onCancel })
           </div>
 
           {/* Primary Category - Moved above tabs */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-6">
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold text-slate-700">Primary Category</Label>
-                <Select 
-                  value={formData.category_id} 
-                  onValueChange={(val) => handleInputChange('category_id', val)}
-                >
-                  <SelectTrigger className="h-11 border-slate-200 bg-white">
-                    <SelectValue placeholder="Select Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(c => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button 
-                  type="button" 
-                  variant="link" 
-                  size="sm" 
-                  className="h-auto p-0 text-blue-600 font-normal"
-                  onClick={() => {
-                      const name = prompt('Enter new category name:');
-                      if (name) {
-                        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-                        base44.entities.ProductCategory.create({ name, slug, order: 99 })
-                          .then((newCat) => {
-                            toast.success('Category created');
-                            handleInputChange('category_id', newCat.id);
-                          });
-                      }
-                  }}
-                >
-                  + Create New Category
-                </Button>
-              </div>
-              
-              {selectedCategory && (
-                <div className="flex items-center">
-                  <div className="bg-white rounded-lg px-4 py-3 border border-blue-200">
-                    <span className="text-xs text-slate-500">Selected:</span>
-                    <p className="font-semibold text-slate-900">{selectedCategory.name}</p>
-                    {isBannerCategory && (
-                      <span className="inline-block mt-1 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                        Banner Configuration Mode
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">Primary Category</Label>
+              <Select 
+                value={formData.category_id} 
+                onValueChange={(val) => handleInputChange('category_id', val)}
+              >
+                <SelectTrigger className="h-11 border-slate-200 bg-white">
+                  <SelectValue placeholder="Select Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button 
+                type="button" 
+                variant="link" 
+                size="sm" 
+                className="h-auto p-0 text-blue-600 font-normal"
+                onClick={() => {
+                    const name = prompt('Enter new category name:');
+                    if (name) {
+                      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                      base44.entities.ProductCategory.create({ name, slug, order: 99 })
+                        .then((newCat) => {
+                          toast.success('Category created');
+                          handleInputChange('category_id', newCat.id);
+                        });
+                    }
+                }}
+              >
+                + Create New Category
+              </Button>
             </div>
           </div>
 
