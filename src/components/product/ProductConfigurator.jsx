@@ -1264,54 +1264,73 @@ export default function ProductConfigurator({
       {/* Bottom padding when floating bar is visible */}
       {showFloatingBar && <div className="h-24" />}
 
-      {/* Floating Price Bar */}
+      {/* Floating Price Card - Right-aligned like static card */}
       {showFloatingBar && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-50 px-4 py-3 animate-fade-in">
-          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-            {/* Left: Price & Size Info */}
-            <div className="flex items-center gap-4">
-              <div className={`text-2xl font-bold ${calculatedPrice.isOnSale ? 'text-red-600' : 'text-green-600'}`}>
-                ${calculatedPrice.total}
-              </div>
-              <div className="hidden sm:block text-sm text-muted-foreground border-l border-gray-200 pl-4">
-                <span>{width} × {height} {product.size_unit === 'feet' ? 'ft' : 'in'}</span>
-                <span className="mx-2">•</span>
-                <span>Qty: {quantity}</span>
+        <div className="fixed bottom-4 left-0 right-0 z-50 px-4 lg:px-8 animate-fade-in">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid lg:grid-cols-2 gap-12">
+              {/* Empty left column to match layout */}
+              <div className="hidden lg:block" />
+              
+              {/* Floating card in right column */}
+              <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-gray-200 p-6">
+                {/* Price Breakdown */}
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-gray-600">{calculatedPrice.sqft} sq ft @ ${calculatedPrice.perSqFt}/sq ft</span>
+                  <span className="text-sm text-gray-500">× {quantity}</span>
+                </div>
+
+                {/* Total Price */}
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <span className="text-sm text-gray-500">Price:</span>
+                    <div className={`text-3xl font-bold ${calculatedPrice.isOnSale ? 'text-red-600' : 'text-green-600'}`}>
+                      ${calculatedPrice.total}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center text-green-600 text-sm">
+                      <Clock className="w-4 h-4 mr-1" />
+                      Ready to Ship
+                    </div>
+                    <div className="text-sm font-medium">{product.turnaround_days || 1} Business Day{(product.turnaround_days || 1) > 1 ? 's' : ''}</div>
+                  </div>
+                </div>
+
+                {/* CTA Button */}
+                {product.has_design_tool !== false ? (
+                  designMethod === 'design-online' ? (
+                    <Button 
+                      size="lg" 
+                      className={`w-full h-12 text-white font-semibold ${calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
+                      onClick={startDesigning}
+                    >
+                      <Palette className="w-5 h-5 mr-2" />
+                      Design Online
+                    </Button>
+                  ) : (
+                    <Button 
+                      size="lg" 
+                      className={`w-full h-12 text-white font-semibold ${calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
+                      onClick={handleAddToCartWithUploads}
+                      disabled={uploadedFiles.length === 0}
+                    >
+                      <ShoppingCart className="w-5 h-5 mr-2" />
+                      Add to Cart
+                    </Button>
+                  )
+                ) : (
+                  <Button 
+                    size="lg" 
+                    className={`w-full h-12 text-white font-semibold ${calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
+                    onClick={handleAddToCart}
+                  >
+                    <ShoppingCart className="w-5 h-5 mr-2" />
+                    Add to Cart
+                  </Button>
+                )}
               </div>
             </div>
-
-            {/* Right: CTA Button */}
-            {product.has_design_tool !== false ? (
-              designMethod === 'design-online' ? (
-                <Button 
-                  size="lg" 
-                  className={`h-12 px-6 text-white font-semibold ${calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
-                  onClick={startDesigning}
-                >
-                  <Palette className="w-4 h-4 mr-2" />
-                  Design Online
-                </Button>
-              ) : (
-                <Button 
-                  size="lg" 
-                  className={`h-12 px-6 text-white font-semibold ${calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
-                  onClick={handleAddToCartWithUploads}
-                  disabled={uploadedFiles.length === 0}
-                >
-                  <ShoppingCart className="w-4 h-4 mr-2" />
-                  Add to Cart
-                </Button>
-              )
-            ) : (
-              <Button 
-                size="lg" 
-                className={`h-12 px-6 text-white font-semibold ${calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
-                onClick={handleAddToCart}
-              >
-                <ShoppingCart className="w-4 h-4 mr-2" />
-                Add to Cart
-              </Button>
-            )}
           </div>
         </div>
       )}
