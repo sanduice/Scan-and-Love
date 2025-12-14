@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { 
-  Star, Upload, Palette, Clock, Truck, Shield, ChevronDown, ChevronUp, Check, Info, Loader2
+  Star, Upload, Palette, Clock, Truck, Shield, ChevronDown, ChevronUp, Check, Info, Loader2, Ruler
 } from 'lucide-react';
 import {
   Collapsible,
@@ -394,6 +394,11 @@ export default function ProductConfigurator({ product }) {
     return !product.is_fixed_size;
   }, [product]);
 
+  // Detect if any size has an image (for dual design mode)
+  const hasAnyImages = useMemo(() => {
+    return standardSizes.some(size => size.image_url);
+  }, [standardSizes]);
+
   // Get size unit label
   const sizeUnitLabel = useMemo(() => {
     const unit = product.size_unit || 'inches';
@@ -627,51 +632,107 @@ export default function ProductConfigurator({ product }) {
         <div className="p-6 border-b border-gray-100">
           <h3 className="font-semibold text-gray-900 mb-4">Size ({sizeUnitLabel})</h3>
           
-          {/* Quick Sizes */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            {standardSizes.map((size) => (
-              <button
-                key={size.label}
-                onClick={() => { 
-                  setWidth(size.width); 
-                  setHeight(size.height);
-                  setSizeKey(size.key || null);
-                  setSelectedPresetPrice(size.price !== undefined ? size.price : null);
-                  setIsCustomSize(false); // Deactivate custom mode when preset selected
-                }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                  !isCustomSize && width === size.width && height === size.height && (size.key ? sizeKey === size.key : true)
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {size.image_url && (
-                  <img 
-                    src={size.image_url} 
-                    alt={size.label}
-                    className="w-6 h-6 object-cover rounded"
-                  />
-                )}
-                {size.label}
-              </button>
-            ))}
-            {allowCustomSize && (
-              <button
-                onClick={() => {
-                  setIsCustomSize(true);
-                  setSizeKey(null);
-                  setSelectedPresetPrice(null);
-                }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  isCustomSize
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Custom
-              </button>
-            )}
-          </div>
+          {/* Quick Sizes - Dual Design Mode */}
+          {hasAnyImages ? (
+            /* Image Card Mode - when sizes have images */
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+              {standardSizes.map((size) => {
+                const isSelected = !isCustomSize && width === size.width && height === size.height && (size.key ? sizeKey === size.key : true);
+                return (
+                  <button
+                    key={size.label}
+                    onClick={() => { 
+                      setWidth(size.width); 
+                      setHeight(size.height);
+                      setSizeKey(size.key || null);
+                      setSelectedPresetPrice(size.price !== undefined ? size.price : null);
+                      setIsCustomSize(false);
+                    }}
+                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center text-center ${
+                      isSelected
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    {size.image_url ? (
+                      <img 
+                        src={size.image_url} 
+                        alt={size.label}
+                        className="w-16 h-16 object-cover rounded-lg mb-2"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
+                        <Ruler className="w-6 h-6 text-gray-400" />
+                      </div>
+                    )}
+                    <span className="font-medium text-sm text-gray-900">{size.label}</span>
+                    {size.price !== undefined && (
+                      <span className="text-xs text-muted-foreground mt-0.5">${parseFloat(size.price).toFixed(2)}</span>
+                    )}
+                  </button>
+                );
+              })}
+              {allowCustomSize && (
+                <button
+                  onClick={() => {
+                    setIsCustomSize(true);
+                    setSizeKey(null);
+                    setSelectedPresetPrice(null);
+                  }}
+                  className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center text-center ${
+                    isCustomSize
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                  }`}
+                >
+                  <div className="w-16 h-16 bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
+                    <Ruler className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <span className="font-medium text-sm text-gray-900">Custom</span>
+                  <span className="text-xs text-muted-foreground mt-0.5">Enter size</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            /* Text Mode - compact buttons when no images */
+            <div className="flex flex-wrap gap-2 mb-4">
+              {standardSizes.map((size) => (
+                <button
+                  key={size.label}
+                  onClick={() => { 
+                    setWidth(size.width); 
+                    setHeight(size.height);
+                    setSizeKey(size.key || null);
+                    setSelectedPresetPrice(size.price !== undefined ? size.price : null);
+                    setIsCustomSize(false);
+                  }}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    !isCustomSize && width === size.width && height === size.height && (size.key ? sizeKey === size.key : true)
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {size.label}
+                </button>
+              ))}
+              {allowCustomSize && (
+                <button
+                  onClick={() => {
+                    setIsCustomSize(true);
+                    setSizeKey(null);
+                    setSelectedPresetPrice(null);
+                  }}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    isCustomSize
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Custom
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Custom Size Inputs */}
           <div className="grid grid-cols-3 gap-4">
