@@ -1192,7 +1192,15 @@ export default function ProductConfigurator({
             {calculatedPrice.isOnSale}
             {quantity > 1 && <span className="text-sm text-gray-500">${calculatedPrice.unitPrice} each</span>}
           </div>
-          
+          <div className="text-right text-sm text-gray-500">
+            <div className="flex items-center gap-1 text-green-600">
+              <Clock className="w-4 h-4" />
+              <span>Ready to Ship</span>
+            </div>
+            <div className="font-medium text-gray-900 mt-1">
+              {product.turnaround_days || 1} Business Day
+            </div>
+          </div>
         </div>
 
         {/* Primary CTA */}
@@ -1270,12 +1278,7 @@ export default function ProductConfigurator({
 
                 {/* Total Price */}
                 <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <span className="text-sm text-gray-500">Price:</span>
-                    <div className={`text-3xl font-bold ${calculatedPrice.isOnSale ? 'text-red-600' : 'text-green-600'}`}>
-                      ${calculatedPrice.total}
-                    </div>
-                  </div>
+                  
                   <div className="text-right">
                     <div className="flex items-center text-green-600 text-sm">
                       <Clock className="w-4 h-4 mr-1" />
