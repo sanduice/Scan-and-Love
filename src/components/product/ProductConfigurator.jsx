@@ -195,7 +195,7 @@ export default function ProductConfigurator({ product }) {
 
   const [openSections, setOpenSections] = useState({
     size: true,
-    options: false,
+    options: true,
   });
 
   // Initialize selected options from product.product_options when product loads
