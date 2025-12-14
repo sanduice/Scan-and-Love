@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
@@ -437,6 +437,26 @@ export default function ProductConfigurator({
     size: true,
     options: true
   });
+
+  // Floating price bar visibility
+  const priceCardRef = useRef(null);
+  const [showFloatingBar, setShowFloatingBar] = useState(true);
+
+  // Observe when price card is in viewport
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowFloatingBar(!entry.isIntersecting);
+      },
+      { threshold: 0.3 }
+    );
+
+    if (priceCardRef.current) {
+      observer.observe(priceCardRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   // Design method state
   const [designMethod, setDesignMethod] = useState('design-online'); // 'design-online' | 'upload-artwork'
@@ -1154,7 +1174,7 @@ export default function ProductConfigurator({
       </div>
 
       {/* Price & Actions Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div ref={priceCardRef} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
         {/* Price Breakdown */}
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm text-gray-600">{calculatedPrice.sqft} sq ft @ ${calculatedPrice.perSqFt}/sq ft</span>
@@ -1240,5 +1260,60 @@ export default function ProductConfigurator({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Bottom padding when floating bar is visible */}
+      {showFloatingBar && <div className="h-24" />}
+
+      {/* Floating Price Bar */}
+      {showFloatingBar && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-50 px-4 py-3 animate-fade-in">
+          <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+            {/* Left: Price & Size Info */}
+            <div className="flex items-center gap-4">
+              <div className={`text-2xl font-bold ${calculatedPrice.isOnSale ? 'text-red-600' : 'text-green-600'}`}>
+                ${calculatedPrice.total}
+              </div>
+              <div className="hidden sm:block text-sm text-muted-foreground border-l border-gray-200 pl-4">
+                <span>{width} × {height} {product.size_unit === 'feet' ? 'ft' : 'in'}</span>
+                <span className="mx-2">•</span>
+                <span>Qty: {quantity}</span>
+              </div>
+            </div>
+
+            {/* Right: CTA Button */}
+            {product.has_design_tool !== false ? (
+              designMethod === 'design-online' ? (
+                <Button 
+                  size="lg" 
+                  className={`h-12 px-6 text-white font-semibold ${calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
+                  onClick={startDesigning}
+                >
+                  <Palette className="w-4 h-4 mr-2" />
+                  Design Online
+                </Button>
+              ) : (
+                <Button 
+                  size="lg" 
+                  className={`h-12 px-6 text-white font-semibold ${calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
+                  onClick={handleAddToCartWithUploads}
+                  disabled={uploadedFiles.length === 0}
+                >
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  Add to Cart
+                </Button>
+              )
+            ) : (
+              <Button 
+                size="lg" 
+                className={`h-12 px-6 text-white font-semibold ${calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
+                onClick={handleAddToCart}
+              >
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                Add to Cart
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
     </div>;
 }
