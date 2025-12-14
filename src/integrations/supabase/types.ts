@@ -783,37 +783,67 @@ export type Database = {
       }
       saved_designs: {
         Row: {
+          artwork_url: string | null
           created_at: string
           design_data: Json | null
+          finish: string | null
+          height: number | null
           id: string
+          is_in_cart: boolean | null
+          material: string | null
           name: string
+          options_json: Json | null
           product_id: string | null
+          product_type: string | null
+          quantity: number | null
           session_id: string | null
           thumbnail_url: string | null
+          unit_price: number | null
           updated_at: string
           user_id: string | null
+          width: number | null
         }
         Insert: {
+          artwork_url?: string | null
           created_at?: string
           design_data?: Json | null
+          finish?: string | null
+          height?: number | null
           id?: string
+          is_in_cart?: boolean | null
+          material?: string | null
           name: string
+          options_json?: Json | null
           product_id?: string | null
+          product_type?: string | null
+          quantity?: number | null
           session_id?: string | null
           thumbnail_url?: string | null
+          unit_price?: number | null
           updated_at?: string
           user_id?: string | null
+          width?: number | null
         }
         Update: {
+          artwork_url?: string | null
           created_at?: string
           design_data?: Json | null
+          finish?: string | null
+          height?: number | null
           id?: string
+          is_in_cart?: boolean | null
+          material?: string | null
           name?: string
+          options_json?: Json | null
           product_id?: string | null
+          product_type?: string | null
+          quantity?: number | null
           session_id?: string | null
           thumbnail_url?: string | null
+          unit_price?: number | null
           updated_at?: string
           user_id?: string | null
+          width?: number | null
         }
         Relationships: [
           {
