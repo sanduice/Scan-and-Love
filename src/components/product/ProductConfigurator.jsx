@@ -19,12 +19,12 @@ import { base44 } from '@/api/base44Client';
 import { usePricing } from '@/components/pricing/PricingCalculator';
 import { supabase } from '@/lib/supabase';
 
-// Helper to get or create session ID for anonymous users
+// Helper to get or create session ID for anonymous users (matches SessionManager)
 const getSessionId = () => {
-  let sessionId = localStorage.getItem('anonymous_session_id');
+  let sessionId = localStorage.getItem('netrave_session_id');
   if (!sessionId) {
-    sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2)}`;
-    localStorage.setItem('anonymous_session_id', sessionId);
+    sessionId = 'sess_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('netrave_session_id', sessionId);
   }
   return sessionId;
 };

@@ -187,10 +187,10 @@ export default function Cart() {
   const sessionId = getSessionId();
 
   const { data: savedDesigns = [], isLoading: loadingSavedDesigns } = useQuery({
-    queryKey: ['cart-items', ownerInfo?.email, sessionId],
+    queryKey: ['cart-items', ownerInfo?.userId, sessionId],
     queryFn: async () => {
       if (ownerInfo?.type === 'user') {
-        return base44.entities.SavedDesign.filter({ is_in_cart: true, created_by: ownerInfo.email });
+        return base44.entities.SavedDesign.filter({ is_in_cart: true, user_id: ownerInfo.userId });
       }
       return base44.entities.SavedDesign.filter({ is_in_cart: true, session_id: sessionId });
     },
@@ -198,10 +198,10 @@ export default function Cart() {
   });
 
   const { data: badgeOrders = [], isLoading: loadingBadgeOrders } = useQuery({
-    queryKey: ['cart-badge-orders', ownerInfo?.email, sessionId],
+    queryKey: ['cart-badge-orders', ownerInfo?.userId, sessionId],
     queryFn: async () => {
       if (ownerInfo?.type === 'user') {
-        return base44.entities.NameBadgeOrder.filter({ is_in_cart: true, created_by: ownerInfo.email });
+        return base44.entities.NameBadgeOrder.filter({ is_in_cart: true, user_id: ownerInfo.userId });
       }
       return base44.entities.NameBadgeOrder.filter({ is_in_cart: true, session_id: sessionId });
     },
