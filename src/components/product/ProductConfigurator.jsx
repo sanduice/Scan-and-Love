@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { 
-  Star, Upload, Palette, Clock, Truck, Shield, ChevronDown, ChevronUp, Check, Info, Loader2, Ruler
+  Star, Upload, Palette, Clock, Truck, Shield, ChevronDown, ChevronUp, Check, Info, Loader2, Ruler, X, ShoppingCart, FileText
 } from 'lucide-react';
 import {
   Collapsible,
@@ -197,6 +197,11 @@ export default function ProductConfigurator({ product }) {
     size: true,
     options: true,
   });
+
+  // Design method state
+  const [designMethod, setDesignMethod] = useState('design-online'); // 'design-online' | 'upload-artwork'
+  const [uploadedFiles, setUploadedFiles] = useState([]); // Array of uploaded file objects {name, url}
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
 
   // Initialize selected options from product.product_options when product loads
   useEffect(() => {
@@ -405,7 +410,7 @@ export default function ProductConfigurator({ product }) {
     return unit === 'feet' ? 'in Feet' : 'in Inches';
   }, [product.size_unit]);
 
-  // Handle file upload
+  // Handle single file upload (legacy)
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -422,7 +427,66 @@ export default function ProductConfigurator({ product }) {
     }
   };
 
-  // Add to cart with uploaded file
+  // Handle multi-file upload for artwork
+  const handleMultiFileUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setIsUploadingFiles(true);
+    try {
+      const uploadPromises = files.map(async (file) => {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        return { name: file.name, url: file_url };
+      });
+      
+      const uploadedResults = await Promise.all(uploadPromises);
+      setUploadedFiles(prev => [...prev, ...uploadedResults]);
+      toast.success(`${uploadedResults.length} file(s) uploaded successfully!`);
+    } catch (err) {
+      toast.error('Failed to upload one or more files');
+    } finally {
+      setIsUploadingFiles(false);
+    }
+  };
+
+  // Remove uploaded file
+  const removeUploadedFile = (index) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Add to cart with uploaded artwork files
+  const handleAddToCartWithUploads = async () => {
+    if (uploadedFiles.length === 0) {
+      toast.error('Please upload at least one artwork file');
+      return;
+    }
+
+    try {
+      await base44.entities.SavedDesign.create({
+        name: product.name,
+        product_type: product.slug,
+        width,
+        height,
+        quantity,
+        unit_price: parseFloat(calculatedPrice.unitPrice),
+        is_in_cart: true,
+        artwork_url: uploadedFiles[0].url, // Primary artwork
+        design_data: JSON.stringify({ 
+          uploadedFiles: uploadedFiles,
+          designMethod: 'upload-artwork'
+        }),
+        options_json: JSON.stringify({ ...selectedOptions, sizeKey }),
+        material: selectedOptions.thickness,
+        finish: selectedOptions.finish,
+      });
+      toast.success('Added to cart!');
+      navigate(createPageUrl('Cart'));
+    } catch (err) {
+      toast.error('Failed to add to cart');
+    }
+  };
+
+  // Add to cart with uploaded file (legacy single file)
   const handleAddToCart = async () => {
     try {
       await base44.entities.SavedDesign.create({
@@ -848,8 +912,110 @@ export default function ProductConfigurator({ product }) {
           </CollapsibleContent>
         </Collapsible>
 
+        {/* Select Your Design Method Section */}
+        {product.has_design_tool !== false && (
+          <div className="px-6 py-6 border-b border-gray-100">
+            <h3 className="font-semibold text-gray-900 mb-4">Select Your Design Method</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {/* Design with Namebadge Print */}
+              <button
+                onClick={() => setDesignMethod('design-online')}
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  designMethod === 'design-online'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                    designMethod === 'design-online' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                  }`}>
+                    {designMethod === 'design-online' && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">Design with Namebadge Print</div>
+                    <div className="text-sm text-muted-foreground mt-1">Create custom design online</div>
+                  </div>
+                </div>
+              </button>
+
+              {/* Upload Your Own Artwork */}
+              <button
+                onClick={() => setDesignMethod('upload-artwork')}
+                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                  designMethod === 'upload-artwork'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                    designMethod === 'upload-artwork' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                  }`}>
+                    {designMethod === 'upload-artwork' && <Check className="w-3 h-3 text-white" />}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">Upload Your Own Artwork</div>
+                    <div className="text-sm text-muted-foreground mt-1">Upload pre-designed files</div>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Price & Actions */}
         <div className="px-6 py-6 bg-gray-50">
+          {/* Upload Area - Show when Upload Artwork is selected */}
+          {designMethod === 'upload-artwork' && product.has_design_tool !== false && (
+            <div className="mb-6">
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-500 transition-colors bg-white">
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png,.ai,.psd"
+                  onChange={handleMultiFileUpload}
+                  className="hidden"
+                  id="multi-file-upload"
+                  multiple
+                />
+                <label htmlFor="multi-file-upload" className="cursor-pointer">
+                  {isUploadingFiles ? (
+                    <Loader2 className="w-10 h-10 mx-auto text-blue-500 animate-spin mb-3" />
+                  ) : (
+                    <Upload className="w-10 h-10 mx-auto text-gray-400 mb-3" />
+                  )}
+                  <div className="font-medium text-gray-700">
+                    {isUploadingFiles ? 'Uploading...' : 'Click to upload or drag files here'}
+                  </div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    PDF, JPG, PNG, AI, PSD (Max 50MB per file)
+                  </div>
+                </label>
+              </div>
+
+              {/* Uploaded Files List */}
+              {uploadedFiles.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <div className="text-sm font-medium text-gray-700">Uploaded Files ({uploadedFiles.length})</div>
+                  {uploadedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-blue-500" />
+                        <span className="text-sm text-gray-700 truncate max-w-[200px]">{file.name}</span>
+                      </div>
+                      <button
+                        onClick={() => removeUploadedFile(index)}
+                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Price Breakdown */}
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-gray-600">{calculatedPrice.sqft} sq ft @ ${calculatedPrice.perSqFt}/sq ft</span>
@@ -889,10 +1055,10 @@ export default function ProductConfigurator({ product }) {
             </div>
           </div>
 
-          {/* Primary CTA - Replicating Signs.com flow */}
+          {/* Primary CTA */}
           <div className="flex flex-col gap-3 mb-6">
             {product.has_design_tool !== false ? (
-              <>
+              designMethod === 'design-online' ? (
                 <Button 
                   size="lg" 
                   className={`w-full h-14 text-white text-lg font-semibold ${
@@ -903,26 +1069,19 @@ export default function ProductConfigurator({ product }) {
                   Design Online
                   <Palette className="w-5 h-5 ml-2" />
                 </Button>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <Button 
-                    variant="outline" 
-                    className="h-12 border-gray-300 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50"
-                    onClick={() => setShowUploadDialog(true)}
-                  >
-                    <Upload className="w-5 h-5 mr-2" />
-                    Upload File
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="h-12 border-gray-300 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50"
-                    onClick={startDesigning}
-                  >
-                    <Info className="w-5 h-5 mr-2" />
-                    Let Us Design
-                  </Button>
-                </div>
-              </>
+              ) : (
+                <Button 
+                  size="lg" 
+                  className={`w-full h-14 text-white text-lg font-semibold ${
+                    calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+                  }`}
+                  onClick={handleAddToCartWithUploads}
+                  disabled={uploadedFiles.length === 0}
+                >
+                  <ShoppingCart className="w-5 h-5 mr-2" />
+                  Add to Cart - ${calculatedPrice.total}
+                </Button>
+              )
             ) : (
               <Button 
                 size="lg" 
@@ -938,8 +1097,7 @@ export default function ProductConfigurator({ product }) {
         </div>
       </div>
 
-
-      {/* Upload Dialog */}
+      {/* Upload Dialog (Legacy - keeping for backwards compatibility) */}
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
