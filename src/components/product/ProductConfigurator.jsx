@@ -215,6 +215,9 @@ export default function ProductConfigurator({ product }) {
     }
   }, [product.product_options]);
 
+  // Track whether initial size has been set (to avoid resetting on re-renders)
+  const [initialSizeSet, setInitialSizeSet] = useState(false);
+
   const toggleSection = (section) => {
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
@@ -363,16 +366,17 @@ export default function ProductConfigurator({ product }) {
     return STANDARD_SIZES['default'];
   }, [product]);
 
-  // Initialize with first size when standardSizes are available
+  // Initialize with first size ONLY on first load (not on every standardSizes change)
   useEffect(() => {
-    if (standardSizes && standardSizes.length > 0) {
+    if (!initialSizeSet && standardSizes && standardSizes.length > 0) {
       const firstSize = standardSizes[0];
       setWidth(firstSize.width);
       setHeight(firstSize.height);
       setSizeKey(firstSize.key || null);
       setSelectedPresetPrice(firstSize.price !== undefined ? firstSize.price : null);
+      setInitialSizeSet(true);
     }
-  }, [standardSizes]);
+  }, [standardSizes, initialSizeSet]);
 
   // Determine if custom sizes are allowed
   const allowCustomSize = useMemo(() => {
