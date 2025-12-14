@@ -715,77 +715,17 @@ export default function ProductConfigurator({ product }) {
         </div>
       </div>
 
-      {/* Configuration Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* Size Section */}
-        <div className="p-6 border-b border-gray-100">
-          <h3 className="font-semibold text-gray-900 mb-4">Size ({sizeUnitLabel})</h3>
-          
-          {/* Quick Sizes - Dual Design Mode */}
-          {hasAnyImages ? (
-            /* Image Card Mode - when sizes have images */
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
-              {standardSizes.map((size) => {
-                const isSelected = !isCustomSize && width === size.width && height === size.height && (size.key ? sizeKey === size.key : true);
-                return (
-                  <button
-                    key={size.label}
-                    onClick={() => { 
-                      setWidth(size.width); 
-                      setHeight(size.height);
-                      setSizeKey(size.key || null);
-                      setSelectedPresetPrice(size.price !== undefined ? size.price : null);
-                      setIsCustomSize(false);
-                    }}
-                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center text-center ${
-                      isSelected
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300 bg-white'
-                    }`}
-                  >
-                    {size.image_url ? (
-                      <img 
-                        src={size.image_url} 
-                        alt={size.label}
-                        className="w-16 h-16 object-cover rounded-lg mb-2"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
-                        <Ruler className="w-6 h-6 text-gray-400" />
-                      </div>
-                    )}
-                    <span className="font-medium text-sm text-gray-900">{size.label}</span>
-                    {size.price !== undefined && (
-                      <span className="text-xs text-muted-foreground mt-0.5">${parseFloat(size.price).toFixed(2)}</span>
-                    )}
-                  </button>
-                );
-              })}
-              {allowCustomSize && (
-                <button
-                  onClick={() => {
-                    setIsCustomSize(true);
-                    setSizeKey(null);
-                    setSelectedPresetPrice(null);
-                  }}
-                  className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center text-center ${
-                    isCustomSize
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}
-                >
-                  <div className="w-16 h-16 bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
-                    <Ruler className="w-6 h-6 text-gray-400" />
-                  </div>
-                  <span className="font-medium text-sm text-gray-900">Custom</span>
-                  <span className="text-xs text-muted-foreground mt-0.5">Enter size</span>
-                </button>
-              )}
-            </div>
-          ) : (
-            /* Text Mode - compact buttons when no images */
-            <div className="flex flex-wrap gap-2 mb-4">
-              {standardSizes.map((size) => (
+      {/* Size Card */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Size ({sizeUnitLabel})</h3>
+        
+        {/* Quick Sizes - Dual Design Mode */}
+        {hasAnyImages ? (
+          /* Image Card Mode - when sizes have images */
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+            {standardSizes.map((size) => {
+              const isSelected = !isCustomSize && width === size.width && height === size.height && (size.key ? sizeKey === size.key : true);
+              return (
                 <button
                   key={size.label}
                   onClick={() => { 
@@ -795,95 +735,146 @@ export default function ProductConfigurator({ product }) {
                     setSelectedPresetPrice(size.price !== undefined ? size.price : null);
                     setIsCustomSize(false);
                   }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    !isCustomSize && width === size.width && height === size.height && (size.key ? sizeKey === size.key : true)
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center text-center ${
+                    isSelected
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}
                 >
-                  {size.label}
+                  {size.image_url ? (
+                    <img 
+                      src={size.image_url} 
+                      alt={size.label}
+                      className="w-16 h-16 object-cover rounded-lg mb-2"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
+                      <Ruler className="w-6 h-6 text-gray-400" />
+                    </div>
+                  )}
+                  <span className="font-medium text-sm text-gray-900">{size.label}</span>
+                  {size.price !== undefined && (
+                    <span className="text-xs text-muted-foreground mt-0.5">${parseFloat(size.price).toFixed(2)}</span>
+                  )}
                 </button>
-              ))}
-              {allowCustomSize && (
-                <button
-                  onClick={() => {
-                    setIsCustomSize(true);
-                    setSizeKey(null);
-                    setSelectedPresetPrice(null);
-                  }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    isCustomSize
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Custom
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Custom Size Inputs */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-sm text-gray-600">W ({product.size_unit === 'feet' ? 'ft' : 'in'}):</Label>
-              <Input
-                type="number"
-                value={width}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setWidth(val === '' ? '' : Math.max(1, Number(val)));
-                  setSizeKey(null); // Custom size invalidates key
-                  setSelectedPresetPrice(null); // Clear preset price for custom sizes
-                  setIsCustomSize(true); // Activate custom mode when typing
+              );
+            })}
+            {allowCustomSize && (
+              <button
+                onClick={() => {
+                  setIsCustomSize(true);
+                  setSizeKey(null);
+                  setSelectedPresetPrice(null);
                 }}
-                onBlur={() => {
-                  // Ensure valid number on blur
-                  if (width === '' || width < 1) setWidth(1);
-                }}
-                disabled={!allowCustomSize && !isCustomSize}
-                className="mt-1 h-12 text-lg disabled:opacity-50 disabled:bg-gray-100"
-              />
-            </div>
-            <div>
-              <Label className="text-sm text-gray-600">H ({product.size_unit === 'feet' ? 'ft' : 'in'}):</Label>
-              <Input
-                type="number"
-                value={height}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setHeight(val === '' ? '' : Math.max(1, Number(val)));
-                  setSizeKey(null); // Custom size invalidates key
-                  setSelectedPresetPrice(null); // Clear preset price for custom sizes
-                  setIsCustomSize(true); // Activate custom mode when typing
-                }}
-                onBlur={() => {
-                  // Ensure valid number on blur
-                  if (height === '' || height < 1) setHeight(1);
-                }}
-                disabled={!allowCustomSize && !isCustomSize}
-                className="mt-1 h-12 text-lg disabled:opacity-50 disabled:bg-gray-100"
-              />
-            </div>
+                className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center text-center ${
+                  isCustomSize
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+              >
+                <div className="w-16 h-16 bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
+                  <Ruler className="w-6 h-6 text-gray-400" />
+                </div>
+                <span className="font-medium text-sm text-gray-900">Custom</span>
+                <span className="text-xs text-muted-foreground mt-0.5">Enter size</span>
+              </button>
+            )}
           </div>
-          
-          <button className="text-sm text-blue-600 hover:underline mt-2">
-            Buy More, Save More!
-          </button>
-        </div>
+        ) : (
+          /* Text Mode - compact buttons when no images */
+          <div className="flex flex-wrap gap-2 mb-4">
+            {standardSizes.map((size) => (
+              <button
+                key={size.label}
+                onClick={() => { 
+                  setWidth(size.width); 
+                  setHeight(size.height);
+                  setSizeKey(size.key || null);
+                  setSelectedPresetPrice(size.price !== undefined ? size.price : null);
+                  setIsCustomSize(false);
+                }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  !isCustomSize && width === size.width && height === size.height && (size.key ? sizeKey === size.key : true)
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {size.label}
+              </button>
+            ))}
+            {allowCustomSize && (
+              <button
+                onClick={() => {
+                  setIsCustomSize(true);
+                  setSizeKey(null);
+                  setSelectedPresetPrice(null);
+                }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  isCustomSize
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Custom
+              </button>
+            )}
+          </div>
+        )}
 
-        {/* Options Section */}
+        {/* Custom Size Inputs */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label className="text-sm text-gray-600">W ({product.size_unit === 'feet' ? 'ft' : 'in'}):</Label>
+            <Input
+              type="number"
+              value={width}
+              onChange={(e) => {
+                const val = e.target.value;
+                setWidth(val === '' ? '' : Math.max(1, Number(val)));
+                setSizeKey(null);
+                setSelectedPresetPrice(null);
+                setIsCustomSize(true);
+              }}
+              onBlur={() => {
+                if (width === '' || width < 1) setWidth(1);
+              }}
+              disabled={!allowCustomSize && !isCustomSize}
+              className="mt-1 h-12 text-lg disabled:opacity-50 disabled:bg-gray-100"
+            />
+          </div>
+          <div>
+            <Label className="text-sm text-gray-600">H ({product.size_unit === 'feet' ? 'ft' : 'in'}):</Label>
+            <Input
+              type="number"
+              value={height}
+              onChange={(e) => {
+                const val = e.target.value;
+                setHeight(val === '' ? '' : Math.max(1, Number(val)));
+                setSizeKey(null);
+                setSelectedPresetPrice(null);
+                setIsCustomSize(true);
+              }}
+              onBlur={() => {
+                if (height === '' || height < 1) setHeight(1);
+              }}
+              disabled={!allowCustomSize && !isCustomSize}
+              className="mt-1 h-12 text-lg disabled:opacity-50 disabled:bg-gray-100"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Product Options Card */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <Collapsible open={openSections.options} onOpenChange={() => toggleSection('options')}>
-          <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between border-b border-gray-100 hover:bg-gray-50 transition-colors">
+          <CollapsibleTrigger className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
             <span className="font-semibold text-gray-900">Product Options</span>
             {openSections.options ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
           </CollapsibleTrigger>
-          <CollapsibleContent className="px-6">
-            {/* NEW: Render from product_options if available */}
+          <CollapsibleContent className="px-6 pb-6">
             {product.product_options && product.product_options.length > 0 ? (
               renderDynamicProductOptions()
             ) : (
-              // LEGACY: Keep old hardcoded options for products not yet configured
               <>
                 {!product.hidden_options?.includes('thickness') && renderOptionGroup('Material', product.material_options || product.thickness_options || [
                   { name: 'Standard Material', description: 'High quality print' },
@@ -913,7 +904,6 @@ export default function ProductConfigurator({ product }) {
                   { name: '3" Top Only', description: 'Top pocket only', price_modifier: 5 },
                 ], selectedOptions.polePockets, 'polePockets')}
                 
-                {/* Only show accessories if not a sticker/label/decal/cling */}
                 {!(product.slug?.includes('sticker') || product.slug?.includes('label') || product.slug?.includes('decal') || product.slug?.includes('cling')) && !product.hidden_options?.includes('accessory') && renderOptionGroup('Accessories', [
                   { name: 'None', description: 'No accessories' },
                   { name: 'Bungees (8)', description: '12" rubber bungee cords', price: 9.99 },
@@ -926,92 +916,60 @@ export default function ProductConfigurator({ product }) {
             )}
           </CollapsibleContent>
         </Collapsible>
+      </div>
 
-        {/* Select Your Design Method Section */}
-        {product.has_design_tool !== false && (
-          <div className="px-6 py-6 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-900 mb-4">Select Your Design Method</h3>
-            <div className="grid grid-cols-2 gap-3">
-              {/* Design with Namebadge Print */}
-              <button
-                onClick={() => setDesignMethod('design-online')}
-                className={`p-4 rounded-xl border-2 transition-all text-center ${
-                  designMethod === 'design-online'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300 bg-white'
-                }`}
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    designMethod === 'design-online' ? 'bg-blue-500' : 'bg-gray-100'
-                  }`}>
-                    <Palette className={`w-5 h-5 ${designMethod === 'design-online' ? 'text-white' : 'text-gray-500'}`} />
-                  </div>
-                  <div>
-                    <div className="font-medium text-sm text-gray-900">Design with Namebadge Print</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">Create custom design online</div>
-                  </div>
-                </div>
-              </button>
-
-              {/* Upload Your Own Artwork */}
-              <button
-                onClick={() => setDesignMethod('upload-artwork')}
-                className={`p-4 rounded-xl border-2 transition-all text-center ${
-                  designMethod === 'upload-artwork'
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300 bg-white'
-                }`}
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    designMethod === 'upload-artwork' ? 'bg-blue-500' : 'bg-gray-100'
-                  }`}>
-                    <Upload className={`w-5 h-5 ${designMethod === 'upload-artwork' ? 'text-white' : 'text-gray-500'}`} />
-                  </div>
-                  <div>
-                    <div className="font-medium text-sm text-gray-900">Upload Your Own Artwork</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">Upload pre-designed files</div>
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Quantity Section */}
-        <div className="px-6 py-6 border-b border-gray-100">
-          <h3 className="font-semibold text-gray-900 mb-4">Quantity</h3>
-          <div className="flex items-center gap-3">
+      {/* Design Method Card */}
+      {product.has_design_tool !== false && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <h3 className="font-semibold text-gray-900 mb-4">Select Your Design Method</h3>
+          <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="w-12 h-12 rounded-lg border border-gray-300 flex items-center justify-center text-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+              onClick={() => setDesignMethod('design-online')}
+              className={`p-4 rounded-xl border-2 transition-all text-center ${
+                designMethod === 'design-online'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300 bg-white'
+              }`}
             >
-              −
+              <div className="flex flex-col items-center gap-2">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  designMethod === 'design-online' ? 'bg-blue-500' : 'bg-gray-100'
+                }`}>
+                  <Palette className={`w-5 h-5 ${designMethod === 'design-online' ? 'text-white' : 'text-gray-500'}`} />
+                </div>
+                <div>
+                  <div className="font-medium text-sm text-gray-900">Design with Namebadge Print</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Create custom design online</div>
+                </div>
+              </div>
             </button>
-            <Input
-              type="number"
-              value={quantity}
-              onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-              min={1}
-              className="w-24 h-12 text-lg text-center"
-            />
+
             <button
-              onClick={() => setQuantity(quantity + 1)}
-              className="w-12 h-12 rounded-lg border border-gray-300 flex items-center justify-center text-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+              onClick={() => setDesignMethod('upload-artwork')}
+              className={`p-4 rounded-xl border-2 transition-all text-center ${
+                designMethod === 'upload-artwork'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300 bg-white'
+              }`}
             >
-              +
+              <div className="flex flex-col items-center gap-2">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  designMethod === 'upload-artwork' ? 'bg-blue-500' : 'bg-gray-100'
+                }`}>
+                  <Upload className={`w-5 h-5 ${designMethod === 'upload-artwork' ? 'text-white' : 'text-gray-500'}`} />
+                </div>
+                <div>
+                  <div className="font-medium text-sm text-gray-900">Upload Your Own Artwork</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Upload pre-designed files</div>
+                </div>
+              </div>
             </button>
           </div>
-          <p className="text-sm text-muted-foreground mt-2">Buy more, save more!</p>
-        </div>
 
-        {/* Price & Actions */}
-        <div className="px-6 py-6 bg-gray-50">
           {/* Upload Area - Show when Upload Artwork is selected */}
-          {designMethod === 'upload-artwork' && product.has_design_tool !== false && (
-            <div className="mb-6">
-              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-500 transition-colors bg-white">
+          {designMethod === 'upload-artwork' && (
+            <div className="mt-6">
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-500 transition-colors bg-gray-50">
                 <input
                   type="file"
                   accept=".pdf,.jpg,.jpeg,.png,.ai,.psd"
@@ -1040,7 +998,7 @@ export default function ProductConfigurator({ product }) {
                 <div className="mt-4 space-y-2">
                   <div className="text-sm font-medium text-gray-700">Uploaded Files ({uploadedFiles.length})</div>
                   {uploadedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
                       <div className="flex items-center gap-3">
                         <FileText className="w-5 h-5 text-blue-500" />
                         <span className="text-sm text-gray-700 truncate max-w-[200px]">{file.name}</span>
@@ -1057,85 +1015,115 @@ export default function ProductConfigurator({ product }) {
               )}
             </div>
           )}
+        </div>
+      )}
 
-          {/* Price Breakdown */}
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-600">{calculatedPrice.sqft} sq ft @ ${calculatedPrice.perSqFt}/sq ft</span>
-            <span className="text-sm text-gray-600">× {quantity}</span>
-          </div>
-          
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <span className="text-sm text-gray-500">Price:</span>
-              <div className="flex items-baseline gap-3">
-                <div className={`text-4xl font-bold ${calculatedPrice.isOnSale ? 'text-red-600' : 'text-green-600'}`}>
-                  ${calculatedPrice.total}
-                </div>
-                {calculatedPrice.isOnSale && (
-                  <div className="text-lg text-gray-400 line-through">
-                    ${calculatedPrice.regularTotal}
-                  </div>
-                )}
+      {/* Quantity Card */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Quantity</h3>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setQuantity(Math.max(1, quantity - 1))}
+            className="w-12 h-12 rounded-lg border border-gray-300 flex items-center justify-center text-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            −
+          </button>
+          <Input
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+            min={1}
+            className="w-24 h-12 text-lg text-center"
+          />
+          <button
+            onClick={() => setQuantity(quantity + 1)}
+            className="w-12 h-12 rounded-lg border border-gray-300 flex items-center justify-center text-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            +
+          </button>
+        </div>
+        <p className="text-sm text-muted-foreground mt-2">Buy more, save more!</p>
+      </div>
+
+      {/* Price & Actions Card */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        {/* Price Breakdown */}
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm text-gray-600">{calculatedPrice.sqft} sq ft @ ${calculatedPrice.perSqFt}/sq ft</span>
+          <span className="text-sm text-gray-600">× {quantity}</span>
+        </div>
+        
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <span className="text-sm text-gray-500">Price:</span>
+            <div className="flex items-baseline gap-3">
+              <div className={`text-4xl font-bold ${calculatedPrice.isOnSale ? 'text-red-600' : 'text-green-600'}`}>
+                ${calculatedPrice.total}
               </div>
               {calculatedPrice.isOnSale && (
-                <div className="text-sm font-bold text-red-600 mb-1">
-                  SAVE {calculatedPrice.salePercentage}%
+                <div className="text-lg text-gray-400 line-through">
+                  ${calculatedPrice.regularTotal}
                 </div>
               )}
-              {quantity > 1 && (
-                <span className="text-sm text-gray-500">${calculatedPrice.unitPrice} each</span>
-              )}
             </div>
-            <div className="text-right text-sm text-gray-500">
-              <div className="flex items-center gap-1 text-green-600">
-                <Clock className="w-4 h-4" />
-                <span>Ready to Ship</span>
+            {calculatedPrice.isOnSale && (
+              <div className="text-sm font-bold text-red-600 mb-1">
+                SAVE {calculatedPrice.salePercentage}%
               </div>
-              <div className="font-medium text-gray-900 mt-1">
-                {product.turnaround_days || 1} Business Day
-              </div>
+            )}
+            {quantity > 1 && (
+              <span className="text-sm text-gray-500">${calculatedPrice.unitPrice} each</span>
+            )}
+          </div>
+          <div className="text-right text-sm text-gray-500">
+            <div className="flex items-center gap-1 text-green-600">
+              <Clock className="w-4 h-4" />
+              <span>Ready to Ship</span>
+            </div>
+            <div className="font-medium text-gray-900 mt-1">
+              {product.turnaround_days || 1} Business Day
             </div>
           </div>
+        </div>
 
-          {/* Primary CTA */}
-          <div className="flex flex-col gap-3 mb-6">
-            {product.has_design_tool !== false ? (
-              designMethod === 'design-online' ? (
-                <Button 
-                  size="lg" 
-                  className={`w-full h-14 text-white text-lg font-semibold ${
-                    calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
-                  }`}
-                  onClick={startDesigning}
-                >
-                  Design Online
-                  <Palette className="w-5 h-5 ml-2" />
-                </Button>
-              ) : (
-                <Button 
-                  size="lg" 
-                  className={`w-full h-14 text-white text-lg font-semibold ${
-                    calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
-                  }`}
-                  onClick={handleAddToCartWithUploads}
-                  disabled={uploadedFiles.length === 0}
-                >
-                  <ShoppingCart className="w-5 h-5 mr-2" />
-                  Add to Cart - ${calculatedPrice.total}
-                </Button>
-              )
+        {/* Primary CTA */}
+        <div className="flex flex-col gap-3">
+          {product.has_design_tool !== false ? (
+            designMethod === 'design-online' ? (
+              <Button 
+                size="lg" 
+                className={`w-full h-14 text-white text-lg font-semibold ${
+                  calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+                }`}
+                onClick={startDesigning}
+              >
+                Design Online
+                <Palette className="w-5 h-5 ml-2" />
+              </Button>
             ) : (
               <Button 
                 size="lg" 
                 className={`w-full h-14 text-white text-lg font-semibold ${
                   calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
                 }`}
-                onClick={handleAddToCart}
+                onClick={handleAddToCartWithUploads}
+                disabled={uploadedFiles.length === 0}
               >
+                <ShoppingCart className="w-5 h-5 mr-2" />
                 Add to Cart - ${calculatedPrice.total}
               </Button>
-            )}
-          </div>
+            )
+          ) : (
+            <Button 
+              size="lg" 
+              className={`w-full h-14 text-white text-lg font-semibold ${
+                calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+              }`}
+              onClick={handleAddToCart}
+            >
+              Add to Cart - ${calculatedPrice.total}
+            </Button>
+          )}
         </div>
       </div>
 
