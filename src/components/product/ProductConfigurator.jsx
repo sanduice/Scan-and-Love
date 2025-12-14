@@ -17,6 +17,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { usePricing } from '@/components/pricing/PricingCalculator';
+import { supabase } from '@/lib/supabase';
+
+// Helper to get or create session ID for anonymous users
+const getSessionId = () => {
+  let sessionId = localStorage.getItem('anonymous_session_id');
+  if (!sessionId) {
+    sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2)}`;
+    localStorage.setItem('anonymous_session_id', sessionId);
+  }
+  return sessionId;
+};
 
 // Standard sizes with optional keys for fixed pricing
 const STANDARD_SIZES = {
@@ -462,6 +473,9 @@ export default function ProductConfigurator({ product }) {
     }
 
     try {
+      // Get current user for RLS compliance
+      const { data: { user } } = await supabase.auth.getUser();
+
       await base44.entities.SavedDesign.create({
         name: product.name,
         product_type: product.slug,
@@ -478,10 +492,14 @@ export default function ProductConfigurator({ product }) {
         options_json: JSON.stringify({ ...selectedOptions, sizeKey }),
         material: selectedOptions.thickness,
         finish: selectedOptions.finish,
+        // RLS: user_id for authenticated, session_id for anonymous
+        user_id: user?.id || null,
+        session_id: user ? null : getSessionId(),
       });
       toast.success('Added to cart!');
       navigate(createPageUrl('Cart'));
     } catch (err) {
+      console.error('Add to cart error:', err);
       toast.error('Failed to add to cart');
     }
   };
@@ -489,6 +507,9 @@ export default function ProductConfigurator({ product }) {
   // Add to cart with uploaded file (legacy single file)
   const handleAddToCart = async () => {
     try {
+      // Get current user for RLS compliance
+      const { data: { user } } = await supabase.auth.getUser();
+
       await base44.entities.SavedDesign.create({
         name: product.name,
         product_type: product.slug,
@@ -501,10 +522,14 @@ export default function ProductConfigurator({ product }) {
         options_json: JSON.stringify({ ...selectedOptions, sizeKey }),
         material: selectedOptions.thickness,
         finish: selectedOptions.finish,
+        // RLS: user_id for authenticated, session_id for anonymous
+        user_id: user?.id || null,
+        session_id: user ? null : getSessionId(),
       });
       toast.success('Added to cart!');
       navigate(createPageUrl('Cart'));
     } catch (err) {
+      console.error('Add to cart error:', err);
       toast.error('Failed to add to cart');
     }
   };
