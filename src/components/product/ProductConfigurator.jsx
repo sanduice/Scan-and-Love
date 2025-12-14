@@ -444,17 +444,14 @@ export default function ProductConfigurator({
 
   // Observe when price card is in viewport
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setShowFloatingBar(!entry.isIntersecting);
-      },
-      { threshold: 0.3 }
-    );
-
+    const observer = new IntersectionObserver(([entry]) => {
+      setShowFloatingBar(!entry.isIntersecting);
+    }, {
+      threshold: 0.3
+    });
     if (priceCardRef.current) {
       observer.observe(priceCardRef.current);
     }
-
     return () => observer.disconnect();
   }, []);
 
@@ -1195,15 +1192,7 @@ export default function ProductConfigurator({
             {calculatedPrice.isOnSale}
             {quantity > 1 && <span className="text-sm text-gray-500">${calculatedPrice.unitPrice} each</span>}
           </div>
-          <div className="text-right text-sm text-gray-500">
-            <div className="flex items-center gap-1 text-green-600">
-              <Clock className="w-4 h-4" />
-              <span>Ready to Ship</span>
-            </div>
-            <div className="font-medium text-gray-900 mt-1">
-              {product.turnaround_days || 1} Business Day
-            </div>
-          </div>
+          
         </div>
 
         {/* Primary CTA */}
@@ -1265,8 +1254,7 @@ export default function ProductConfigurator({
       {showFloatingBar && <div className="h-24" />}
 
       {/* Floating Price Card - Right-aligned like static card */}
-      {showFloatingBar && (
-        <div className="fixed bottom-4 left-0 right-0 z-50 px-4 lg:px-8 animate-fade-in">
+      {showFloatingBar && <div className="fixed bottom-4 left-0 right-0 z-50 px-4 lg:px-8 animate-fade-in">
           <div className="max-w-7xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12">
               {/* Empty left column to match layout */}
@@ -1298,41 +1286,19 @@ export default function ProductConfigurator({
                 </div>
 
                 {/* CTA Button */}
-                {product.has_design_tool !== false ? (
-                  designMethod === 'design-online' ? (
-                    <Button 
-                      size="lg" 
-                      className={`w-full h-12 text-white font-semibold ${calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
-                      onClick={startDesigning}
-                    >
+                {product.has_design_tool !== false ? designMethod === 'design-online' ? <Button size="lg" className={`w-full h-12 text-white font-semibold ${calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`} onClick={startDesigning}>
                       <Palette className="w-5 h-5 mr-2" />
                       Design Online
-                    </Button>
-                  ) : (
-                    <Button 
-                      size="lg" 
-                      className={`w-full h-12 text-white font-semibold ${calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
-                      onClick={handleAddToCartWithUploads}
-                      disabled={uploadedFiles.length === 0}
-                    >
+                    </Button> : <Button size="lg" className={`w-full h-12 text-white font-semibold ${calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`} onClick={handleAddToCartWithUploads} disabled={uploadedFiles.length === 0}>
                       <ShoppingCart className="w-5 h-5 mr-2" />
                       Add to Cart
-                    </Button>
-                  )
-                ) : (
-                  <Button 
-                    size="lg" 
-                    className={`w-full h-12 text-white font-semibold ${calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
-                    onClick={handleAddToCart}
-                  >
+                    </Button> : <Button size="lg" className={`w-full h-12 text-white font-semibold ${calculatedPrice.isOnSale ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`} onClick={handleAddToCart}>
                     <ShoppingCart className="w-5 h-5 mr-2" />
                     Add to Cart
-                  </Button>
-                )}
+                  </Button>}
               </div>
             </div>
           </div>
-        </div>
-      )}
+        </div>}
     </div>;
 }
