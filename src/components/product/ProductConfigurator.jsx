@@ -920,21 +920,21 @@ export default function ProductConfigurator({ product }) {
               {/* Design with Namebadge Print */}
               <button
                 onClick={() => setDesignMethod('design-online')}
-                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                className={`p-4 rounded-xl border-2 transition-all text-center ${
                   designMethod === 'design-online'
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300 bg-white'
                 }`}
               >
-                <div className="flex items-start gap-3">
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                    designMethod === 'design-online' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                <div className="flex flex-col items-center gap-2">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    designMethod === 'design-online' ? 'bg-blue-500' : 'bg-gray-100'
                   }`}>
-                    {designMethod === 'design-online' && <Check className="w-3 h-3 text-white" />}
+                    <Palette className={`w-5 h-5 ${designMethod === 'design-online' ? 'text-white' : 'text-gray-500'}`} />
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">Design with Namebadge Print</div>
-                    <div className="text-sm text-muted-foreground mt-1">Create custom design online</div>
+                    <div className="font-medium text-sm text-gray-900">Design with Namebadge Print</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Create custom design online</div>
                   </div>
                 </div>
               </button>
@@ -942,21 +942,21 @@ export default function ProductConfigurator({ product }) {
               {/* Upload Your Own Artwork */}
               <button
                 onClick={() => setDesignMethod('upload-artwork')}
-                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                className={`p-4 rounded-xl border-2 transition-all text-center ${
                   designMethod === 'upload-artwork'
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300 bg-white'
                 }`}
               >
-                <div className="flex items-start gap-3">
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                    designMethod === 'upload-artwork' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
+                <div className="flex flex-col items-center gap-2">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    designMethod === 'upload-artwork' ? 'bg-blue-500' : 'bg-gray-100'
                   }`}>
-                    {designMethod === 'upload-artwork' && <Check className="w-3 h-3 text-white" />}
+                    <Upload className={`w-5 h-5 ${designMethod === 'upload-artwork' ? 'text-white' : 'text-gray-500'}`} />
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">Upload Your Own Artwork</div>
-                    <div className="text-sm text-muted-foreground mt-1">Upload pre-designed files</div>
+                    <div className="font-medium text-sm text-gray-900">Upload Your Own Artwork</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">Upload pre-designed files</div>
                   </div>
                 </div>
               </button>
