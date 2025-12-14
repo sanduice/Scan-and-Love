@@ -340,7 +340,8 @@ export default function ProductConfigurator({ product }) {
           width: parseFloat(size.width),
           height: parseFloat(size.height),
           price: size.price ? parseFloat(size.price) : undefined,
-          key: size.key
+          key: size.key,
+          image_url: size.image_url || null
         }));
     }
     
@@ -638,12 +639,19 @@ export default function ProductConfigurator({ product }) {
                   setSelectedPresetPrice(size.price !== undefined ? size.price : null);
                   setIsCustomSize(false); // Deactivate custom mode when preset selected
                 }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
                   !isCustomSize && width === size.width && height === size.height && (size.key ? sizeKey === size.key : true)
                     ? 'bg-blue-500 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
+                {size.image_url && (
+                  <img 
+                    src={size.image_url} 
+                    alt={size.label}
+                    className="w-6 h-6 object-cover rounded"
+                  />
+                )}
                 {size.label}
               </button>
             ))}

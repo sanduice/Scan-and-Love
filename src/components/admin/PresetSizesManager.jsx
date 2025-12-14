@@ -1,9 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, DollarSign } from 'lucide-react';
+import { Plus, Trash2, DollarSign, Camera, X, Loader2 } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
+import { toast } from 'sonner';
 
 export default function PresetSizesManager({ 
   presetSizes = [], 
@@ -15,6 +17,8 @@ export default function PresetSizesManager({
   onPricingTypeChange,
   onPricePerSqftChange
 }) {
+  const [uploadingIndex, setUploadingIndex] = useState(null);
+  const fileInputRefs = useRef({});
   
   // Calculate price based on dimensions and price per sqft
   const calculateSqFtPrice = (width, height) => {
@@ -44,7 +48,7 @@ export default function PresetSizesManager({
   }, [pricingType, pricePerSqft]);
 
   const addSize = () => {
-    const newSize = { width: 24, height: 36, price: 0, is_active: true };
+    const newSize = { width: 24, height: 36, price: 0, is_active: true, image_url: null };
     if (pricingType === 'per_sqft' && pricePerSqft > 0) {
       newSize.price = parseFloat(calculateSqFtPrice(24, 36));
     }
@@ -77,6 +81,31 @@ export default function PresetSizesManager({
   const toggleActive = (index) => {
     const updated = [...presetSizes];
     updated[index] = { ...updated[index], is_active: !updated[index].is_active };
+    onSizesChange(updated);
+  };
+
+  // Handle image upload for a preset size
+  const handleImageUpload = async (index, file) => {
+    if (!file) return;
+    
+    setUploadingIndex(index);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const updated = [...presetSizes];
+      updated[index] = { ...updated[index], image_url: file_url };
+      onSizesChange(updated);
+      toast.success('Image uploaded');
+    } catch (err) {
+      toast.error('Failed to upload image');
+    } finally {
+      setUploadingIndex(null);
+    }
+  };
+
+  // Remove image from a preset size
+  const removeImage = (index) => {
+    const updated = [...presetSizes];
+    updated[index] = { ...updated[index], image_url: null };
     onSizesChange(updated);
   };
 
@@ -187,7 +216,8 @@ export default function PresetSizesManager({
         {presetSizes.length > 0 ? (
           <div className="space-y-3">
             {/* Header Row */}
-            <div className="grid grid-cols-9 gap-3 px-3 text-xs text-slate-500 font-medium">
+            <div className="grid grid-cols-11 gap-3 px-3 text-xs text-slate-500 font-medium">
+              <div className="col-span-1">Image</div>
               <div className="col-span-2">Width ({sizeUnit === 'feet' ? 'ft' : 'in'})</div>
               <div className="col-span-2">Height ({sizeUnit === 'feet' ? 'ft' : 'in'})</div>
               <div className="col-span-2">
@@ -197,18 +227,65 @@ export default function PresetSizesManager({
                 )}
               </div>
               <div className="col-span-2">Active</div>
-              <div className="col-span-1"></div>
+              <div className="col-span-2"></div>
             </div>
 
             {presetSizes.map((size, idx) => (
               <div 
                 key={idx} 
-                className={`grid grid-cols-9 gap-3 items-start p-3 rounded-xl border transition-colors ${
+                className={`grid grid-cols-11 gap-3 items-start p-3 rounded-xl border transition-colors ${
                   size.is_active 
                     ? 'bg-white border-slate-200 hover:border-blue-300' 
                     : 'bg-slate-100 border-slate-200 opacity-60'
                 }`}
               >
+                {/* Image Upload Column */}
+                <div className="col-span-1 pt-0.5">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={el => fileInputRefs.current[idx] = el}
+                    onChange={(e) => handleImageUpload(idx, e.target.files?.[0])}
+                  />
+                  {size.image_url ? (
+                    <div className="relative group w-12 h-12">
+                      <img 
+                        src={size.image_url} 
+                        alt="Size thumbnail"
+                        className="w-12 h-12 object-cover rounded-lg border border-slate-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRefs.current[idx]?.click()}
+                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center"
+                      >
+                        <Camera className="w-4 h-4 text-white" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRefs.current[idx]?.click()}
+                      disabled={uploadingIndex === idx}
+                      className="w-12 h-12 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center hover:border-blue-400 hover:bg-blue-50 transition-colors"
+                    >
+                      {uploadingIndex === idx ? (
+                        <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                      ) : (
+                        <Camera className="w-4 h-4 text-slate-400" />
+                      )}
+                    </button>
+                  )}
+                </div>
+
                 <div className="col-span-2 pt-0.5">
                   <Input
                     type="number"
@@ -262,7 +339,7 @@ export default function PresetSizesManager({
                     {size.is_active !== false ? 'On' : 'Off'}
                   </span>
                 </div>
-                <div className="col-span-1 flex justify-end h-9 mt-0.5">
+                <div className="col-span-2 flex justify-end h-9 mt-0.5">
                   <Button
                     type="button"
                     variant="ghost"
