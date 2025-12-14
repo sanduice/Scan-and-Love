@@ -565,7 +565,9 @@ export type Database = {
           options: Json | null
           order: number | null
           preset_sizes: Json | null
+          price_per_sqft: number | null
           pricing_tiers: Json | null
+          pricing_type: string | null
           product_options: Json | null
           sale_percentage: number | null
           sale_price: number | null
@@ -611,7 +613,9 @@ export type Database = {
           options?: Json | null
           order?: number | null
           preset_sizes?: Json | null
+          price_per_sqft?: number | null
           pricing_tiers?: Json | null
+          pricing_type?: string | null
           product_options?: Json | null
           sale_percentage?: number | null
           sale_price?: number | null
@@ -657,7 +661,9 @@ export type Database = {
           options?: Json | null
           order?: number | null
           preset_sizes?: Json | null
+          price_per_sqft?: number | null
           pricing_tiers?: Json | null
+          pricing_type?: string | null
           product_options?: Json | null
           sale_percentage?: number | null
           sale_price?: number | null

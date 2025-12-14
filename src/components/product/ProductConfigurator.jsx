@@ -244,9 +244,15 @@ export default function ProductConfigurator({ product }) {
     let unitPrice = 0;
     let regularUnitPrice = 0;
     
-    // PRIORITY 1: Use preset size price if a preset with price is selected
-    if (selectedPresetPrice !== null && selectedPresetPrice !== undefined) {
+    // PRIORITY 1: Use preset size price if a preset with price is selected (custom pricing mode)
+    if (selectedPresetPrice !== null && selectedPresetPrice !== undefined && product.pricing_type !== 'per_sqft') {
       unitPrice = parseFloat(selectedPresetPrice);
+      regularUnitPrice = unitPrice;
+    } 
+    // PRIORITY 2: Calculate from per_sqft if that pricing mode is set
+    else if (product.pricing_type === 'per_sqft' && product.price_per_sqft > 0) {
+      const sqFt = (width * height) / 144;
+      unitPrice = sqFt * product.price_per_sqft;
       regularUnitPrice = unitPrice;
     } else {
       // PRIORITY 2: Use calculated pricing from usePricing hook

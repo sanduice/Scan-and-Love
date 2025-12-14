@@ -63,6 +63,9 @@ export default function ProductEditor({ product, categories, onSave, onCancel })
     allow_custom_size: product?.allow_custom_size !== false,
     preset_sizes: product?.preset_sizes || [],
     product_options: product?.product_options || [],
+    // Pricing type fields
+    pricing_type: product?.pricing_type || 'custom',
+    price_per_sqft: product?.price_per_sqft || 0,
   });
 
   // Check if selected category is "Banners" related
@@ -621,8 +624,12 @@ export default function ProductEditor({ product, categories, onSave, onCancel })
               <PresetSizesManager 
                 presetSizes={formData.preset_sizes}
                 sizeUnit={formData.size_unit}
+                pricingType={formData.pricing_type}
+                pricePerSqft={formData.price_per_sqft}
                 onSizesChange={(sizes) => handleInputChange('preset_sizes', sizes)}
                 onUnitChange={(unit) => handleInputChange('size_unit', unit)}
+                onPricingTypeChange={(type) => handleInputChange('pricing_type', type)}
+                onPricePerSqftChange={(price) => handleInputChange('price_per_sqft', price)}
               />
 
               {/* Custom Size Settings */}
