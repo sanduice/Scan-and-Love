@@ -534,12 +534,45 @@ export default function Cart() {
                       </div>
                     </div>
 
-                    {/* Quantity/Badges Info */}
+                    {/* Product Options & Details */}
                     <div className="text-sm text-gray-600 mb-3">
                       {item.itemType === 'badge' ? (
                         <span>{item.quantity} badge{item.quantity !== 1 ? 's' : ''}{item.border && item.border !== 'none' ? ` • ${item.border} border` : ''}</span>
                       ) : (
-                        <span>{item.material || ''}</span>
+                        <div className="space-y-1">
+                          {/* Parse and display selected options with prices */}
+                          {(() => {
+                            try {
+                              const options = typeof item.options_json === 'string' 
+                                ? JSON.parse(item.options_json) 
+                                : (item.options_json || {});
+                              
+                              // Get options that are objects with title and price
+                              const selectedOptions = Object.entries(options)
+                                .filter(([key, val]) => 
+                                  val && typeof val === 'object' && val.title && val.price > 0
+                                )
+                                .map(([key, val]) => val);
+                              
+                              if (selectedOptions.length > 0) {
+                                return (
+                                  <div className="flex flex-wrap gap-x-2 gap-y-1">
+                                    {selectedOptions.map((opt, idx) => (
+                                      <span key={idx} className="inline-flex items-center">
+                                        <span className="text-gray-700">{opt.title}</span>
+                                        <span className="text-green-600 ml-1">+${Number(opt.price).toFixed(2)}</span>
+                                        {idx < selectedOptions.length - 1 && <span className="ml-2 text-gray-300">•</span>}
+                                      </span>
+                                    ))}
+                                  </div>
+                                );
+                              }
+                              return null;
+                            } catch (e) {
+                              return null;
+                            }
+                          })()}
+                        </div>
                       )}
                     </div>
 
