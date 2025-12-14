@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -414,6 +415,7 @@ export default function ProductConfigurator({
   product
 }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [width, setWidth] = useState(product.default_width || 72);
   const [height, setHeight] = useState(product.default_height || 36);
   const [sizeKey, setSizeKey] = useState(product.default_size_key || null);
@@ -768,6 +770,9 @@ export default function ProductConfigurator({
         session_id: user ? null : getSessionId()
       });
       toast.success('Added to cart!');
+      // Invalidate cart queries so Cart page fetches fresh data
+      queryClient.invalidateQueries({ queryKey: ['cart-items'] });
+      queryClient.invalidateQueries({ queryKey: ['cart-badge-orders'] });
       navigate(createPageUrl('Cart'));
     } catch (err) {
       console.error('Add to cart error:', err);
@@ -804,6 +809,9 @@ export default function ProductConfigurator({
         session_id: user ? null : getSessionId()
       });
       toast.success('Added to cart!');
+      // Invalidate cart queries so Cart page fetches fresh data
+      queryClient.invalidateQueries({ queryKey: ['cart-items'] });
+      queryClient.invalidateQueries({ queryKey: ['cart-badge-orders'] });
       navigate(createPageUrl('Cart'));
     } catch (err) {
       console.error('Add to cart error:', err);
