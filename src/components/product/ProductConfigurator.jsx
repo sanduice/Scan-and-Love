@@ -442,10 +442,21 @@ export default function ProductConfigurator({
   const priceCardRef = useRef(null);
   const [showFloatingBar, setShowFloatingBar] = useState(true);
 
-  // Observe when price card is in viewport
+  // Observe when price card is in viewport - show floating bar only when price card is below viewport
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => {
-      setShowFloatingBar(!entry.isIntersecting);
+      const rect = entry.boundingClientRect;
+      
+      if (entry.isIntersecting) {
+        // Card is visible - hide floating bar
+        setShowFloatingBar(false);
+      } else if (rect.top > 0) {
+        // Card is below viewport (not scrolled to yet) - show floating bar
+        setShowFloatingBar(true);
+      } else {
+        // Card is above viewport (scrolled past) - hide floating bar
+        setShowFloatingBar(false);
+      }
     }, {
       threshold: 0.3
     });
