@@ -434,14 +434,5 @@ export function useBlogPost(slug) {
   });
 }
 
-// Auth helper
-export function useAuth() {
-  return useQuery({
-    queryKey: ['auth-user'],
-    queryFn: async () => {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) throw error;
-      return user;
-    },
-  });
-}
+// Note: For auth, use the AuthContext from '@/contexts/AuthContext' instead
+// This avoids duplicate useAuth exports and provides a more complete auth solution
