@@ -232,13 +232,12 @@ export default function Cart() {
 
   const updateQuantity = (item, newQty) => {
     if (newQty < 1) return;
-    const sqft = (item.width * item.height) / 144;
-    const pricePerSqFt = 3.26; // Base price
-    const unitPrice = Math.max(sqft * pricePerSqFt, 25 / newQty);
     
+    // Only update quantity - unit_price was already correctly calculated 
+    // when the item was added to cart (includes preset prices, options, etc.)
     updateMutation.mutate({
       id: item.id,
-      data: { quantity: newQty, unit_price: unitPrice },
+      data: { quantity: newQty },
     });
   };
 
