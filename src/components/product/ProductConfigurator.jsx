@@ -938,20 +938,6 @@ export default function ProductConfigurator({ product }) {
         </div>
       </div>
 
-      {/* Features List */}
-      {product.features && product.features.length > 0 && (
-        <div className="bg-white rounded-xl p-6 border border-gray-200">
-          <h3 className="font-semibold text-gray-900 mb-4">Product Features</h3>
-          <ul className="space-y-2">
-            {product.features.map((feature, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <Check className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-700">{feature}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       {/* Upload Dialog */}
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
