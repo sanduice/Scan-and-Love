@@ -1270,11 +1270,6 @@ export default function ProductConfigurator({
               
               {/* Floating card in right column */}
               <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-gray-200 p-6">
-                {/* Price Breakdown */}
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">{calculatedPrice.sqft} sq ft @ ${calculatedPrice.perSqFt}/sq ft</span>
-                  <span className="text-sm text-gray-500">× {quantity}</span>
-                </div>
 
                 {/* Total Price */}
                 <div className="flex items-center justify-between mb-4">
