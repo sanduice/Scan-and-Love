@@ -218,7 +218,30 @@ export default function Cart() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.SavedDesign.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cart-items'] }),
+    onMutate: async ({ id, data }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['cart-items'] });
+      
+      // Snapshot the previous value for rollback
+      const previousItems = queryClient.getQueryData(['cart-items']);
+      
+      // Optimistically update the cache immediately
+      queryClient.setQueryData(['cart-items'], (old) => 
+        old?.map(item => item.id === id ? { ...item, ...data } : item)
+      );
+      
+      return { previousItems };
+    },
+    onError: (err, variables, context) => {
+      // Rollback to previous value on error
+      if (context?.previousItems) {
+        queryClient.setQueryData(['cart-items'], context.previousItems);
+      }
+      toast.error('Failed to update quantity');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart-items'] });
+    },
   });
 
   const deleteMutation = useMutation({
