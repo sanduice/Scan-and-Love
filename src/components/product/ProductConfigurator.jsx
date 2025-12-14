@@ -824,7 +824,7 @@ export default function ProductConfigurator({ product }) {
           )}
 
           {/* Custom Size Inputs */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-sm text-gray-600">W ({product.size_unit === 'feet' ? 'ft' : 'in'}):</Label>
               <Input
@@ -863,16 +863,6 @@ export default function ProductConfigurator({ product }) {
                 }}
                 disabled={!allowCustomSize && !isCustomSize}
                 className="mt-1 h-12 text-lg disabled:opacity-50 disabled:bg-gray-100"
-              />
-            </div>
-            <div>
-              <Label className="text-sm text-gray-600">Quantity:</Label>
-              <Input
-                type="number"
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                min={1}
-                className="mt-1 h-12 text-lg"
               />
             </div>
           </div>
@@ -988,6 +978,33 @@ export default function ProductConfigurator({ product }) {
             </div>
           </div>
         )}
+
+        {/* Quantity Section */}
+        <div className="px-6 py-6 border-b border-gray-100">
+          <h3 className="font-semibold text-gray-900 mb-4">Quantity</h3>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setQuantity(Math.max(1, quantity - 1))}
+              className="w-12 h-12 rounded-lg border border-gray-300 flex items-center justify-center text-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              −
+            </button>
+            <Input
+              type="number"
+              value={quantity}
+              onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+              min={1}
+              className="w-24 h-12 text-lg text-center"
+            />
+            <button
+              onClick={() => setQuantity(quantity + 1)}
+              className="w-12 h-12 rounded-lg border border-gray-300 flex items-center justify-center text-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              +
+            </button>
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">Buy more, save more!</p>
+        </div>
 
         {/* Price & Actions */}
         <div className="px-6 py-6 bg-gray-50">
