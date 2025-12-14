@@ -1278,7 +1278,14 @@ export default function ProductConfigurator({
 
                 {/* Total Price */}
                 <div className="flex items-center justify-between mb-4">
-                  
+                  <div>
+                    <div className={`text-3xl font-bold ${calculatedPrice.isOnSale ? 'text-red-600' : 'text-green-600'}`}>
+                      ${calculatedPrice.total}
+                    </div>
+                    {calculatedPrice.isOnSale && <div className="text-sm text-gray-400 line-through">
+                        ${calculatedPrice.originalTotal}
+                      </div>}
+                  </div>
                   <div className="text-right">
                     <div className="flex items-center text-green-600 text-sm">
                       <Clock className="w-4 h-4 mr-1" />
