@@ -203,13 +203,13 @@ export default function PresetSizesManager({
             {presetSizes.map((size, idx) => (
               <div 
                 key={idx} 
-                className={`grid grid-cols-9 gap-3 items-center p-3 rounded-xl border transition-colors ${
+                className={`grid grid-cols-9 gap-3 items-start p-3 rounded-xl border transition-colors ${
                   size.is_active 
                     ? 'bg-white border-slate-200 hover:border-blue-300' 
                     : 'bg-slate-100 border-slate-200 opacity-60'
                 }`}
               >
-                <div className="col-span-2">
+                <div className="col-span-2 pt-0.5">
                   <Input
                     type="number"
                     step="0.1"
@@ -219,7 +219,7 @@ export default function PresetSizesManager({
                     placeholder="24"
                   />
                 </div>
-                <div className="col-span-2">
+                <div className="col-span-2 pt-0.5">
                   <Input
                     type="number"
                     step="0.1"
@@ -229,7 +229,7 @@ export default function PresetSizesManager({
                     placeholder="36"
                   />
                 </div>
-                <div className="col-span-2">
+                <div className="col-span-2 pt-0.5">
                   <div className="relative">
                     <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
                     <Input
@@ -248,12 +248,12 @@ export default function PresetSizesManager({
                     />
                   </div>
                   {pricingType === 'per_sqft' && (
-                    <p className="text-[10px] text-blue-500 mt-0.5">
+                    <p className="text-[10px] text-blue-500 mt-1">
                       {((size.width * size.height) / 144).toFixed(2)} sq ft
                     </p>
                   )}
                 </div>
-                <div className="col-span-2 flex items-center">
+                <div className="col-span-2 flex items-center h-9 mt-0.5">
                   <Switch
                     checked={size.is_active !== false}
                     onCheckedChange={() => toggleActive(idx)}
@@ -262,7 +262,7 @@ export default function PresetSizesManager({
                     {size.is_active !== false ? 'On' : 'Off'}
                   </span>
                 </div>
-                <div className="col-span-1 flex justify-end">
+                <div className="col-span-1 flex justify-end h-9 mt-0.5">
                   <Button
                     type="button"
                     variant="ghost"
