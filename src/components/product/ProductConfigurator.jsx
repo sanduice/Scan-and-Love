@@ -663,12 +663,17 @@ export default function ProductConfigurator({ product }) {
                 type="number"
                 value={width}
                 onChange={(e) => {
-                  setWidth(Math.max(1, Number(e.target.value)));
+                  const val = e.target.value;
+                  setWidth(val === '' ? '' : Math.max(1, Number(val)));
                   setSizeKey(null); // Custom size invalidates key
                   setSelectedPresetPrice(null); // Clear preset price for custom sizes
                   setIsCustomSize(true); // Activate custom mode when typing
                 }}
-                disabled={!allowCustomSize}
+                onBlur={() => {
+                  // Ensure valid number on blur
+                  if (width === '' || width < 1) setWidth(1);
+                }}
+                disabled={!allowCustomSize && !isCustomSize}
                 className="mt-1 h-12 text-lg disabled:opacity-50 disabled:bg-gray-100"
               />
             </div>
@@ -678,12 +683,17 @@ export default function ProductConfigurator({ product }) {
                 type="number"
                 value={height}
                 onChange={(e) => {
-                  setHeight(Math.max(1, Number(e.target.value)));
+                  const val = e.target.value;
+                  setHeight(val === '' ? '' : Math.max(1, Number(val)));
                   setSizeKey(null); // Custom size invalidates key
                   setSelectedPresetPrice(null); // Clear preset price for custom sizes
                   setIsCustomSize(true); // Activate custom mode when typing
                 }}
-                disabled={!allowCustomSize}
+                onBlur={() => {
+                  // Ensure valid number on blur
+                  if (height === '' || height < 1) setHeight(1);
+                }}
+                disabled={!allowCustomSize && !isCustomSize}
                 className="mt-1 h-12 text-lg disabled:opacity-50 disabled:bg-gray-100"
               />
             </div>
