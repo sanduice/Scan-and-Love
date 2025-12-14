@@ -176,6 +176,7 @@ export default function ProductConfigurator({ product }) {
   const [height, setHeight] = useState(product.default_height || 36);
   const [sizeKey, setSizeKey] = useState(product.default_size_key || null);
   const [selectedPresetPrice, setSelectedPresetPrice] = useState(null); // Track preset's fixed price
+  const [isCustomSize, setIsCustomSize] = useState(false); // Track if user is in custom size mode
   const [quantity, setQuantity] = useState(1);
   const [isUploading, setIsUploading] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -625,9 +626,10 @@ export default function ProductConfigurator({ product }) {
                   setHeight(size.height);
                   setSizeKey(size.key || null);
                   setSelectedPresetPrice(size.price !== undefined ? size.price : null);
+                  setIsCustomSize(false); // Deactivate custom mode when preset selected
                 }}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  width === size.width && height === size.height && (size.key ? sizeKey === size.key : true)
+                  !isCustomSize && width === size.width && height === size.height && (size.key ? sizeKey === size.key : true)
                     ? 'bg-blue-500 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
@@ -637,7 +639,16 @@ export default function ProductConfigurator({ product }) {
             ))}
             {allowCustomSize && (
               <button
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200"
+                onClick={() => {
+                  setIsCustomSize(true);
+                  setSizeKey(null);
+                  setSelectedPresetPrice(null);
+                }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  isCustomSize
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
                 Custom
               </button>
@@ -655,6 +666,7 @@ export default function ProductConfigurator({ product }) {
                   setWidth(Math.max(1, Number(e.target.value)));
                   setSizeKey(null); // Custom size invalidates key
                   setSelectedPresetPrice(null); // Clear preset price for custom sizes
+                  setIsCustomSize(true); // Activate custom mode when typing
                 }}
                 disabled={!allowCustomSize}
                 className="mt-1 h-12 text-lg disabled:opacity-50 disabled:bg-gray-100"
@@ -669,6 +681,7 @@ export default function ProductConfigurator({ product }) {
                   setHeight(Math.max(1, Number(e.target.value)));
                   setSizeKey(null); // Custom size invalidates key
                   setSelectedPresetPrice(null); // Clear preset price for custom sizes
+                  setIsCustomSize(true); // Activate custom mode when typing
                 }}
                 disabled={!allowCustomSize}
                 className="mt-1 h-12 text-lg disabled:opacity-50 disabled:bg-gray-100"
