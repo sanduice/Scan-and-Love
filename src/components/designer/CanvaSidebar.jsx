@@ -88,6 +88,154 @@ const LINES_ARROWS = [
   { id: 'double-arrow', name: 'Double ↔', icon: MoveHorizontal },
 ];
 
+// Basic Arrows - 30+ directional/block/curved arrows
+const BASIC_ARROWS = [
+  // Simple directional arrows
+  { id: 'arrow-simple-right', name: 'Simple →', svg: 'M5,18 L25,18 L25,12 L35,20 L25,28 L25,22 L5,22 Z' },
+  { id: 'arrow-simple-left', name: 'Simple ←', svg: 'M35,18 L15,18 L15,12 L5,20 L15,28 L15,22 L35,22 Z' },
+  { id: 'arrow-simple-up', name: 'Simple ↑', svg: 'M18,35 L18,15 L12,15 L20,5 L28,15 L22,15 L22,35 Z' },
+  { id: 'arrow-simple-down', name: 'Simple ↓', svg: 'M18,5 L18,25 L12,25 L20,35 L28,25 L22,25 L22,5 Z' },
+  // Block arrows (thick filled)
+  { id: 'arrow-block-right', name: 'Block →', svg: 'M2,14 L24,14 L24,6 L38,20 L24,34 L24,26 L2,26 Z' },
+  { id: 'arrow-block-left', name: 'Block ←', svg: 'M38,14 L16,14 L16,6 L2,20 L16,34 L16,26 L38,26 Z' },
+  { id: 'arrow-block-up', name: 'Block ↑', svg: 'M14,38 L14,16 L6,16 L20,2 L34,16 L26,16 L26,38 Z' },
+  { id: 'arrow-block-down', name: 'Block ↓', svg: 'M14,2 L14,24 L6,24 L20,38 L34,24 L26,24 L26,2 Z' },
+  // Multi-directional
+  { id: 'arrow-4way', name: '4-Way', svg: 'M20,2 L26,10 L22,10 L22,18 L30,18 L30,14 L38,20 L30,26 L30,22 L22,22 L22,30 L26,30 L20,38 L14,30 L18,30 L18,22 L10,22 L10,26 L2,20 L10,14 L10,18 L18,18 L18,10 L14,10 Z' },
+  { id: 'arrow-horizontal', name: 'H-Arrow', svg: 'M2,20 L10,14 L10,18 L30,18 L30,14 L38,20 L30,26 L30,22 L10,22 L10,26 Z' },
+  { id: 'arrow-vertical', name: 'V-Arrow', svg: 'M20,2 L26,10 L22,10 L22,30 L26,30 L20,38 L14,30 L18,30 L18,10 L14,10 Z' },
+  // Bent/corner arrows
+  { id: 'arrow-bent-right', name: 'Bent →', svg: 'M4,4 L4,20 L8,20 L8,8 L28,8 L28,4 L36,12 L28,20 L28,12 L4,12 Z' },
+  { id: 'arrow-bent-left', name: 'Bent ←', svg: 'M36,4 L36,20 L32,20 L32,8 L12,8 L12,4 L4,12 L12,20 L12,12 L36,12 Z' },
+  { id: 'arrow-bent-up', name: 'Bent ↑', svg: 'M36,36 L20,36 L20,32 L32,32 L32,12 L28,12 L36,4 L36,12 L36,4 L36,12 L28,12 L32,12 L32,36 Z M20,36 L20,12 L28,12 L20,4 L12,12 L20,12 Z' },
+  { id: 'arrow-corner-up', name: 'Corner ↑', svg: 'M4,36 L4,32 L28,32 L28,12 L24,12 L32,4 L40,12 L36,12 L36,36 Z' },
+  { id: 'arrow-corner-down', name: 'Corner ↓', svg: 'M4,4 L4,8 L28,8 L28,28 L24,28 L32,36 L40,28 L36,28 L36,4 Z' },
+  // Curved arrows
+  { id: 'arrow-uturn-right', name: 'U-Turn →', svg: 'M8,32 L8,16 Q8,8 16,8 L24,8 Q32,8 32,16 L32,22 L28,22 L32,30 L36,22 L32,22 L32,16 Q32,12 28,12 L12,12 Q12,12 12,16 L12,32 Z' },
+  { id: 'arrow-uturn-left', name: 'U-Turn ←', svg: 'M32,32 L32,16 Q32,8 24,8 L16,8 Q8,8 8,16 L8,22 L12,22 L8,30 L4,22 L8,22 L8,16 Q8,12 12,12 L28,12 Q28,12 28,16 L28,32 Z' },
+  { id: 'arrow-circular', name: 'Circular', svg: 'M20,4 L24,10 L22,10 A8,8 0 1 1 10,20 L16,20 A2,2 0 1 0 18,14 L18,10 L14,10 Z' },
+  { id: 'arrow-refresh', name: 'Refresh', svg: 'M34,20 Q34,12 26,8 L26,4 L18,10 L26,16 L26,12 Q30,14 30,20 Q30,26 24,30 L24,34 Q34,30 34,20 Z M6,20 Q6,28 14,32 L14,36 L22,30 L14,24 L14,28 Q10,26 10,20 Q10,14 16,10 L16,6 Q6,10 6,20 Z' },
+  // Chevrons
+  { id: 'chevron-right', name: 'Chevron →', svg: 'M8,4 L28,20 L8,36 L14,20 Z' },
+  { id: 'chevron-left', name: 'Chevron ←', svg: 'M32,4 L12,20 L32,36 L26,20 Z' },
+  { id: 'chevron-double', name: 'Double >', svg: 'M4,4 L18,20 L4,36 L10,20 Z M18,4 L32,20 L18,36 L24,20 Z' },
+  { id: 'chevron-triple', name: 'Triple >', svg: 'M2,6 L12,20 L2,34 L6,20 Z M12,6 L22,20 L12,34 L16,20 Z M22,6 L32,20 L22,34 L26,20 Z' },
+  // Pentagon/tag arrows
+  { id: 'arrow-pentagon', name: 'Pentagon', svg: 'M4,8 L30,8 L38,20 L30,32 L4,32 Z' },
+  { id: 'arrow-tag', name: 'Tag', svg: 'M4,8 L30,8 L38,20 L30,32 L4,32 L10,20 Z' },
+  { id: 'arrow-notched', name: 'Notched', svg: 'M4,4 L30,4 L38,20 L30,36 L4,36 L12,20 Z' },
+  // Striped arrow
+  { id: 'arrow-striped', name: 'Striped', svg: 'M4,16 L4,24 L10,24 L10,16 Z M14,16 L14,24 L20,24 L20,16 Z M24,16 L24,24 L28,24 L28,12 L36,20 L28,28 L28,16 Z' },
+];
+
+// Stars & Decorations - 30+ stars/flowers/weather icons
+const STARS_DECORATIONS = [
+  // Stars
+  { id: 'star-4point', name: '4-Point', svg: 'M20,2 L24,16 L38,20 L24,24 L20,38 L16,24 L2,20 L16,16 Z' },
+  { id: 'star-5point', name: '5-Point', svg: 'M20,2 L24,14 L38,14 L27,22 L31,36 L20,28 L9,36 L13,22 L2,14 L16,14 Z' },
+  { id: 'star-6point', name: '6-Point', svg: 'M20,2 L24,14 L36,8 L28,18 L36,28 L24,24 L20,38 L16,24 L4,28 L12,18 L4,8 L16,14 Z' },
+  { id: 'star-8point', name: '8-Point', svg: 'M20,2 L23,13 L32,6 L27,16 L38,20 L27,24 L32,34 L23,27 L20,38 L17,27 L8,34 L13,24 L2,20 L13,16 L8,6 L17,13 Z' },
+  { id: 'star-12point', name: '12-Point', svg: 'M20,2 L22,11 L28,4 L26,13 L36,10 L30,17 L38,20 L30,23 L36,30 L26,27 L28,36 L22,29 L20,38 L18,29 L12,36 L14,27 L4,30 L10,23 L2,20 L10,17 L4,10 L14,13 L12,4 L18,11 Z' },
+  { id: 'star-burst', name: 'Starburst', svg: 'M20,0 L23,14 L36,8 L26,18 L40,20 L26,22 L36,32 L23,26 L20,40 L17,26 L4,32 L14,22 L0,20 L14,18 L4,8 L17,14 Z' },
+  { id: 'star-sparkle', name: 'Sparkle', svg: 'M20,4 L22,16 L34,14 L24,20 L34,26 L22,24 L20,36 L18,24 L6,26 L16,20 L6,14 L18,16 Z' },
+  // Flowers
+  { id: 'flower-4petal', name: '4-Petal', svg: 'M20,4 Q26,12 20,20 Q28,14 36,20 Q28,26 20,20 Q26,28 20,36 Q14,28 20,20 Q12,26 4,20 Q12,14 20,20 Q14,12 20,4 Z' },
+  { id: 'flower-5petal', name: '5-Petal', svg: 'M20,4 Q24,12 20,20 Q30,12 34,18 Q26,22 20,20 Q28,28 24,34 Q18,26 20,20 Q10,28 6,22 Q14,18 20,20 Q8,14 10,6 Q18,14 20,20 Z' },
+  { id: 'flower-6petal', name: '6-Petal', svg: 'M20,2 Q24,10 20,20 Q30,8 36,14 Q26,18 20,20 Q32,24 32,32 Q22,26 20,20 Q24,32 18,36 Q16,26 20,20 Q8,32 4,26 Q14,22 20,20 Q4,16 6,8 Q16,14 20,20 Z' },
+  { id: 'flower-8petal', name: '8-Petal', svg: 'M20,2 Q22,12 20,20 Q28,8 34,10 Q24,16 20,20 Q34,16 36,22 Q24,22 20,20 Q32,28 28,34 Q22,24 20,20 Q24,34 18,36 Q18,24 20,20 Q10,32 6,28 Q16,22 20,20 Q4,24 4,16 Q16,18 20,20 Q6,10 12,6 Q18,16 20,20 Z' },
+  { id: 'flower-tulip', name: 'Tulip', svg: 'M20,4 Q28,8 28,18 Q28,28 20,32 Q12,28 12,18 Q12,8 20,4 Z M18,32 L18,38 L22,38 L22,32' },
+  // Hearts
+  { id: 'heart-simple', name: 'Heart', svg: 'M20,36 L6,22 Q2,16 6,10 Q10,4 16,8 L20,14 L24,8 Q30,4 34,10 Q38,16 34,22 Z' },
+  { id: 'heart-rounded', name: 'Heart 2', svg: 'M20,34 Q8,24 8,16 Q8,8 14,8 Q20,8 20,14 Q20,8 26,8 Q32,8 32,16 Q32,24 20,34 Z' },
+  { id: 'heart-double', name: 'Double ♥', svg: 'M12,28 L4,18 Q2,14 4,10 Q6,6 10,8 L12,12 L14,8 Q18,6 20,10 Q22,14 20,18 Z M28,28 L20,18 Q18,14 20,10 Q22,6 26,8 L28,12 L30,8 Q34,6 36,10 Q38,14 36,18 Z' },
+  // Weather & Nature
+  { id: 'cloud', name: 'Cloud', svg: 'M32,28 L10,28 Q4,28 4,22 Q4,18 8,16 Q6,12 10,10 Q14,8 18,10 Q20,4 28,6 Q34,8 34,14 Q38,16 38,22 Q38,28 32,28 Z' },
+  { id: 'sun', name: 'Sun', svg: 'M20,12 Q24,12 26,16 Q28,20 26,24 Q24,28 20,28 Q16,28 14,24 Q12,20 14,16 Q16,12 20,12 Z M20,4 L20,8 M20,32 L20,36 M4,20 L8,20 M32,20 L36,20 M8,8 L11,11 M29,29 L32,32 M32,8 L29,11 M11,29 L8,32' },
+  { id: 'sun-rays', name: 'Sun Rays', svg: 'M20,10 A10,10 0 1 0 20,30 A10,10 0 1 0 20,10 M20,2 L20,6 M20,34 L20,38 M2,20 L6,20 M34,20 L38,20 M6,6 L10,10 M30,30 L34,34 M34,6 L30,10 M10,30 L6,34' },
+  { id: 'moon-crescent', name: 'Moon', svg: 'M24,4 Q14,6 10,16 Q6,26 14,34 Q4,30 4,20 Q4,8 16,4 Q20,4 24,4 Z' },
+  { id: 'lightning', name: 'Lightning', svg: 'M24,2 L14,18 L20,18 L12,38 L28,20 L22,20 Z' },
+  { id: 'snowflake', name: 'Snowflake', svg: 'M20,2 L20,38 M4,11 L36,29 M36,11 L4,29 M20,8 L16,4 M20,8 L24,4 M20,32 L16,36 M20,32 L24,36 M10,14 L6,12 M10,14 L8,10 M30,14 L32,10 M30,14 L34,12 M10,26 L6,28 M10,26 L8,30 M30,26 L34,28 M30,26 L32,30' },
+  { id: 'raindrop', name: 'Raindrop', svg: 'M20,4 Q8,20 8,28 Q8,36 20,36 Q32,36 32,28 Q32,20 20,4 Z' },
+  // Misc Decorations
+  { id: 'location-pin', name: 'Pin', svg: 'M20,2 Q8,2 8,14 Q8,26 20,38 Q32,26 32,14 Q32,2 20,2 Z M20,10 Q24,10 24,14 Q24,18 20,18 Q16,18 16,14 Q16,10 20,10 Z' },
+  { id: 'smiley', name: 'Smiley', svg: 'M20,4 Q36,4 36,20 Q36,36 20,36 Q4,36 4,20 Q4,4 20,4 Z M12,16 Q14,14 16,16 Q14,18 12,16 Z M24,16 Q26,14 28,16 Q26,18 24,16 Z M12,26 Q16,30 20,30 Q24,30 28,26' },
+  { id: 'cross-plus', name: 'Plus', svg: 'M16,4 L24,4 L24,16 L36,16 L36,24 L24,24 L24,36 L16,36 L16,24 L4,24 L4,16 L16,16 Z' },
+  { id: 'cross-x', name: 'X Mark', svg: 'M8,4 L20,16 L32,4 L36,8 L24,20 L36,32 L32,36 L20,24 L8,36 L4,32 L16,20 L4,8 Z' },
+  { id: 'checkmark', name: 'Check', svg: 'M4,20 L14,30 L36,8 L32,4 L14,22 L8,16 Z' },
+  { id: 'clover', name: 'Clover', svg: 'M20,8 Q26,4 30,10 Q34,16 28,20 Q34,24 30,30 Q26,36 20,32 Q14,36 10,30 Q6,24 12,20 Q6,16 10,10 Q14,4 20,8 Z M18,32 L18,38 L22,38 L22,32' },
+];
+
+// Flowchart Symbols - 25+ standard diagram shapes
+const FLOWCHART_SHAPES = [
+  // Basic flow shapes
+  { id: 'flow-process', name: 'Process', svg: 'M4,8 L36,8 L36,32 L4,32 Z' },
+  { id: 'flow-decision', name: 'Decision', svg: 'M20,4 L38,20 L20,36 L2,20 Z' },
+  { id: 'flow-terminal', name: 'Terminal', svg: 'M10,8 L30,8 Q38,8 38,20 Q38,32 30,32 L10,32 Q2,32 2,20 Q2,8 10,8 Z' },
+  { id: 'flow-data', name: 'Data', svg: 'M8,8 L36,8 L32,32 L4,32 Z' },
+  { id: 'flow-document', name: 'Document', svg: 'M4,6 L36,6 L36,30 Q28,26 20,30 Q12,34 4,30 Z' },
+  { id: 'flow-multi-doc', name: 'Multi-Doc', svg: 'M8,2 L38,2 L38,26 Q32,22 26,26 Q20,30 14,26 Z M6,6 L6,30 Q12,26 18,30 Q24,34 30,30 L30,6 M4,10 L4,34 Q10,30 16,34' },
+  // Database & Storage
+  { id: 'flow-database', name: 'Database', svg: 'M4,10 Q4,4 20,4 Q36,4 36,10 L36,30 Q36,36 20,36 Q4,36 4,30 Z M4,10 Q4,16 20,16 Q36,16 36,10' },
+  { id: 'flow-cylinder', name: 'Cylinder', svg: 'M4,8 Q4,2 20,2 Q36,2 36,8 L36,32 Q36,38 20,38 Q4,38 4,32 Z M4,8 Q4,14 20,14 Q36,14 36,8' },
+  { id: 'flow-disk', name: 'Disk', svg: 'M20,4 Q36,4 36,10 L36,30 Q36,36 20,36 Q4,36 4,30 L4,10 Q4,4 20,4 Z M4,10 L36,10' },
+  // Special process
+  { id: 'flow-predefined', name: 'Predefined', svg: 'M4,8 L36,8 L36,32 L4,32 Z M8,8 L8,32 M32,8 L32,32' },
+  { id: 'flow-manual', name: 'Manual', svg: 'M2,8 L38,8 L34,32 L6,32 Z' },
+  { id: 'flow-preparation', name: 'Preparation', svg: 'M10,8 L30,8 L38,20 L30,32 L10,32 L2,20 Z' },
+  { id: 'flow-internal', name: 'Internal', svg: 'M4,4 L36,4 L36,36 L4,36 Z M8,4 L8,36 M32,4 L32,36 M4,8 L36,8 M4,32 L36,32' },
+  // Connectors
+  { id: 'flow-connector', name: 'Connector', svg: 'M20,4 Q36,4 36,20 Q36,36 20,36 Q4,36 4,20 Q4,4 20,4 Z' },
+  { id: 'flow-off-page', name: 'Off-Page', svg: 'M4,4 L36,4 L36,28 L20,36 L4,28 Z' },
+  { id: 'flow-summing', name: 'Summing', svg: 'M20,4 Q36,4 36,20 Q36,36 20,36 Q4,36 4,20 Q4,4 20,4 Z M4,20 L36,20 M20,4 L20,36' },
+  // Special shapes
+  { id: 'flow-delay', name: 'Delay', svg: 'M4,8 L28,8 Q36,8 36,20 Q36,32 28,32 L4,32 Z' },
+  { id: 'flow-display', name: 'Display', svg: 'M8,8 Q2,20 8,32 L28,32 Q36,32 36,20 Q36,8 28,8 Z' },
+  { id: 'flow-merge', name: 'Merge', svg: 'M4,4 L36,4 L20,36 Z' },
+  { id: 'flow-extract', name: 'Extract', svg: 'M20,4 L36,36 L4,36 Z' },
+  { id: 'flow-sort', name: 'Sort', svg: 'M20,4 L36,20 L20,36 L4,20 Z M4,20 L36,20' },
+  { id: 'flow-collate', name: 'Collate', svg: 'M4,4 L36,4 L4,36 L36,36 Z' },
+  // Pie/Chart sections
+  { id: 'pie-half', name: 'Half Pie', svg: 'M20,4 A16,16 0 0 1 20,36 Z' },
+  { id: 'pie-quarter', name: 'Quarter', svg: 'M20,20 L20,4 A16,16 0 0 1 36,20 Z' },
+  { id: 'pie-3quarter', name: '3/4 Pie', svg: 'M20,20 L20,4 A16,16 0 1 1 4,20 Z' },
+];
+
+// Atypical/Colorful Shapes - 25+ organic blobs with preset colors
+const ATYPICAL_SHAPES = [
+  // Organic blobs
+  { id: 'blob-1', name: 'Blob 1', svg: 'M28,6 Q38,10 36,22 Q34,34 22,36 Q10,38 6,26 Q2,14 14,8 Q26,2 28,6 Z', color: '#60A5FA' },
+  { id: 'blob-2', name: 'Blob 2', svg: 'M32,12 Q40,24 30,34 Q20,44 10,32 Q0,20 12,10 Q24,0 32,12 Z', color: '#A3E635' },
+  { id: 'blob-3', name: 'Blob 3', svg: 'M26,4 Q40,8 38,24 Q36,40 20,38 Q4,36 2,20 Q0,4 16,2 Q26,0 26,4 Z', color: '#C084FC' },
+  { id: 'blob-4', name: 'Blob 4', svg: 'M30,8 Q42,18 34,32 Q26,46 12,36 Q-2,26 8,12 Q18,-2 30,8 Z', color: '#FBBF24' },
+  { id: 'blob-5', name: 'Blob 5', svg: 'M24,6 Q36,12 34,26 Q32,40 18,38 Q4,36 6,22 Q8,8 24,6 Z', color: '#94A3B8' },
+  { id: 'blob-6', name: 'Blob 6', svg: 'M28,4 Q44,12 38,28 Q32,44 16,40 Q0,36 4,20 Q8,4 28,4 Z', color: '#F87171' },
+  { id: 'blob-7', name: 'Blob 7', svg: 'M20,2 Q34,6 36,20 Q38,34 24,38 Q10,42 4,28 Q-2,14 12,6 Q20,-2 20,2 Z', color: '#38BDF8' },
+  { id: 'blob-8', name: 'Blob 8', svg: 'M26,8 Q38,16 32,32 Q26,48 10,38 Q-6,28 6,14 Q18,0 26,8 Z', color: '#4ADE80' },
+  // Abstract decorative shapes
+  { id: 'abstract-flower', name: 'A-Flower', svg: 'M20,8 Q26,2 32,8 Q38,14 32,20 Q38,26 32,32 Q26,38 20,32 Q14,38 8,32 Q2,26 8,20 Q2,14 8,8 Q14,2 20,8 Z', color: '#EC4899' },
+  { id: 'abstract-star', name: 'A-Star', svg: 'M20,4 L24,14 L34,14 L26,22 L30,34 L20,26 L10,34 L14,22 L6,14 L16,14 Z', color: '#F97316' },
+  { id: 'abstract-clover', name: 'A-Clover', svg: 'M20,16 Q26,10 32,16 Q38,22 32,28 Q26,34 20,28 Q14,34 8,28 Q2,22 8,16 Q14,10 20,16 Z M20,28 L20,38', color: '#22C55E' },
+  { id: 'abstract-plus', name: 'A-Plus', svg: 'M14,2 L26,2 Q28,2 28,4 L28,14 L38,14 Q40,14 40,16 L40,24 Q40,26 38,26 L28,26 L28,36 Q28,38 26,38 L14,38 Q12,38 12,36 L12,26 L2,26 Q0,26 0,24 L0,16 Q0,14 2,14 L12,14 L12,4 Q12,2 14,2 Z', color: '#FBBF24' },
+  // Squiggles & Waves
+  { id: 'squiggle-wave', name: 'Wave', svg: 'M2,20 Q8,10 14,20 Q20,30 26,20 Q32,10 38,20 L38,28 Q32,38 26,28 Q20,18 14,28 Q8,38 2,28 Z', color: '#8B5CF6' },
+  { id: 'squiggle-s', name: 'S-Curve', svg: 'M8,4 Q26,4 26,16 Q26,28 8,28 Q26,28 26,36 L32,36 Q14,36 14,24 Q14,12 32,12 Q14,12 14,4 Z', color: '#14B8A6' },
+  // Rounded organic forms
+  { id: 'organic-oval', name: 'Organic O', svg: 'M20,4 Q36,6 38,20 Q40,34 22,38 Q6,40 2,24 Q-2,10 16,4 Q20,2 20,4 Z', color: '#60A5FA' },
+  { id: 'organic-pill', name: 'Pill', svg: 'M12,8 L28,8 Q38,8 38,20 Q38,32 28,32 L12,32 Q2,32 2,20 Q2,8 12,8 Z', color: '#4ADE80' },
+  { id: 'organic-pebble', name: 'Pebble', svg: 'M18,4 Q32,2 36,14 Q40,26 28,36 Q16,46 6,32 Q-4,18 10,8 Q18,0 18,4 Z', color: '#FB923C' },
+  // Speech & dialog
+  { id: 'speech-modern', name: 'Modern', svg: 'M6,6 Q6,2 20,2 Q34,2 34,6 L34,24 Q34,28 20,28 L14,28 L8,36 L10,28 Q6,28 6,24 Z', color: '#3B82F6' },
+  // Banners & badges
+  { id: 'badge-ribbon', name: 'Badge', svg: 'M8,4 L32,4 Q36,4 36,8 L36,28 L32,24 L28,28 L24,24 L20,28 L16,24 L12,28 L8,24 L4,28 L4,8 Q4,4 8,4 Z', color: '#EF4444' },
+  { id: 'seal-star', name: 'Seal', svg: 'M20,2 L23,12 L34,10 L26,18 L36,26 L25,26 L22,38 L20,28 L18,38 L15,26 L4,26 L14,18 L6,10 L17,12 Z', color: '#F59E0B' },
+  // Abstract patterns
+  { id: 'zigzag-arrow', name: 'Zigzag', svg: 'M2,20 L10,10 L18,20 L26,10 L34,20 L30,20 L26,16 L18,26 L10,16 L6,20 Z', color: '#06B6D4' },
+  { id: 'wave-double', name: 'Waves', svg: 'M2,14 Q8,8 14,14 Q20,20 26,14 Q32,8 38,14 L38,18 Q32,24 26,18 Q20,12 14,18 Q8,24 2,18 Z M2,24 Q8,18 14,24 Q20,30 26,24 Q32,18 38,24 L38,28 Q32,34 26,28 Q20,22 14,28 Q8,34 2,28 Z', color: '#8B5CF6' },
+  // Geometric abstract
+  { id: 'geo-hexagon', name: 'Geo Hex', svg: 'M20,2 L36,11 L36,29 L20,38 L4,29 L4,11 Z M20,10 L28,15 L28,25 L20,30 L12,25 L12,15 Z', color: '#10B981' },
+  { id: 'geo-diamond', name: 'Geo Dia', svg: 'M20,2 L38,20 L20,38 L2,20 Z M20,10 L30,20 L20,30 L10,20 Z', color: '#6366F1' },
+];
+
 // Speech bubbles and callout shapes
 const SPEECH_BUBBLES = [
   // Speech bubbles with tails
@@ -486,6 +634,78 @@ export default function CanvaSidebar({
                   title={shape.name}
                 >
                   <shape.icon className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-[9px] text-muted-foreground mt-1 truncate w-full text-center">{shape.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Basic Arrows */}
+            <h4 className="font-medium text-foreground text-sm mb-3">Basic Arrows</h4>
+            <div className="grid grid-cols-4 gap-2 mb-6">
+              {BASIC_ARROWS.map((shape) => (
+                <button
+                  key={shape.id}
+                  onClick={() => onAddShape(shape.id)}
+                  className="aspect-square flex flex-col items-center justify-center p-2 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
+                  title={shape.name}
+                >
+                  <svg viewBox="0 0 40 40" className="w-6 h-6 text-muted-foreground fill-current">
+                    <path d={shape.svg} />
+                  </svg>
+                  <span className="text-[9px] text-muted-foreground mt-1 truncate w-full text-center">{shape.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Stars & Decorations */}
+            <h4 className="font-medium text-foreground text-sm mb-3">Stars & Decorations</h4>
+            <div className="grid grid-cols-4 gap-2 mb-6">
+              {STARS_DECORATIONS.map((shape) => (
+                <button
+                  key={shape.id}
+                  onClick={() => onAddShape(shape.id)}
+                  className="aspect-square flex flex-col items-center justify-center p-2 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
+                  title={shape.name}
+                >
+                  <svg viewBox="0 0 40 40" className="w-6 h-6 text-muted-foreground fill-current">
+                    <path d={shape.svg} />
+                  </svg>
+                  <span className="text-[9px] text-muted-foreground mt-1 truncate w-full text-center">{shape.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Flowchart Symbols */}
+            <h4 className="font-medium text-foreground text-sm mb-3">Flowchart Symbols</h4>
+            <div className="grid grid-cols-4 gap-2 mb-6">
+              {FLOWCHART_SHAPES.map((shape) => (
+                <button
+                  key={shape.id}
+                  onClick={() => onAddShape(shape.id)}
+                  className="aspect-square flex flex-col items-center justify-center p-2 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
+                  title={shape.name}
+                >
+                  <svg viewBox="0 0 40 40" className="w-6 h-6 text-muted-foreground fill-current">
+                    <path d={shape.svg} />
+                  </svg>
+                  <span className="text-[9px] text-muted-foreground mt-1 truncate w-full text-center">{shape.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Atypical Colorful Shapes */}
+            <h4 className="font-medium text-foreground text-sm mb-3">Colorful Shapes</h4>
+            <div className="grid grid-cols-4 gap-2 mb-6">
+              {ATYPICAL_SHAPES.map((shape) => (
+                <button
+                  key={shape.id}
+                  onClick={() => onAddShape(shape.id, shape.color)}
+                  className="aspect-square flex flex-col items-center justify-center p-2 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
+                  title={shape.name}
+                >
+                  <svg viewBox="0 0 40 40" className="w-6 h-6" style={{ fill: shape.color }}>
+                    <path d={shape.svg} />
+                  </svg>
                   <span className="text-[9px] text-muted-foreground mt-1 truncate w-full text-center">{shape.name}</span>
                 </button>
               ))}

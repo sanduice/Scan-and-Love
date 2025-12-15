@@ -471,12 +471,25 @@ export default function DesignTool() {
     // Handle line shapes with different dimensions
     const isLine = shape.startsWith('line-') || shape === 'double-arrow';
     const isArrowShape = shape.startsWith('arrow-');
-    const isVertical = shape === 'line-v' || shape === 'arrow-up' || shape === 'arrow-down';
+    const isVertical = shape === 'line-v' || shape === 'arrow-up' || shape === 'arrow-down' || 
+                       shape === 'arrow-simple-up' || shape === 'arrow-simple-down' ||
+                       shape === 'arrow-block-up' || shape === 'arrow-block-down' ||
+                       shape === 'arrow-vertical';
     const isSpeechBubble = shape.startsWith('speech-') || shape.startsWith('thought-') || shape.startsWith('cloud-');
     const isCallout = shape.startsWith('callout-');
-    const isRibbon = shape.startsWith('ribbon-') || shape === 'badge-shield';
+    const isRibbon = shape.startsWith('ribbon-') || shape === 'badge-shield' || shape === 'badge-ribbon';
     const isBracket = shape.startsWith('bracket-') || shape.startsWith('frame-');
-    const isStarburst = shape === 'starburst';
+    const isStarburst = shape === 'starburst' || shape === 'star-burst' || shape === 'seal-star';
+    const isFlowchart = shape.startsWith('flow-') || shape.startsWith('pie-');
+    const isBlob = shape.startsWith('blob-') || shape.startsWith('organic-') || shape.startsWith('abstract-') || 
+                   shape.startsWith('squiggle-') || shape.startsWith('wave-') || shape.startsWith('geo-') ||
+                   shape === 'zigzag-arrow';
+    const isStar = shape.startsWith('star-') || shape === 'star-sparkle';
+    const isHeart = shape.startsWith('heart-');
+    const isFlower = shape.startsWith('flower-');
+    const isChevron = shape.startsWith('chevron-');
+    const isWeather = ['cloud', 'sun', 'sun-rays', 'moon-crescent', 'lightning', 'snowflake', 'raindrop'].includes(shape);
+    const isMiscDeco = ['location-pin', 'smiley', 'cross-plus', 'cross-x', 'checkmark', 'clover'].includes(shape);
     
     let width, height;
     if (isLine) {
@@ -487,29 +500,32 @@ export default function DesignTool() {
         width = canvasWidth * 0.3;
         height = 0.5;
       }
-    } else if (isArrowShape) {
+    } else if (isArrowShape || isChevron) {
       width = canvasWidth * 0.15;
       height = canvasWidth * 0.1;
     } else if (isSpeechBubble) {
-      // Speech bubbles are wider than tall
       width = canvasWidth * 0.35;
       height = canvasHeight * 0.25;
     } else if (isCallout) {
       width = canvasWidth * 0.25;
       height = canvasHeight * 0.15;
     } else if (isRibbon) {
-      // Ribbons are wide and short
       width = canvasWidth * 0.5;
       height = canvasHeight * 0.12;
     } else if (isBracket) {
-      // Brackets are tall and narrow
       width = canvasWidth * 0.08;
       height = canvasHeight * 0.3;
-    } else if (isStarburst) {
+    } else if (isStarburst || isStar || isHeart || isFlower || isWeather || isMiscDeco) {
+      width = canvasWidth * 0.2;
+      height = canvasWidth * 0.2;
+    } else if (isFlowchart) {
+      width = canvasWidth * 0.2;
+      height = canvasHeight * 0.15;
+    } else if (isBlob) {
       width = canvasWidth * 0.25;
       height = canvasWidth * 0.25;
-    } else if (shape === 'circle' || shape === 'star' || shape === 'hexagon' || 
-               shape === 'pentagon' || shape === 'octagon' || shape === 'heart' || shape === 'diamond') {
+    } else if (shape === 'circle' || shape === 'hexagon' || 
+               shape === 'pentagon' || shape === 'octagon' || shape === 'diamond') {
       width = canvasWidth * 0.2;
       height = canvasWidth * 0.2;
     } else {
