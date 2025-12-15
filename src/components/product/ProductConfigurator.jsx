@@ -448,7 +448,6 @@ export default function ProductConfigurator({
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => {
       const rect = entry.boundingClientRect;
-      
       if (entry.isIntersecting) {
         // Card is visible - hide floating bar
         setShowFloatingBar(false);
@@ -771,8 +770,12 @@ export default function ProductConfigurator({
       });
       toast.success('Added to cart!');
       // Invalidate cart queries so Cart page fetches fresh data
-      queryClient.invalidateQueries({ queryKey: ['cart-items'] });
-      queryClient.invalidateQueries({ queryKey: ['cart-badge-orders'] });
+      queryClient.invalidateQueries({
+        queryKey: ['cart-items']
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['cart-badge-orders']
+      });
       navigate(createPageUrl('Cart'));
     } catch (err) {
       console.error('Add to cart error:', err);
@@ -810,8 +813,12 @@ export default function ProductConfigurator({
       });
       toast.success('Added to cart!');
       // Invalidate cart queries so Cart page fetches fresh data
-      queryClient.invalidateQueries({ queryKey: ['cart-items'] });
-      queryClient.invalidateQueries({ queryKey: ['cart-badge-orders'] });
+      queryClient.invalidateQueries({
+        queryKey: ['cart-items']
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['cart-badge-orders']
+      });
       navigate(createPageUrl('Cart'));
     } catch (err) {
       console.error('Add to cart error:', err);
@@ -1211,15 +1218,7 @@ export default function ProductConfigurator({
             {calculatedPrice.isOnSale}
             {quantity > 1 && <span className="text-sm text-gray-500">${calculatedPrice.unitPrice} each</span>}
           </div>
-          <div className="text-right text-sm text-gray-500">
-            <div className="flex items-center gap-1 text-green-600">
-              <Clock className="w-4 h-4" />
-              <span>Ready to Ship</span>
-            </div>
-            <div className="font-medium text-gray-900 mt-1">
-              {product.turnaround_days || 1} Business Day
-            </div>
-          </div>
+          
         </div>
 
         {/* Primary CTA */}
