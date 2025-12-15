@@ -539,7 +539,7 @@ export default function TemplatesManager() {
   // Navigate to design tool to edit template visually
   const handleEditDesign = (template) => {
     const defaultSize = template.sizes?.[0] || { width: 24, height: 36 };
-    navigate(`/design-tool?editTemplateId=${template.id}&width=${defaultSize.width}&height=${defaultSize.height}`);
+    navigate(`/DesignTool?editTemplateId=${template.id}&width=${defaultSize.width}&height=${defaultSize.height}`);
   };
 
   // Fetch templates
