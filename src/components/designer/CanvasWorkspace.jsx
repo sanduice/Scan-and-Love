@@ -47,7 +47,12 @@ export default function CanvasWorkspace({
   // Refs for immediate drag state synchronization (fixes stale closure issue)
   const isDraggingRef = useRef(false);
   const groupDragStartRef = useRef(null);
-
+  const elementsRef = useRef(elements);
+  
+  // Keep elementsRef in sync with the latest elements prop
+  useEffect(() => {
+    elementsRef.current = elements;
+  }, [elements]);
   const PIXELS_PER_INCH = 10;
   const scale = (zoom / 100) * PIXELS_PER_INCH;
   const canvasPixelWidth = width * scale;
@@ -118,7 +123,9 @@ export default function CanvasWorkspace({
   const handleElementMouseDown = useCallback((e, elementId) => {
     if (e.button === 2) return; // Right-click handled separately
     
-    const element = elements.find(el => el.id === elementId);
+    // Use elementsRef to get the latest elements array (fixes stale closure issue)
+    const currentElements = elementsRef.current;
+    const element = currentElements.find(el => el.id === elementId);
     if (!element) return;
     
     // For locked elements, don't stop propagation - let event bubble up for marquee selection
@@ -140,7 +147,7 @@ export default function CanvasWorkspace({
     let positions = {};
     if (selectedElements.length > 1 || (selectedElements.length === 1 && selectedElements.includes(elementId))) {
       selectedElements.forEach(id => {
-        const el = elements.find(e => e.id === id);
+        const el = currentElements.find(e => e.id === id);
         if (el) positions[id] = { x: el.x, y: el.y };
       });
       // Also include current element if not in selection yet
@@ -166,7 +173,7 @@ export default function CanvasWorkspace({
       rotation: element.rotation || 0
     });
     setGroupDragStart(positions);
-  }, [elements, editingTextId, selectElement, selectedElements]);
+  }, [editingTextId, selectElement, selectedElements]);
 
   const handleContextMenu = useCallback((e, elementId) => {
     e.preventDefault();
