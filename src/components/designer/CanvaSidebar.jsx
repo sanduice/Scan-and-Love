@@ -625,125 +625,118 @@ export default function CanvaSidebar({
           <div className="p-4">
             {/* Basic Shapes */}
             <h4 className="font-medium text-foreground text-sm mb-3">Basic Shapes</h4>
-            <div className="grid grid-cols-4 gap-2 mb-6">
+            <div className="grid grid-cols-5 gap-1.5 mb-6">
               {SHAPES.map((shape) => (
                 <button
                   key={shape.id}
                   onClick={() => onAddShape(shape.id)}
-                  className="aspect-square flex flex-col items-center justify-center p-2 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
+                  className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
                   title={shape.name}
                 >
-                  <shape.icon className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-[9px] text-muted-foreground mt-1 truncate w-full text-center">{shape.name}</span>
+                  <shape.icon className="w-7 h-7 text-muted-foreground" />
                 </button>
               ))}
             </div>
 
             {/* Basic Arrows */}
             <h4 className="font-medium text-foreground text-sm mb-3">Basic Arrows</h4>
-            <div className="grid grid-cols-4 gap-2 mb-6">
+            <div className="grid grid-cols-5 gap-1.5 mb-6">
               {BASIC_ARROWS.map((shape) => (
                 <button
                   key={shape.id}
                   onClick={() => onAddShape(shape.id)}
-                  className="aspect-square flex flex-col items-center justify-center p-2 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
+                  className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
                   title={shape.name}
                 >
-                  <svg viewBox="0 0 40 40" className="w-6 h-6 text-muted-foreground fill-current">
+                  <svg viewBox="0 0 40 40" className="w-8 h-8 text-muted-foreground fill-current">
                     <path d={shape.svg} />
                   </svg>
-                  <span className="text-[9px] text-muted-foreground mt-1 truncate w-full text-center">{shape.name}</span>
                 </button>
               ))}
             </div>
 
             {/* Stars & Decorations */}
             <h4 className="font-medium text-foreground text-sm mb-3">Stars & Decorations</h4>
-            <div className="grid grid-cols-4 gap-2 mb-6">
+            <div className="grid grid-cols-5 gap-1.5 mb-6">
               {STARS_DECORATIONS.map((shape) => (
                 <button
                   key={shape.id}
                   onClick={() => onAddShape(shape.id)}
-                  className="aspect-square flex flex-col items-center justify-center p-2 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
+                  className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
                   title={shape.name}
                 >
-                  <svg viewBox="0 0 40 40" className="w-6 h-6 text-muted-foreground fill-current">
+                  <svg viewBox="0 0 40 40" className="w-8 h-8 text-muted-foreground fill-current">
                     <path d={shape.svg} />
                   </svg>
-                  <span className="text-[9px] text-muted-foreground mt-1 truncate w-full text-center">{shape.name}</span>
                 </button>
               ))}
             </div>
 
             {/* Flowchart Symbols */}
             <h4 className="font-medium text-foreground text-sm mb-3">Flowchart Symbols</h4>
-            <div className="grid grid-cols-4 gap-2 mb-6">
+            <div className="grid grid-cols-5 gap-1.5 mb-6">
               {FLOWCHART_SHAPES.map((shape) => (
                 <button
                   key={shape.id}
                   onClick={() => onAddShape(shape.id)}
-                  className="aspect-square flex flex-col items-center justify-center p-2 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
+                  className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
                   title={shape.name}
                 >
-                  <svg viewBox="0 0 40 40" className="w-6 h-6 text-muted-foreground fill-current">
+                  <svg viewBox="0 0 40 40" className="w-8 h-8 text-muted-foreground fill-current">
                     <path d={shape.svg} />
                   </svg>
-                  <span className="text-[9px] text-muted-foreground mt-1 truncate w-full text-center">{shape.name}</span>
                 </button>
               ))}
             </div>
 
             {/* Atypical Colorful Shapes */}
             <h4 className="font-medium text-foreground text-sm mb-3">Colorful Shapes</h4>
-            <div className="grid grid-cols-4 gap-2 mb-6">
+            <div className="grid grid-cols-5 gap-1.5 mb-6">
               {ATYPICAL_SHAPES.map((shape) => (
                 <button
                   key={shape.id}
                   onClick={() => onAddShape(shape.id, shape.color)}
-                  className="aspect-square flex flex-col items-center justify-center p-2 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
+                  className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
                   title={shape.name}
                 >
-                  <svg viewBox="0 0 40 40" className="w-6 h-6" style={{ fill: shape.color }}>
+                  <svg viewBox="0 0 40 40" className="w-8 h-8" style={{ fill: shape.color }}>
                     <path d={shape.svg} />
                   </svg>
-                  <span className="text-[9px] text-muted-foreground mt-1 truncate w-full text-center">{shape.name}</span>
                 </button>
               ))}
             </div>
 
             {/* Speech Bubbles & Callouts */}
             <h4 className="font-medium text-foreground text-sm mb-3">Speech Bubbles & Callouts</h4>
-            <div className="grid grid-cols-4 gap-2 mb-6">
+            <div className="grid grid-cols-5 gap-1.5 mb-6">
               {SPEECH_BUBBLES.map((shape) => (
                 <button
                   key={shape.id}
                   onClick={() => onAddShape(shape.id)}
-                  className="aspect-square flex flex-col items-center justify-center p-2 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
+                  className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
                   title={shape.name}
                 >
-                  <svg viewBox="0 0 40 40" className="w-6 h-6 text-muted-foreground fill-current">
+                  <svg viewBox="0 0 40 40" className="w-8 h-8 text-muted-foreground fill-current">
                     <path d={shape.svg} />
                   </svg>
-                  <span className="text-[9px] text-muted-foreground mt-1 truncate w-full text-center">{shape.name}</span>
                 </button>
               ))}
             </div>
 
             {/* Lines & Arrows */}
             <h4 className="font-medium text-foreground text-sm mb-3">Lines & Arrows</h4>
-            <div className="grid grid-cols-4 gap-2 mb-6">
+            <div className="grid grid-cols-5 gap-1.5 mb-6">
               {LINES_ARROWS.map((line) => (
                 <button
                   key={line.id}
                   onClick={() => onAddShape(line.id)}
-                  className="aspect-square flex flex-col items-center justify-center p-2 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
+                  className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
                   title={line.name}
                 >
                   <line.icon 
-                    className="w-5 h-5 text-muted-foreground" 
+                    className="w-7 h-7 text-muted-foreground" 
                     style={{ transform: line.rotate ? `rotate(${line.rotate}deg)` : undefined }}
                   />
-                  <span className="text-[9px] text-muted-foreground mt-1 truncate w-full text-center">{line.name}</span>
                 </button>
               ))}
             </div>
