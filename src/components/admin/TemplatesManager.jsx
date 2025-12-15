@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Plus, Search, Edit, Trash2, Image, Loader2, 
   ChevronDown, ChevronRight, Upload, X, FileImage, 
-  FileType, Eye, EyeOff, Copy, LayoutTemplate
+  FileType, Eye, EyeOff, Copy, LayoutTemplate, Paintbrush
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -529,10 +530,17 @@ const TemplateEditor = ({ template, categories, open, onClose, onSave }) => {
 
 export default function TemplatesManager() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [showDialog, setShowDialog] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [selectedCategorySlug, setSelectedCategorySlug] = useState('all-templates');
+
+  // Navigate to design tool to edit template visually
+  const handleEditDesign = (template) => {
+    const defaultSize = template.sizes?.[0] || { width: 24, height: 36 };
+    navigate(`/design-tool?editTemplateId=${template.id}&width=${defaultSize.width}&height=${defaultSize.height}`);
+  };
 
   // Fetch templates
   const { data: templates = [], isLoading } = useQuery({
@@ -817,6 +825,14 @@ export default function TemplatesManager() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEditDesign(template)}
+                        className="text-primary"
+                      >
+                        <Paintbrush className="w-4 h-4 mr-1" /> Design
+                      </Button>
                       <Button 
                         variant="ghost" 
                         size="sm"
