@@ -105,11 +105,26 @@ export default function DesignTool() {
   const [showBleed, setShowBleed] = useState(true);
 
   const [elements, setElements] = useState([]);
-  const [selectedElement, setSelectedElement] = useState(null);
+  const [selectedElements, setSelectedElements] = useState([]);
   const [editingTextId, setEditingTextId] = useState(null);
   const [history, setHistory] = useState([[]]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [lastSavedElements, setLastSavedElements] = useState(null); // Track saved state for exit warning
+
+  // Multi-select helpers
+  const selectElement = useCallback((id, addToSelection = false) => {
+    if (addToSelection) {
+      setSelectedElements(prev => 
+        prev.includes(id) ? prev.filter(e => e !== id) : [...prev, id]
+      );
+    } else {
+      setSelectedElements([id]);
+    }
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedElements([]);
+  }, []);
 
   const [isSaving, setIsSaving] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -366,7 +381,7 @@ export default function DesignTool() {
     if (historyIndex > 0) {
       setHistoryIndex(historyIndex - 1);
       setElements([...history[historyIndex - 1]]);
-      setSelectedElement(null);
+      setSelectedElements([]);
       setEditingTextId(null);
     }
   };
@@ -375,7 +390,7 @@ export default function DesignTool() {
     if (historyIndex < history.length - 1) {
       setHistoryIndex(historyIndex + 1);
       setElements([...history[historyIndex + 1]]);
-      setSelectedElement(null);
+      setSelectedElements([]);
       setEditingTextId(null);
     }
   };
@@ -394,7 +409,7 @@ export default function DesignTool() {
     const newElements = [...elements, newElement];
     setElements(newElements);
     saveToHistory(newElements);
-    setSelectedElement(newElement.id);
+    setSelectedElements([newElement.id]);
   };
 
   const updateElement = (id, updates) => {
@@ -416,8 +431,40 @@ export default function DesignTool() {
     const newElements = elements.filter(el => el.id !== id);
     setElements(newElements);
     saveToHistory(newElements);
-    if (selectedElement === id) setSelectedElement(null);
+    setSelectedElements(prev => prev.filter(selId => selId !== id));
   };
+
+  // Bulk delete for multi-select
+  const deleteSelectedElements = useCallback(() => {
+    if (selectedElements.length === 0) return;
+    const newElements = elements.filter(el => !selectedElements.includes(el.id));
+    setElements(newElements);
+    saveToHistory(newElements);
+    setSelectedElements([]);
+  }, [selectedElements, elements, saveToHistory]);
+
+  // Keyboard shortcuts for delete and escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't delete if user is typing in a text field
+      if (editingTextId) return;
+      if (document.activeElement?.tagName === 'INPUT' || 
+          document.activeElement?.tagName === 'TEXTAREA') return;
+
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedElements.length > 0) {
+        e.preventDefault();
+        deleteSelectedElements();
+      }
+      
+      if (e.key === 'Escape') {
+        clearSelection();
+        setEditingTextId(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedElements, editingTextId, deleteSelectedElements, clearSelection]);
 
   const duplicateElement = (id) => {
     const element = elements.find(el => el.id === id);
@@ -611,7 +658,7 @@ export default function DesignTool() {
     }));
     setElements(newElements);
     saveToHistory(newElements);
-    setSelectedElement(null);
+    setSelectedElements([]);
     setShowTemplateWarning(false);
     setPendingTemplate(null);
     toast.success(`Applied "${template.name}" template`);
@@ -786,7 +833,7 @@ export default function DesignTool() {
     toast.success(`Downloaded as ${format.toUpperCase()}`);
   };
 
-  const selectedEl = elements.find(el => el.id === selectedElement);
+  const selectedEl = selectedElements.length === 1 ? elements.find(el => el.id === selectedElements[0]) : null;
 
   return (
     <TooltipProvider>
@@ -969,8 +1016,9 @@ export default function DesignTool() {
               setZoom={setZoom}
               elements={elements}
               setElements={setElements}
-              selectedElement={selectedElement}
-              setSelectedElement={setSelectedElement}
+              selectedElements={selectedElements}
+              selectElement={selectElement}
+              clearSelection={clearSelection}
               updateElement={updateElement}
               onStartTextEdit={handleStartTextEdit}
               editingTextId={editingTextId}
