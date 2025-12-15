@@ -304,10 +304,28 @@ export default function CanvasWorkspace({
 
         updateElement(selectedElement, { width: newWidth, height: newHeight, x: newX, y: newY });
       } else if (isRotating) {
-        const centerX = (elementStart.x + elementStart.width / 2) * scale;
-        const centerY = (elementStart.y + elementStart.height / 2) * scale;
-        const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI) + 90;
-        updateElement(selectedElement, { rotation: Math.round(angle / 15) * 15 });
+        // Get canvas element position for accurate rotation calculation
+        const canvasRect = containerRef.current?.getBoundingClientRect();
+        if (!canvasRect) return;
+        
+        // Calculate element center in screen coordinates (accounting for pan offset and scale)
+        const elementCenterX = canvasRect.left + canvasRect.width / 2 + panOffset.x + 
+          (elementStart.x + elementStart.width / 2 - width / 2) * scale;
+        const elementCenterY = canvasRect.top + canvasRect.height / 2 + panOffset.y + 
+          (elementStart.y + elementStart.height / 2 - height / 2) * scale;
+        
+        // Calculate angle from element center to mouse position
+        const angle = Math.atan2(e.clientY - elementCenterY, e.clientX - elementCenterX) * (180 / Math.PI) + 90;
+        
+        // Normalize rotation to 0-360 degrees for smooth continuous rotation
+        let newRotation = ((angle % 360) + 360) % 360;
+        
+        // Optional: Snap to 15° increments when Shift is held for precise angles
+        if (e.shiftKey) {
+          newRotation = Math.round(newRotation / 15) * 15;
+        }
+        
+        updateElement(selectedElement, { rotation: newRotation });
       }
     };
 
