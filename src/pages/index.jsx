@@ -73,7 +73,7 @@ function PagesContent() {
     const location = useLocation();
     const currentPage = _getCurrentPage(location.pathname);
     
-    // Auth and Admin pages don't use Layout
+    // Auth, Admin, and design pages don't use Layout
     if (currentPage === 'Auth') {
         return (
             <Routes>
@@ -86,6 +86,16 @@ function PagesContent() {
         return (
             <Routes>
                 <Route path="/Admin" element={<Admin />} />
+            </Routes>
+        );
+    }
+    
+    // Design tool pages bypass Layout completely
+    if (currentPage === 'DesignTool' || currentPage === 'NameBadgeDesigner' || currentPage === 'NameBadgeNames') {
+        const PageComponent = PAGES[currentPage];
+        return (
+            <Routes>
+                <Route path={`/${currentPage}`} element={<PageComponent />} />
             </Routes>
         );
     }
