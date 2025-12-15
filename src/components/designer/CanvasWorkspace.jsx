@@ -310,12 +310,15 @@ export default function CanvasWorkspace({
       const dx = (e.clientX - dragStart.x) / scale;
       const dy = (e.clientY - dragStart.y) / scale;
 
+      // Always use latest elements during interactions (fixes "newly added element can't move" timing issues)
+      const liveElements = elementsRef.current;
+
       if (currentlyDragging && currentGroupDragStart) {
         // Group drag - move all selected elements
         const idsToMove = Object.keys(currentGroupDragStart);
         if (idsToMove.length > 1) {
           // Multi-element drag
-          const newElements = elements.map(el => {
+          const newElements = liveElements.map(el => {
             if (currentGroupDragStart[el.id]) {
               return {
                 ...el,
@@ -330,7 +333,7 @@ export default function CanvasWorkspace({
         } else {
           // Single element drag with center snapping
           const elementId = idsToMove[0];
-          const element = elements.find(el => el.id === elementId);
+          const element = liveElements.find(el => el.id === elementId);
           if (!element) return;
           
           let newX = currentGroupDragStart[elementId].x + dx;
@@ -367,7 +370,7 @@ export default function CanvasWorkspace({
           updateElement(elementId, { x: newX, y: newY });
         }
       } else if (isResizing && resizeHandle && selectedElements.length === 1) {
-        const element = elements.find(el => el.id === selectedElements[0]);
+        const element = liveElements.find(el => el.id === selectedElements[0]);
         if (!element) return;
         
         let newWidth = elementStart.width;
@@ -400,7 +403,7 @@ export default function CanvasWorkspace({
 
         updateElement(selectedElements[0], { width: newWidth, height: newHeight, x: newX, y: newY });
       } else if (isRotating && selectedElements.length === 1) {
-        const element = elements.find(el => el.id === selectedElements[0]);
+        const element = liveElements.find(el => el.id === selectedElements[0]);
         if (!element) return;
         
         // Get canvas element position for accurate rotation calculation
@@ -439,7 +442,8 @@ export default function CanvasWorkspace({
         
         // Only select if marquee has some size
         if (Math.abs(maxX - minX) > 0.5 || Math.abs(maxY - minY) > 0.5) {
-        const selectedIds = elements
+          const liveElements = elementsRef.current;
+          const selectedIds = liveElements
             .filter(el => {
               // Skip locked elements - they shouldn't be selected via marquee
               if (el.locked) return false;
@@ -474,7 +478,7 @@ export default function CanvasWorkspace({
       
       // Save to history when drag/resize/rotate operation completes
       if ((isDraggingRef.current || isDragging || isResizing || isRotating) && selectedElements.length > 0 && saveToHistory) {
-        saveToHistory(elements);
+        saveToHistory(elementsRef.current);
       }
       
       // Reset refs immediately
