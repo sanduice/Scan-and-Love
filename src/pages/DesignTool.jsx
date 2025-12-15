@@ -109,6 +109,7 @@ export default function DesignTool() {
   const [editingTextId, setEditingTextId] = useState(null);
   const [history, setHistory] = useState([[]]);
   const [historyIndex, setHistoryIndex] = useState(0);
+  const [lastSavedElements, setLastSavedElements] = useState(null); // Track saved state for exit warning
 
   const [isSaving, setIsSaving] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -235,6 +236,7 @@ export default function DesignTool() {
         setElements(templateElements);
         setHistory([templateElements]);
         setHistoryIndex(0);
+        setLastSavedElements(JSON.stringify(templateElements)); // Mark as saved state
       }
 
       toast.success(`Editing template: "${template.name}"`);
@@ -317,6 +319,7 @@ export default function DesignTool() {
         setElements(templateElements);
         setHistory([templateElements]);
         setHistoryIndex(0);
+        setLastSavedElements(JSON.stringify(templateElements)); // Mark as saved state
       }
 
       // Set design name from template
@@ -341,6 +344,7 @@ export default function DesignTool() {
         const loadedElements = design.elements_json ? JSON.parse(design.elements_json) : [];
         setElements(loadedElements);
         setHistory([loadedElements]);
+        setLastSavedElements(JSON.stringify(loadedElements)); // Mark as saved state
       } catch (e) {
         setElements([]);
       }
@@ -503,8 +507,15 @@ export default function DesignTool() {
     applyTemplateConfirmed(template);
   };
 
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = useMemo(() => {
+    if (elements.length === 0) return false;
+    if (lastSavedElements === null) return true; // Never saved
+    return JSON.stringify(elements) !== lastSavedElements;
+  }, [elements, lastSavedElements]);
+
   const handleBackClick = () => {
-    if (elements.length > 0) {
+    if (hasUnsavedChanges) {
       setShowExitWarning(true);
     } else {
       navigateBack();
@@ -594,6 +605,7 @@ export default function DesignTool() {
 
       if (error) throw error;
       
+      setLastSavedElements(JSON.stringify(elements)); // Mark as saved
       toast.success('Template saved successfully!');
     } catch (err) {
       console.error('Failed to save template:', err);
@@ -640,6 +652,7 @@ export default function DesignTool() {
         setSavedDesignId(result.id);
         window.history.replaceState({}, '', `${window.location.pathname}?product=${productType}&width=${canvasWidth}&height=${canvasHeight}&designId=${result.id}`);
       }
+      setLastSavedElements(JSON.stringify(elements)); // Mark as saved
       toast.success('Design saved!');
       setShowSaveDialog(false);
     } catch (err) {
