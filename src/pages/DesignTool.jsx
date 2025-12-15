@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -61,6 +62,7 @@ export default function DesignTool() {
   const initialSizeKey = urlParams.get('sizeKey') || null;
   const initialMaterial = urlParams.get('material') ? decodeURIComponent(urlParams.get('material')) : null;
   const designId = urlParams.get('designId');
+  const templateId = urlParams.get('templateId');
 
   // Fetch product configuration dynamically
   const { data: productData = [] } = useQuery({
@@ -140,6 +142,68 @@ export default function DesignTool() {
       loadDesign(designId);
     }
   }, [designId]);
+
+  // Load template if templateId is provided
+  useEffect(() => {
+    if (templateId && !designId) {
+      loadTemplate(templateId);
+    }
+  }, [templateId]);
+
+  const loadTemplate = async (id) => {
+    try {
+      const { data: template, error } = await supabase
+        .from('design_templates')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!template) {
+        toast.error('Template not found');
+        return;
+      }
+
+      // Apply template design data to canvas
+      if (template.design_data?.elements) {
+        setElements(template.design_data.elements);
+        setHistory([template.design_data.elements]);
+        setHistoryIndex(0);
+      }
+
+      // If template has a source file URL (SVG or image), add it as background element
+      if (template.source_file_url) {
+        const bgElement = {
+          id: Date.now(),
+          type: 'image',
+          src: template.source_file_url,
+          x: 0,
+          y: 0,
+          width: canvasWidth,
+          height: canvasHeight,
+          rotation: 0,
+          locked: true,
+          visible: true,
+          opacity: 1,
+          name: 'Template Background'
+        };
+        const newElements = [bgElement, ...elements];
+        setElements(newElements);
+        setHistory([newElements]);
+        setHistoryIndex(0);
+      }
+
+      // Set design name from template
+      if (template.name) {
+        setDesignName(`${template.name} - Custom`);
+      }
+
+      toast.success(`Template "${template.name}" loaded!`);
+    } catch (err) {
+      console.error('Error loading template:', err);
+      toast.error('Failed to load template');
+    }
+  };
 
   const loadDesign = async (id) => {
     const designs = await base44.entities.SavedDesign.filter({ id });
