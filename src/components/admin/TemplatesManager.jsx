@@ -340,14 +340,14 @@ const TemplateEditor = ({ template, categories, open, onClose, onSave }) => {
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
               <Select 
-                value={formData.category_id || ''} 
-                onValueChange={(v) => setFormData(prev => ({ ...prev, category_id: v }))}
+                value={formData.category_id || 'none'} 
+                onValueChange={(v) => setFormData(prev => ({ ...prev, category_id: v === 'none' ? null : v }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Category</SelectItem>
+                  <SelectItem value="none">No Category</SelectItem>
                   {flatCategories.map(cat => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {'—'.repeat(cat.level)} {cat.name}
