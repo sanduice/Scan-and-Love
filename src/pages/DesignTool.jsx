@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import CanvasWorkspace from '@/components/designer/CanvasWorkspace';
-import ElementsPanel from '@/components/designer/ElementsPanel';
+import CanvaSidebar from '@/components/designer/CanvaSidebar';
 import DesignToolbar from '@/components/designer/DesignToolbar';
 import { generateThumbnail, generateThumbnailWithImages, generateSVG, downloadSVG, downloadPNG, generateArtworkDataURL } from '@/components/designer/CanvasExporter';
 import { parseSvgToElements } from '@/components/designer/SvgParser';
@@ -725,7 +725,7 @@ export default function DesignTool() {
 
   return (
     <TooltipProvider>
-      <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+      <div className="h-screen flex flex-col bg-[#F2F3F6] overflow-hidden">
         {/* Top Header */}
         <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -885,13 +885,12 @@ export default function DesignTool() {
 
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Left Panel - Elements */}
-          <ElementsPanel
+          {/* Left Panel - Canva-style Sidebar */}
+          <CanvaSidebar
             onAddText={handleAddText}
             onAddShape={handleAddShape}
             onAddImage={handleAddImage}
             onAddClipart={handleAddClipart}
-            onApplyTemplate={handleApplyTemplate}
             canvasWidth={canvasWidth}
             canvasHeight={canvasHeight}
           />
