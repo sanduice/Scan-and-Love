@@ -314,10 +314,34 @@ export default function LeftSidebarPanel({
         );
 
       case 'layers':
+        const offCanvasElements = elements.filter(el => isElementOffCanvas(el));
+        const bringAllBack = () => {
+          const newElements = elements.map(el => {
+            if (isElementOffCanvas(el)) {
+              return { ...el, x: (canvasWidth - el.width) / 2, y: (canvasHeight - el.height) / 2 };
+            }
+            return el;
+          });
+          setElements(newElements);
+        };
+        
         return (
           <TooltipProvider>
             <div className="space-y-2">
-              <h4 className="text-xs font-semibold text-[#a6adc8] uppercase tracking-wider mb-3">Layers</h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-xs font-semibold text-[#a6adc8] uppercase tracking-wider">Layers</h4>
+                {offCanvasElements.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={bringAllBack}
+                    className="h-6 text-xs bg-amber-500/20 border-amber-500/50 text-amber-400 hover:bg-amber-500/30"
+                  >
+                    <Crosshair className="w-3 h-3 mr-1" />
+                    Bring All ({offCanvasElements.length})
+                  </Button>
+                )}
+              </div>
               {elements.length === 0 ? (
                 <div className="text-center py-8 text-[#6c7086]">
                   <p className="text-sm">No layers yet</p>
@@ -331,20 +355,25 @@ export default function LeftSidebarPanel({
                       <div
                         key={el.id}
                         onClick={() => setSelectedElement(el.id)}
-                        className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                        className={`relative flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
                           selectedElement === el.id 
                             ? 'bg-[#89b4fa]/20 border border-[#89b4fa]' 
                             : 'hover:bg-[#313244] border border-transparent'
-                        } ${isOffCanvas ? 'bg-amber-900/20' : ''}`}
+                        } ${isOffCanvas ? 'border-amber-500/50 bg-amber-500/10' : ''}`}
                       >
+                        {/* Off-canvas highlight overlay */}
+                        {isOffCanvas && (
+                          <div className="absolute inset-0 rounded-lg border-2 border-amber-500/40 pointer-events-none" />
+                        )}
+                        
                         <GripVertical className="w-4 h-4 text-[#6c7086]" />
                         
                         {isOffCanvas && (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                              <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 animate-pulse" />
                             </TooltipTrigger>
-                            <TooltipContent>Element is outside canvas</TooltipContent>
+                            <TooltipContent>Element is outside canvas - click crosshair to bring back</TooltipContent>
                           </Tooltip>
                         )}
                         

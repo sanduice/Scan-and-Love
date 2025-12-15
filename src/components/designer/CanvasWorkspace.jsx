@@ -1,5 +1,6 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { RotateCw, ArrowUpToLine, ArrowDownToLine, Crosshair } from 'lucide-react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import { RotateCw, ArrowUpToLine, ArrowDownToLine, Crosshair, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // Main Canvas Workspace - Canva-style infinite canvas with pan/zoom
 export default function CanvasWorkspace({
@@ -36,6 +37,40 @@ export default function CanvasWorkspace({
   const canvasPixelWidth = width * scale;
   const canvasPixelHeight = height * scale;
   const bleedSize = 0.25 * scale;
+
+  // Calculate off-canvas elements and their directions
+  const offCanvasInfo = useMemo(() => {
+    const offElements = elements.filter(el => 
+      (el.x + el.width < 0) || (el.x > width) || 
+      (el.y + el.height < 0) || (el.y > height)
+    );
+    
+    let hasLeft = false, hasRight = false, hasTop = false, hasBottom = false;
+    offElements.forEach(el => {
+      if (el.x + el.width < 0) hasLeft = true;
+      if (el.x > width) hasRight = true;
+      if (el.y + el.height < 0) hasTop = true;
+      if (el.y > height) hasBottom = true;
+    });
+    
+    return { offElements, hasLeft, hasRight, hasTop, hasBottom };
+  }, [elements, width, height]);
+
+  const bringAllToCanvas = useCallback(() => {
+    const newElements = elements.map(el => {
+      const isOff = (el.x + el.width < 0) || (el.x > width) || 
+                    (el.y + el.height < 0) || (el.y > height);
+      if (isOff) {
+        return {
+          ...el,
+          x: (width - el.width) / 2,
+          y: (height - el.height) / 2,
+        };
+      }
+      return el;
+    });
+    setElements(newElements);
+  }, [elements, width, height, setElements]);
 
   // Handle wheel zoom
   useEffect(() => {
@@ -519,10 +554,10 @@ export default function CanvasWorkspace({
             />
           )}
 
-          {/* Main canvas */}
+          {/* Main canvas with overflow hidden to clip elements */}
           <div
             data-canvas-bg
-            className="relative bg-white"
+            className="relative bg-white overflow-hidden"
             style={{
               width: canvasPixelWidth,
               height: canvasPixelHeight,
@@ -564,7 +599,47 @@ export default function CanvasWorkspace({
                 <p className="text-sm">Add text, images, or shapes from the left panel</p>
               </div>
             )}
+
+            {/* Edge direction indicators */}
+            {offCanvasInfo.hasLeft && (
+              <div className="absolute left-0 top-1/2 -translate-y-1/2 bg-amber-500 text-white p-1.5 rounded-r-md z-[100] shadow-lg">
+                <ChevronLeft className="w-4 h-4" />
+              </div>
+            )}
+            {offCanvasInfo.hasRight && (
+              <div className="absolute right-0 top-1/2 -translate-y-1/2 bg-amber-500 text-white p-1.5 rounded-l-md z-[100] shadow-lg">
+                <ChevronRight className="w-4 h-4" />
+              </div>
+            )}
+            {offCanvasInfo.hasTop && (
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-amber-500 text-white p-1.5 rounded-b-md z-[100] shadow-lg">
+                <ChevronUp className="w-4 h-4" />
+              </div>
+            )}
+            {offCanvasInfo.hasBottom && (
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-amber-500 text-white p-1.5 rounded-t-md z-[100] shadow-lg">
+                <ChevronDown className="w-4 h-4" />
+              </div>
+            )}
           </div>
+
+          {/* Floating recovery panel */}
+          {offCanvasInfo.offElements.length > 0 && (
+            <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 bg-amber-50 border border-amber-300 rounded-lg px-4 py-2.5 shadow-lg z-[100] flex items-center gap-3 whitespace-nowrap">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+              <span className="text-amber-800 font-medium text-sm">
+                {offCanvasInfo.offElements.length} element{offCanvasInfo.offElements.length > 1 ? 's' : ''} off canvas
+              </span>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={bringAllToCanvas}
+                className="border-amber-400 text-amber-700 hover:bg-amber-100 h-7 text-xs"
+              >
+                <Crosshair className="w-3 h-3 mr-1" /> Bring All Back
+              </Button>
+            </div>
+          )}
 
           {/* Size indicator */}
           <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs text-gray-500 bg-white px-2 py-1 rounded shadow">
