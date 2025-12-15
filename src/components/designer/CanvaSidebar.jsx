@@ -308,10 +308,10 @@ export default function CanvaSidebar({
   };
 
   return (
-    <div className="flex h-full">
+    <div className="relative h-full">
       {/* Icon Bar */}
       <div 
-        className="w-[70px] bg-white border-r border-gray-200 flex flex-col py-2"
+        className="w-[70px] bg-[#F2F3F6] flex flex-col py-2 h-full"
         onMouseLeave={handleIconBarLeave}
       >
         {MENU_ITEMS.map((item) => (
@@ -320,10 +320,10 @@ export default function CanvaSidebar({
             onMouseEnter={() => handleItemHover(item.id)}
             onClick={() => handleItemClick(item.id)}
             className={cn(
-              "flex flex-col items-center justify-center py-3 px-2 gap-1 transition-colors mx-1 rounded-lg",
+              "flex flex-col items-center justify-center py-3 px-2 gap-1 transition-all mx-1 rounded-xl",
               activeItem === item.id 
-                ? "text-primary bg-primary/10" 
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-white text-primary shadow-sm" 
+                : "text-muted-foreground hover:bg-white/50 hover:text-foreground"
             )}
           >
             <item.icon className="w-5 h-5" />
@@ -332,11 +332,11 @@ export default function CanvaSidebar({
         ))}
       </div>
 
-      {/* Drawer Panel */}
+      {/* Drawer Panel - Absolute positioned overlay */}
       <div 
         className={cn(
-          "bg-white border-r border-gray-200 transition-all duration-200 overflow-hidden flex flex-col",
-          showDrawer ? "w-[280px] opacity-100" : "w-0 opacity-0"
+          "absolute left-[70px] top-0 h-full bg-white border-r border-gray-200 shadow-lg transition-all duration-200 overflow-hidden flex flex-col z-50",
+          showDrawer ? "w-[280px] opacity-100" : "w-0 opacity-0 pointer-events-none"
         )}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={handleDrawerLeave}
