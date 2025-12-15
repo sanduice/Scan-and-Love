@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Move, RotateCw } from 'lucide-react';
+import { RotateCw, ArrowUpToLine, ArrowDownToLine, Crosshair } from 'lucide-react';
 
 // Main Canvas Workspace - Canva-style infinite canvas with pan/zoom
 export default function CanvasWorkspace({
@@ -8,6 +8,7 @@ export default function CanvasWorkspace({
   zoom,
   setZoom,
   elements,
+  setElements,
   selectedElement,
   setSelectedElement,
   updateElement,
@@ -28,6 +29,7 @@ export default function CanvasWorkspace({
   const [isPanning, setIsPanning] = useState(false);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [contextMenu, setContextMenu] = useState(null);
 
   const PIXELS_PER_INCH = 10;
   const scale = (zoom / 100) * PIXELS_PER_INCH;
@@ -52,8 +54,19 @@ export default function CanvasWorkspace({
     return () => container.removeEventListener('wheel', handleWheel);
   }, [setZoom]);
 
+  // Close context menu on click outside
+  useEffect(() => {
+    const handleClickOutside = () => setContextMenu(null);
+    if (contextMenu) {
+      window.addEventListener('click', handleClickOutside);
+      return () => window.removeEventListener('click', handleClickOutside);
+    }
+  }, [contextMenu]);
+
   const handleElementMouseDown = useCallback((e, elementId) => {
     e.stopPropagation();
+    if (e.button === 2) return; // Right-click handled separately
+    
     const element = elements.find(el => el.id === elementId);
     if (!element || element.locked) return;
     if (editingTextId === elementId) return;
@@ -69,6 +82,59 @@ export default function CanvasWorkspace({
       rotation: element.rotation || 0
     });
   }, [elements, editingTextId, setSelectedElement]);
+
+  const handleContextMenu = useCallback((e, elementId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedElement(elementId);
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      elementId,
+    });
+  }, [setSelectedElement]);
+
+  const handleBringToFront = useCallback(() => {
+    if (!contextMenu?.elementId) return;
+    const index = elements.findIndex(el => el.id === contextMenu.elementId);
+    if (index === -1 || index === elements.length - 1) {
+      setContextMenu(null);
+      return;
+    }
+    const newElements = [...elements];
+    const [element] = newElements.splice(index, 1);
+    newElements.push(element);
+    setElements(newElements);
+    setContextMenu(null);
+  }, [contextMenu, elements, setElements]);
+
+  const handleSendToBack = useCallback(() => {
+    if (!contextMenu?.elementId) return;
+    const index = elements.findIndex(el => el.id === contextMenu.elementId);
+    if (index === -1 || index === 0) {
+      setContextMenu(null);
+      return;
+    }
+    const newElements = [...elements];
+    const [element] = newElements.splice(index, 1);
+    newElements.unshift(element);
+    setElements(newElements);
+    setContextMenu(null);
+  }, [contextMenu, elements, setElements]);
+
+  const handleCenterOnCanvas = useCallback(() => {
+    if (!contextMenu?.elementId) return;
+    const element = elements.find(el => el.id === contextMenu.elementId);
+    if (!element) {
+      setContextMenu(null);
+      return;
+    }
+    updateElement(contextMenu.elementId, {
+      x: (width - element.width) / 2,
+      y: (height - element.height) / 2,
+    });
+    setContextMenu(null);
+  }, [contextMenu, elements, updateElement, width, height]);
 
   const handleDoubleClick = useCallback((e, elementId) => {
     e.stopPropagation();
@@ -128,9 +194,10 @@ export default function CanvasWorkspace({
       const dy = (e.clientY - dragStart.y) / scale;
 
       if (isDragging) {
+        // Allow free movement outside canvas bounds
         updateElement(selectedElement, {
-          x: Math.max(0, Math.min(width - element.width, elementStart.x + dx)),
-          y: Math.max(0, Math.min(height - element.height, elementStart.y + dy)),
+          x: elementStart.x + dx,
+          y: elementStart.y + dy,
         });
       } else if (isResizing && resizeHandle) {
         let newWidth = elementStart.width;
@@ -207,6 +274,7 @@ export default function CanvasWorkspace({
   const renderElement = (element) => {
     const isSelected = selectedElement === element.id;
     const isEditing = editingTextId === element.id;
+    const elementIndex = elements.indexOf(element);
 
     const style = {
       position: 'absolute',
@@ -217,7 +285,8 @@ export default function CanvasWorkspace({
       transform: `rotate(${element.rotation || 0}deg)`,
       cursor: element.locked ? 'not-allowed' : isEditing ? 'text' : 'move',
       opacity: element.visible === false ? 0.3 : 1,
-      zIndex: isSelected ? 1000 : elements.indexOf(element) + 1,
+      // Keep element at its natural z-index position
+      zIndex: elementIndex + 1,
       transformOrigin: 'center center',
     };
 
@@ -316,15 +385,16 @@ export default function CanvasWorkspace({
         onClick={(e) => { e.stopPropagation(); setSelectedElement(element.id); }}
         onMouseDown={(e) => handleElementMouseDown(e, element.id)}
         onDoubleClick={(e) => handleDoubleClick(e, element.id)}
+        onContextMenu={(e) => handleContextMenu(e, element.id)}
       >
         {content}
 
-        {/* Selection UI */}
+        {/* Selection UI - elevated above other elements */}
         {isSelected && !element.locked && !isEditing && (
-          <>
+          <div style={{ position: 'absolute', inset: 0, zIndex: 9999, pointerEvents: 'none' }}>
             {/* Selection border */}
             <div 
-              className="absolute inset-0 border-2 pointer-events-none rounded-sm"
+              className="absolute inset-0 border-2 rounded-sm"
               style={{ borderColor: '#3B82F6' }}
             />
             
@@ -344,7 +414,7 @@ export default function CanvasWorkspace({
                 <div
                   key={handle}
                   className="absolute w-3 h-3 bg-white rounded-full shadow-lg border-2 border-blue-500 hover:scale-125 transition-transform"
-                  style={{ ...positions[handle], cursor: positions[handle].cursor }}
+                  style={{ ...positions[handle], cursor: positions[handle].cursor, pointerEvents: 'auto' }}
                   onMouseDown={(e) => handleResizeStart(e, element.id, handle)}
                 />
               );
@@ -353,18 +423,19 @@ export default function CanvasWorkspace({
             {/* Rotation handle */}
             <div
               className="absolute -top-10 left-1/2 -ml-4 w-8 h-8 bg-white rounded-full shadow-lg border-2 border-blue-500 flex items-center justify-center cursor-grab hover:scale-110 transition-transform"
+              style={{ pointerEvents: 'auto' }}
               onMouseDown={(e) => handleRotateStart(e, element.id)}
             >
               <RotateCw className="w-4 h-4 text-blue-500" />
             </div>
             <div className="absolute -top-10 left-1/2 w-px h-6 bg-blue-500 -ml-px" style={{ top: -24 }} />
-          </>
+          </div>
         )}
 
         {isEditing && (
           <div 
             className="absolute inset-0 border-2 pointer-events-none" 
-            style={{ borderColor: '#22C55E' }} 
+            style={{ borderColor: '#22C55E', zIndex: 9999 }} 
           />
         )}
       </div>
@@ -379,6 +450,38 @@ export default function CanvasWorkspace({
       onMouseDown={handleCanvasMouseDown}
       style={{ cursor: isPanning ? 'grabbing' : 'default' }}
     >
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[10000] min-w-[160px]"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+            onClick={handleBringToFront}
+          >
+            <ArrowUpToLine className="w-4 h-4" />
+            Bring to Front
+          </button>
+          <button
+            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+            onClick={handleSendToBack}
+          >
+            <ArrowDownToLine className="w-4 h-4" />
+            Send to Back
+          </button>
+          <div className="border-t border-gray-100 my-1" />
+          <button
+            className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+            onClick={handleCenterOnCanvas}
+          >
+            <Crosshair className="w-4 h-4" />
+            Center on Canvas
+          </button>
+        </div>
+      )}
+
       {/* Checkered background */}
       <div 
         className="absolute inset-0 pointer-events-none"
