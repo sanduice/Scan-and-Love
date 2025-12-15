@@ -450,6 +450,22 @@ export default function CanvasWorkspace({
         />
       );
     } else if (element.type === 'shape') {
+      // Clip-path definitions for complex shapes
+      const SHAPE_CLIP_PATHS = {
+        triangle: 'polygon(50% 0%, 0% 100%, 100% 100%)',
+        star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
+        hexagon: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',
+        pentagon: 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)',
+        diamond: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+        heart: 'path("M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z")',
+        octagon: 'polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%)',
+        'arrow-right': 'polygon(0% 20%, 60% 20%, 60% 0%, 100% 50%, 60% 100%, 60% 80%, 0% 80%)',
+        'arrow-left': 'polygon(40% 0%, 40% 20%, 100% 20%, 100% 80%, 40% 80%, 40% 100%, 0% 50%)',
+        'arrow-up': 'polygon(50% 0%, 100% 40%, 80% 40%, 80% 100%, 20% 100%, 20% 40%, 0% 40%)',
+        'arrow-down': 'polygon(20% 0%, 80% 0%, 80% 60%, 100% 60%, 50% 100%, 0% 60%, 20% 60%)',
+        'double-arrow': 'polygon(0% 50%, 15% 20%, 15% 40%, 85% 40%, 85% 20%, 100% 50%, 85% 80%, 85% 60%, 15% 60%, 15% 80%)',
+      };
+      
       // Handle border radius - can be numeric from SVG parser or string
       let borderRadius = 0;
       if (element.shape === 'circle') {
@@ -460,6 +476,9 @@ export default function CanvasWorkspace({
         borderRadius = `${element.borderRadius * scale}px`;
       }
 
+      // Check if this is a line shape
+      const isLine = element.shape === 'line-h' || element.shape === 'line-v';
+
       const shapeStyle = {
         width: '100%',
         height: '100%',
@@ -467,7 +486,8 @@ export default function CanvasWorkspace({
         border: element.stroke && element.stroke !== 'none' 
           ? `${(element.strokeWidth || 2) * scale}px solid ${element.stroke}` 
           : 'none',
-        borderRadius,
+        borderRadius: isLine ? '4px' : borderRadius,
+        clipPath: SHAPE_CLIP_PATHS[element.shape] || undefined,
         opacity: element.opacity ?? 1,
         boxShadow: element.shadow || 'none',
         pointerEvents: 'none',

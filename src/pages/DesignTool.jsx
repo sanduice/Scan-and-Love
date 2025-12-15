@@ -457,25 +457,47 @@ export default function DesignTool() {
       type: 'text',
       text: preset.label || 'Your Text',
       fontSize: preset.fontSize || 4,
-      fontFamily: preset.fontFamily || 'Arial',
+      fontFamily: preset.fontFamily || 'Inter',
       fontWeight: preset.fontWeight || 'bold',
       fontStyle: 'normal',
       textAlign: 'center',
-      color: '#000000',
+      color: preset.color || '#000000',
       width: canvasWidth * 0.6,
       height: preset.fontSize * 2 || 8,
     });
   };
 
   const handleAddShape = (shape, color) => {
+    // Handle line shapes with different dimensions
+    const isLine = shape.startsWith('line-') || shape.startsWith('arrow-') || shape === 'double-arrow';
+    const isVertical = shape === 'line-v' || shape === 'arrow-up' || shape === 'arrow-down';
+    
+    let width, height;
+    if (isLine) {
+      if (isVertical) {
+        width = 0.5;
+        height = canvasHeight * 0.3;
+      } else {
+        width = canvasWidth * 0.3;
+        height = 0.5;
+      }
+    } else if (shape === 'circle' || shape === 'star' || shape === 'hexagon' || 
+               shape === 'pentagon' || shape === 'octagon' || shape === 'heart' || shape === 'diamond') {
+      width = canvasWidth * 0.2;
+      height = canvasWidth * 0.2;
+    } else {
+      width = canvasWidth * 0.25;
+      height = canvasHeight * 0.25;
+    }
+    
     addElement({
       type: 'shape',
       shape,
       fill: color || '#3B82F6',
       stroke: 'none',
       strokeWidth: 0,
-      width: canvasWidth * 0.25,
-      height: shape === 'circle' ? canvasWidth * 0.25 : canvasHeight * 0.25,
+      width,
+      height,
     });
   };
 
