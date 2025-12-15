@@ -64,12 +64,18 @@ export default function DesignTool() {
   const initialMaterial = urlParams.get('material') ? decodeURIComponent(urlParams.get('material')) : null;
   const designId = urlParams.get('designId');
   const templateId = urlParams.get('templateId');
+  const editTemplateId = urlParams.get('editTemplateId');
+  
+  // Template editing mode
+  const isTemplateEditMode = !!editTemplateId;
+  const [templateEditData, setTemplateEditData] = useState(null);
 
   // Fetch product configuration dynamically
   const { data: productData = [] } = useQuery({
     queryKey: ['product-config', productType],
     queryFn: () => base44.entities.Product.filter({ slug: productType }),
     staleTime: 1000 * 60 * 60, // 1 hour
+    enabled: !isTemplateEditMode, // Skip product fetch in template edit mode
   });
 
   const product = productData[0];
@@ -144,12 +150,99 @@ export default function DesignTool() {
     }
   }, [designId]);
 
-  // Load template if templateId is provided
+  // Load template for editing (admin mode)
   useEffect(() => {
-    if (templateId && !designId) {
+    if (editTemplateId) {
+      loadTemplateForEditing(editTemplateId);
+    } else if (templateId && !designId) {
       loadTemplate(templateId);
     }
-  }, [templateId]);
+  }, [editTemplateId, templateId]);
+
+  const loadTemplateForEditing = async (id) => {
+    try {
+      const { data: template, error } = await supabase
+        .from('design_templates')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!template) {
+        toast.error('Template not found');
+        navigate('/admin?tab=templates');
+        return;
+      }
+
+      // Store template metadata for saving later
+      setTemplateEditData(template);
+      setDesignName(template.name || 'Template');
+
+      let templateElements = [];
+
+      // Load elements from design_data if available
+      if (template.design_data?.elements && template.design_data.elements.length > 0) {
+        templateElements = template.design_data.elements;
+      }
+      // If template has a source file URL (SVG), parse it into editable elements
+      else if (template.source_file_url) {
+        const fileUrl = template.source_file_url;
+        const isSvg = fileUrl.toLowerCase().includes('.svg') || 
+                      fileUrl.includes('image/svg') ||
+                      template.file_type === 'vector';
+
+        if (isSvg) {
+          toast.info('Parsing SVG template...', { duration: 2000 });
+          try {
+            templateElements = await parseSvgToElements(fileUrl, canvasWidth, canvasHeight);
+            toast.success(`Parsed ${templateElements.length} elements from template!`);
+          } catch (parseError) {
+            console.error('SVG parsing failed, falling back to image:', parseError);
+            templateElements = [{
+              id: Date.now(),
+              type: 'image',
+              src: fileUrl,
+              x: 0,
+              y: 0,
+              width: canvasWidth,
+              height: canvasHeight,
+              rotation: 0,
+              locked: false,
+              visible: true,
+              opacity: 1,
+              name: 'Template Image'
+            }];
+          }
+        } else {
+          templateElements = [{
+            id: Date.now(),
+            type: 'image',
+            src: fileUrl,
+            x: 0,
+            y: 0,
+            width: canvasWidth,
+            height: canvasHeight,
+            rotation: 0,
+            locked: false,
+            visible: true,
+            opacity: 1,
+            name: 'Template Image'
+          }];
+        }
+      }
+
+      if (templateElements.length > 0) {
+        setElements(templateElements);
+        setHistory([templateElements]);
+        setHistoryIndex(0);
+      }
+
+      toast.success(`Editing template: "${template.name}"`);
+    } catch (err) {
+      console.error('Error loading template for editing:', err);
+      toast.error('Failed to load template');
+    }
+  };
 
   const loadTemplate = async (id) => {
     try {
@@ -419,6 +512,12 @@ export default function DesignTool() {
   };
 
   const navigateBack = () => {
+    // If editing a template, go back to admin templates
+    if (isTemplateEditMode) {
+      navigate('/admin?tab=templates');
+      return;
+    }
+    
     if (productType) {
       navigate(`${createPageUrl('ProductDetail')}?slug=${productType}`);
     } else {
@@ -470,6 +569,39 @@ export default function DesignTool() {
   }, [pricingData, options.printSides, quantity, canvasWidth, canvasHeight]);
 
   const createThumbnail = () => generateThumbnailWithImages(elements, canvasWidth, canvasHeight);
+
+  // Save template (admin template edit mode)
+  const saveTemplate = async () => {
+    if (!templateEditData?.id) {
+      toast.error('No template loaded');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Generate new thumbnail
+      const thumbnail = await createThumbnail();
+
+      // Update design_templates table
+      const { error } = await supabase
+        .from('design_templates')
+        .update({
+          design_data: { elements },
+          thumbnail_url: thumbnail,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', templateEditData.id);
+
+      if (error) throw error;
+      
+      toast.success('Template saved successfully!');
+    } catch (err) {
+      console.error('Failed to save template:', err);
+      toast.error('Failed to save template: ' + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleSave = async () => {
     // Check if user is logged in
@@ -589,10 +721,22 @@ export default function DesignTool() {
               className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
             >
               <ChevronLeft className="w-5 h-5" />
-              <span className="font-medium hidden sm:inline">Back</span>
+              <span className="font-medium hidden sm:inline">
+                {isTemplateEditMode ? 'Back to Templates' : 'Back'}
+              </span>
             </button>
 
             <div className="h-5 w-px bg-gray-200" />
+
+            {/* Template Mode Indicator */}
+            {isTemplateEditMode && (
+              <>
+                <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+                  Editing Template
+                </div>
+                <div className="h-5 w-px bg-gray-200" />
+              </>
+            )}
 
             <button
               onClick={() => setShowSizeDialog(true)}
@@ -638,26 +782,30 @@ export default function DesignTool() {
 
           {/* Right - Actions */}
           <div className="flex items-center gap-3">
-            {/* Quantity & Price */}
-            <div className="hidden md:flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 py-1">
-                <span className="text-sm text-gray-600">Qty:</span>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setQuantity(Math.max(1, quantity - 1))}>
-                  <Minus className="w-3 h-3" />
-                </Button>
-                <span className="text-sm font-medium w-6 text-center">{quantity}</span>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setQuantity(quantity + 1)}>
-                  <Plus className="w-3 h-3" />
-                </Button>
-              </div>
+            {/* Quantity & Price - Only show in normal mode */}
+            {!isTemplateEditMode && (
+              <>
+                <div className="hidden md:flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 py-1">
+                    <span className="text-sm text-gray-600">Qty:</span>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setQuantity(Math.max(1, quantity - 1))}>
+                      <Minus className="w-3 h-3" />
+                    </Button>
+                    <span className="text-sm font-medium w-6 text-center">{quantity}</span>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setQuantity(quantity + 1)}>
+                      <Plus className="w-3 h-3" />
+                    </Button>
+                  </div>
 
-              <div className="text-right">
-                <div className="text-xs text-gray-500">Total</div>
-                <div className="text-xl font-bold text-green-600">${pricing.total}</div>
-              </div>
-            </div>
+                  <div className="text-right">
+                    <div className="text-xs text-gray-500">Total</div>
+                    <div className="text-xl font-bold text-green-600">${pricing.total}</div>
+                  </div>
+                </div>
 
-            <div className="h-8 w-px bg-gray-200" />
+                <div className="h-8 w-px bg-gray-200" />
+              </>
+            )}
 
             {/* Download */}
             <Tooltip>
@@ -669,41 +817,56 @@ export default function DesignTool() {
               <TooltipContent>Download PNG</TooltipContent>
             </Tooltip>
 
-            {/* Share */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Share2 className="w-4 h-4" />
+            {/* Share - Only in normal mode */}
+            {!isTemplateEditMode && (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <Share2 className="w-4 h-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Share Design</DialogTitle>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <p className="text-sm text-gray-500 mb-4">
+                      Share this design with others. They can view and edit a copy of it.
+                    </p>
+                    <SocialShare title={`Check out my design: ${designName}`} />
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+
+            {/* Save / Save Template Button */}
+            {isTemplateEditMode ? (
+              <Button 
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                onClick={saveTemplate} 
+                disabled={isSaving}
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                Save Template
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => setShowSaveDialog(true)} disabled={isSaving}>
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                  Save
                 </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Share Design</DialogTitle>
-                </DialogHeader>
-                <div className="py-4">
-                  <p className="text-sm text-gray-500 mb-4">
-                    Share this design with others. They can view and edit a copy of it.
-                  </p>
-                  <SocialShare title={`Check out my design: ${designName}`} />
-                </div>
-              </DialogContent>
-            </Dialog>
 
-            {/* Save */}
-            <Button variant="outline" onClick={() => setShowSaveDialog(true)} disabled={isSaving}>
-              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-              Save
-            </Button>
-
-            {/* Add to Cart */}
-            <Button
-              className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={handleAddToCart}
-              disabled={isAddingToCart}
-            >
-              {isAddingToCart ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4 mr-2" />}
-              Add to Cart
-            </Button>
+                {/* Add to Cart */}
+                <Button
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  onClick={handleAddToCart}
+                  disabled={isAddingToCart}
+                >
+                  {isAddingToCart ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4 mr-2" />}
+                  Add to Cart
+                </Button>
+              </>
+            )}
           </div>
         </header>
 
