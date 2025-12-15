@@ -19,6 +19,7 @@ export default function CanvasWorkspace({
   onEndTextEdit,
   showGrid,
   showBleed,
+  saveToHistory,
 }) {
   const containerRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -70,7 +71,8 @@ export default function CanvasWorkspace({
       return el;
     });
     setElements(newElements);
-  }, [elements, width, height, setElements]);
+    if (saveToHistory) saveToHistory(newElements);
+  }, [elements, width, height, setElements, saveToHistory]);
 
   // Handle wheel zoom
   useEffect(() => {
@@ -140,8 +142,9 @@ export default function CanvasWorkspace({
     const [element] = newElements.splice(index, 1);
     newElements.push(element);
     setElements(newElements);
+    if (saveToHistory) saveToHistory(newElements);
     setContextMenu(null);
-  }, [contextMenu, elements, setElements]);
+  }, [contextMenu, elements, setElements, saveToHistory]);
 
   const handleSendToBack = useCallback(() => {
     if (!contextMenu?.elementId) return;
@@ -154,8 +157,9 @@ export default function CanvasWorkspace({
     const [element] = newElements.splice(index, 1);
     newElements.unshift(element);
     setElements(newElements);
+    if (saveToHistory) saveToHistory(newElements);
     setContextMenu(null);
-  }, [contextMenu, elements, setElements]);
+  }, [contextMenu, elements, setElements, saveToHistory]);
 
   const handleCenterOnCanvas = useCallback(() => {
     if (!contextMenu?.elementId) return;
@@ -164,12 +168,18 @@ export default function CanvasWorkspace({
       setContextMenu(null);
       return;
     }
-    updateElement(contextMenu.elementId, {
-      x: (width - element.width) / 2,
-      y: (height - element.height) / 2,
-    });
+    const newX = (width - element.width) / 2;
+    const newY = (height - element.height) / 2;
+    updateElement(contextMenu.elementId, { x: newX, y: newY });
+    // Save to history after centering
+    if (saveToHistory) {
+      const newElements = elements.map(el => 
+        el.id === contextMenu.elementId ? { ...el, x: newX, y: newY } : el
+      );
+      saveToHistory(newElements);
+    }
     setContextMenu(null);
-  }, [contextMenu, elements, updateElement, width, height]);
+  }, [contextMenu, elements, updateElement, width, height, saveToHistory]);
 
   const handleDoubleClick = useCallback((e, elementId) => {
     e.stopPropagation();
@@ -273,6 +283,10 @@ export default function CanvasWorkspace({
     };
 
     const handleMouseUp = () => {
+      // Save to history when drag/resize/rotate operation completes
+      if ((isDragging || isResizing || isRotating) && selectedElement && saveToHistory) {
+        saveToHistory(elements);
+      }
       setIsDragging(false);
       setIsResizing(false);
       setIsRotating(false);
