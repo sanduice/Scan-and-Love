@@ -50,15 +50,7 @@ export default function Layout({ children, currentPageName }) {
     navigate(createPageUrl('Auth'));
   };
 
-  // Don't show layout on design tool pages
-  if (currentPageName === 'DesignTool' || currentPageName === 'NameBadgeDesigner' || currentPageName === 'NameBadgeNames') {
-    return (
-      <>
-        <Toaster position="top-right" richColors />
-        {children}
-      </>
-    );
-  }
+  // Design tool pages now bypass Layout completely via routing
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
