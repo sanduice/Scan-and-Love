@@ -469,8 +469,14 @@ export default function DesignTool() {
 
   const handleAddShape = (shape, color) => {
     // Handle line shapes with different dimensions
-    const isLine = shape.startsWith('line-') || shape.startsWith('arrow-') || shape === 'double-arrow';
+    const isLine = shape.startsWith('line-') || shape === 'double-arrow';
+    const isArrowShape = shape.startsWith('arrow-');
     const isVertical = shape === 'line-v' || shape === 'arrow-up' || shape === 'arrow-down';
+    const isSpeechBubble = shape.startsWith('speech-') || shape.startsWith('thought-') || shape.startsWith('cloud-');
+    const isCallout = shape.startsWith('callout-');
+    const isRibbon = shape.startsWith('ribbon-') || shape === 'badge-shield';
+    const isBracket = shape.startsWith('bracket-') || shape.startsWith('frame-');
+    const isStarburst = shape === 'starburst';
     
     let width, height;
     if (isLine) {
@@ -481,6 +487,27 @@ export default function DesignTool() {
         width = canvasWidth * 0.3;
         height = 0.5;
       }
+    } else if (isArrowShape) {
+      width = canvasWidth * 0.15;
+      height = canvasWidth * 0.1;
+    } else if (isSpeechBubble) {
+      // Speech bubbles are wider than tall
+      width = canvasWidth * 0.35;
+      height = canvasHeight * 0.25;
+    } else if (isCallout) {
+      width = canvasWidth * 0.25;
+      height = canvasHeight * 0.15;
+    } else if (isRibbon) {
+      // Ribbons are wide and short
+      width = canvasWidth * 0.5;
+      height = canvasHeight * 0.12;
+    } else if (isBracket) {
+      // Brackets are tall and narrow
+      width = canvasWidth * 0.08;
+      height = canvasHeight * 0.3;
+    } else if (isStarburst) {
+      width = canvasWidth * 0.25;
+      height = canvasWidth * 0.25;
     } else if (shape === 'circle' || shape === 'star' || shape === 'hexagon' || 
                shape === 'pentagon' || shape === 'octagon' || shape === 'heart' || shape === 'diamond') {
       width = canvasWidth * 0.2;
