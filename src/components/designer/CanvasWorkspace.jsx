@@ -43,6 +43,10 @@ export default function CanvasWorkspace({
   
   // Group drag state
   const [groupDragStart, setGroupDragStart] = useState(null);
+  
+  // Refs for immediate drag state synchronization (fixes stale closure issue)
+  const isDraggingRef = useRef(false);
+  const groupDragStartRef = useRef(null);
 
   const PIXELS_PER_INCH = 10;
   const scale = (zoom / 100) * PIXELS_PER_INCH;
@@ -132,6 +136,26 @@ export default function CanvasWorkspace({
     }
     // If clicking on already-selected element, keep selection (allows group drag)
     
+    // Store initial positions for all selected elements for group drag
+    let positions = {};
+    if (selectedElements.length > 1 || (selectedElements.length === 1 && selectedElements.includes(elementId))) {
+      selectedElements.forEach(id => {
+        const el = elements.find(e => e.id === id);
+        if (el) positions[id] = { x: el.x, y: el.y };
+      });
+      // Also include current element if not in selection yet
+      if (!selectedElements.includes(elementId)) {
+        positions[elementId] = { x: element.x, y: element.y };
+      }
+    } else {
+      positions = { [elementId]: { x: element.x, y: element.y } };
+    }
+    
+    // Set refs IMMEDIATELY for synchronous access in mousemove handler
+    isDraggingRef.current = true;
+    groupDragStartRef.current = positions;
+    
+    // Also set state for React re-renders
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
     setElementStart({ 
@@ -141,22 +165,7 @@ export default function CanvasWorkspace({
       height: element.height,
       rotation: element.rotation || 0
     });
-    
-    // Store initial positions for all selected elements for group drag
-    if (selectedElements.length > 1 || (selectedElements.length === 1 && selectedElements.includes(elementId))) {
-      const positions = {};
-      selectedElements.forEach(id => {
-        const el = elements.find(e => e.id === id);
-        if (el) positions[id] = { x: el.x, y: el.y };
-      });
-      // Also include current element if not in selection yet
-      if (!selectedElements.includes(elementId)) {
-        positions[elementId] = { x: element.x, y: element.y };
-      }
-      setGroupDragStart(positions);
-    } else {
-      setGroupDragStart({ [elementId]: { x: element.x, y: element.y } });
-    }
+    setGroupDragStart(positions);
   }, [elements, editingTextId, selectElement, selectedElements]);
 
   const handleContextMenu = useCallback((e, elementId) => {
@@ -287,22 +296,26 @@ export default function CanvasWorkspace({
         return;
       }
 
-      if (!isDragging && !isResizing && !isRotating) return;
+      // Use refs for immediate drag detection (fixes stale closure issue)
+      const currentlyDragging = isDraggingRef.current || isDragging;
+      const currentGroupDragStart = groupDragStartRef.current || groupDragStart;
+      
+      if (!currentlyDragging && !isResizing && !isRotating) return;
 
       const dx = (e.clientX - dragStart.x) / scale;
       const dy = (e.clientY - dragStart.y) / scale;
 
-      if (isDragging && groupDragStart) {
+      if (currentlyDragging && currentGroupDragStart) {
         // Group drag - move all selected elements
-        const idsToMove = Object.keys(groupDragStart);
+        const idsToMove = Object.keys(currentGroupDragStart);
         if (idsToMove.length > 1) {
           // Multi-element drag
           const newElements = elements.map(el => {
-            if (groupDragStart[el.id]) {
+            if (currentGroupDragStart[el.id]) {
               return {
                 ...el,
-                x: groupDragStart[el.id].x + dx,
-                y: groupDragStart[el.id].y + dy,
+                x: currentGroupDragStart[el.id].x + dx,
+                y: currentGroupDragStart[el.id].y + dy,
               };
             }
             return el;
@@ -315,8 +328,8 @@ export default function CanvasWorkspace({
           const element = elements.find(el => el.id === elementId);
           if (!element) return;
           
-          let newX = groupDragStart[elementId].x + dx;
-          let newY = groupDragStart[elementId].y + dy;
+          let newX = currentGroupDragStart[elementId].x + dx;
+          let newY = currentGroupDragStart[elementId].y + dy;
           
           // Calculate element center
           const elementCenterX = newX + element.width / 2;
@@ -455,9 +468,14 @@ export default function CanvasWorkspace({
       }
       
       // Save to history when drag/resize/rotate operation completes
-      if ((isDragging || isResizing || isRotating) && selectedElements.length > 0 && saveToHistory) {
+      if ((isDraggingRef.current || isDragging || isResizing || isRotating) && selectedElements.length > 0 && saveToHistory) {
         saveToHistory(elements);
       }
+      
+      // Reset refs immediately
+      isDraggingRef.current = false;
+      groupDragStartRef.current = null;
+      
       setIsDragging(false);
       setIsResizing(false);
       setIsRotating(false);
@@ -801,8 +819,14 @@ export default function CanvasWorkspace({
     return (
       <div
         key={element.id}
+        data-element-id={element.id}
         style={style}
-        onClick={(e) => { e.stopPropagation(); if (!e.shiftKey) selectElement(element.id, false); }}
+        onClick={(e) => { 
+          if (!element.locked) {
+            e.stopPropagation(); 
+            if (!e.shiftKey) selectElement(element.id, false); 
+          }
+        }}
         onMouseDown={(e) => handleElementMouseDown(e, element.id)}
         onDoubleClick={(e) => handleDoubleClick(e, element.id)}
         onContextMenu={(e) => handleContextMenu(e, element.id)}
