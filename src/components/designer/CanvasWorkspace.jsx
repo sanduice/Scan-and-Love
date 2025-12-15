@@ -39,6 +39,7 @@ export default function CanvasWorkspace({
   const [isMarqueeSelecting, setIsMarqueeSelecting] = useState(false);
   const [marqueeStart, setMarqueeStart] = useState({ x: 0, y: 0 });
   const [marqueeEnd, setMarqueeEnd] = useState({ x: 0, y: 0 });
+  const marqueeJustCompletedRef = useRef(false);
   
   // Group drag state
   const [groupDragStart, setGroupDragStart] = useState(null);
@@ -436,6 +437,10 @@ export default function CanvasWorkspace({
           }
         }
         
+        // Set flag to prevent click handler from clearing selection
+        marqueeJustCompletedRef.current = true;
+        setTimeout(() => { marqueeJustCompletedRef.current = false; }, 0);
+        
         setIsMarqueeSelecting(false);
         setMarqueeStart({ x: 0, y: 0 });
         setMarqueeEnd({ x: 0, y: 0 });
@@ -464,6 +469,11 @@ export default function CanvasWorkspace({
   }, [isDragging, isResizing, isRotating, isPanning, isMarqueeSelecting, selectedElements, dragStart, elementStart, resizeHandle, panStart, elements, scale, width, height, updateElement, groupDragStart, marqueeStart, marqueeEnd, selectElement, saveToHistory, setElements]);
 
   const handleCanvasClick = (e) => {
+    // Skip if marquee selection just completed
+    if (marqueeJustCompletedRef.current) {
+      return;
+    }
+    
     if (e.target === e.currentTarget || e.target.closest('[data-canvas-bg]')) {
       if (!e.shiftKey) {
         clearSelection();
@@ -483,12 +493,7 @@ export default function CanvasWorkspace({
       } 
       // Left click starts marquee selection
       else if (e.button === 0) {
-        // Clear selection unless Shift is held
-        if (!e.shiftKey) {
-          clearSelection();
-        }
-        
-        // Start marquee selection
+        // Start marquee selection (don't clear yet - will clear on click if no selection made)
         const canvasContainer = containerRef.current?.querySelector('[data-canvas-bg]');
         const canvasRect = canvasContainer?.getBoundingClientRect();
         if (canvasRect) {
