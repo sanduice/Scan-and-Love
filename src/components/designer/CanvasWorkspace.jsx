@@ -579,19 +579,10 @@ export default function CanvasWorkspace({
         </div>
       )}
 
-      {/* Checkered background */}
+      {/* Solid background */}
       <div 
         className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: `
-            linear-gradient(45deg, #e5e5e5 25%, transparent 25%),
-            linear-gradient(-45deg, #e5e5e5 25%, transparent 25%),
-            linear-gradient(45deg, transparent 75%, #e5e5e5 75%),
-            linear-gradient(-45deg, transparent 75%, #e5e5e5 75%)
-          `,
-          backgroundSize: '20px 20px',
-          backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
-        }}
+        style={{ backgroundColor: '#F2F3F6' }}
       />
 
       <div 
