@@ -32,6 +32,7 @@ export default function CanvasWorkspace({
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [contextMenu, setContextMenu] = useState(null);
+  const [alignmentGuides, setAlignmentGuides] = useState({ showVertical: false, showHorizontal: false });
 
   const PIXELS_PER_INCH = 10;
   const scale = (zoom / 100) * PIXELS_PER_INCH;
@@ -239,11 +240,39 @@ export default function CanvasWorkspace({
       const dy = (e.clientY - dragStart.y) / scale;
 
       if (isDragging) {
-        // Allow free movement outside canvas bounds
-        updateElement(selectedElement, {
-          x: elementStart.x + dx,
-          y: elementStart.y + dy,
+        // Calculate new position
+        let newX = elementStart.x + dx;
+        let newY = elementStart.y + dy;
+        
+        // Calculate element center
+        const elementCenterX = newX + element.width / 2;
+        const elementCenterY = newY + element.height / 2;
+        
+        // Canvas center
+        const canvasCenterX = width / 2;
+        const canvasCenterY = height / 2;
+        
+        // Snap threshold (in inches)
+        const threshold = 0.15;
+        
+        // Check alignment
+        const isHorizontallyCentered = Math.abs(elementCenterX - canvasCenterX) < threshold;
+        const isVerticallyCentered = Math.abs(elementCenterY - canvasCenterY) < threshold;
+        
+        // Snap to center if within threshold
+        if (isHorizontallyCentered) {
+          newX = canvasCenterX - element.width / 2;
+        }
+        if (isVerticallyCentered) {
+          newY = canvasCenterY - element.height / 2;
+        }
+        
+        setAlignmentGuides({
+          showVertical: isHorizontallyCentered,
+          showHorizontal: isVerticallyCentered,
         });
+        
+        updateElement(selectedElement, { x: newX, y: newY });
       } else if (isResizing && resizeHandle) {
         let newWidth = elementStart.width;
         let newHeight = elementStart.height;
@@ -292,6 +321,7 @@ export default function CanvasWorkspace({
       setIsRotating(false);
       setResizeHandle(null);
       setIsPanning(false);
+      setAlignmentGuides({ showVertical: false, showHorizontal: false });
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -601,6 +631,38 @@ export default function CanvasWorkspace({
                 bottom: 0.5 * scale,
               }}
             />
+
+            {/* Center alignment guides */}
+            {alignmentGuides.showVertical && (
+              <div 
+                className="absolute top-0 bottom-0 w-px pointer-events-none z-[50]"
+                style={{ left: canvasPixelWidth / 2, backgroundColor: '#EC4899' }}
+              >
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] px-1.5 py-0.5 rounded text-white whitespace-nowrap" style={{ backgroundColor: '#EC4899' }}>
+                  Center
+                </div>
+              </div>
+            )}
+            {alignmentGuides.showHorizontal && (
+              <div 
+                className="absolute left-0 right-0 h-px pointer-events-none z-[50]"
+                style={{ top: canvasPixelHeight / 2, backgroundColor: '#EC4899' }}
+              >
+                <div className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] px-1.5 py-0.5 rounded text-white whitespace-nowrap" style={{ backgroundColor: '#EC4899' }}>
+                  Center
+                </div>
+              </div>
+            )}
+            {alignmentGuides.showVertical && alignmentGuides.showHorizontal && (
+              <div 
+                className="absolute w-3 h-3 rounded-full pointer-events-none z-[51] -translate-x-1/2 -translate-y-1/2"
+                style={{ 
+                  left: canvasPixelWidth / 2, 
+                  top: canvasPixelHeight / 2,
+                  backgroundColor: '#EC4899',
+                }}
+              />
+            )}
 
             {/* Elements */}
             {elements.filter(el => el.visible !== false).map(renderElement)}
