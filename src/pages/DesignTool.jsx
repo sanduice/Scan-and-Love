@@ -20,6 +20,7 @@ import CanvasWorkspace from '@/components/designer/CanvasWorkspace';
 import ElementsPanel from '@/components/designer/ElementsPanel';
 import DesignToolbar from '@/components/designer/DesignToolbar';
 import { generateThumbnail, generateThumbnailWithImages, generateSVG, downloadSVG, downloadPNG, generateArtworkDataURL } from '@/components/designer/CanvasExporter';
+import { parseSvgToElements } from '@/components/designer/SvgParser';
 import { AlertTriangle } from 'lucide-react';
 
 import { usePricing } from '@/components/pricing/PricingCalculator';
@@ -164,32 +165,64 @@ export default function DesignTool() {
         return;
       }
 
-      // Apply template design data to canvas
-      if (template.design_data?.elements) {
-        setElements(template.design_data.elements);
-        setHistory([template.design_data.elements]);
-        setHistoryIndex(0);
+      let templateElements = [];
+
+      // Apply template design data to canvas if available
+      if (template.design_data?.elements && template.design_data.elements.length > 0) {
+        templateElements = template.design_data.elements;
+      }
+      // If template has a source file URL (SVG), parse it into editable elements
+      else if (template.source_file_url) {
+        const fileUrl = template.source_file_url;
+        const isSvg = fileUrl.toLowerCase().includes('.svg') || 
+                      fileUrl.includes('image/svg') ||
+                      template.file_type === 'vector';
+
+        if (isSvg) {
+          toast.info('Parsing SVG template...', { duration: 2000 });
+          try {
+            templateElements = await parseSvgToElements(fileUrl, canvasWidth, canvasHeight);
+            toast.success(`Parsed ${templateElements.length} elements from template!`);
+          } catch (parseError) {
+            console.error('SVG parsing failed, falling back to image:', parseError);
+            // Fallback: add as single editable image
+            templateElements = [{
+              id: Date.now(),
+              type: 'image',
+              src: fileUrl,
+              x: 0,
+              y: 0,
+              width: canvasWidth,
+              height: canvasHeight,
+              rotation: 0,
+              locked: false,
+              visible: true,
+              opacity: 1,
+              name: 'Template Image'
+            }];
+          }
+        } else {
+          // Non-SVG files: add as editable image element
+          templateElements = [{
+            id: Date.now(),
+            type: 'image',
+            src: fileUrl,
+            x: 0,
+            y: 0,
+            width: canvasWidth,
+            height: canvasHeight,
+            rotation: 0,
+            locked: false,
+            visible: true,
+            opacity: 1,
+            name: 'Template Image'
+          }];
+        }
       }
 
-      // If template has a source file URL (SVG or image), add it as background element
-      if (template.source_file_url) {
-        const bgElement = {
-          id: Date.now(),
-          type: 'image',
-          src: template.source_file_url,
-          x: 0,
-          y: 0,
-          width: canvasWidth,
-          height: canvasHeight,
-          rotation: 0,
-          locked: true,
-          visible: true,
-          opacity: 1,
-          name: 'Template Background'
-        };
-        const newElements = [bgElement, ...elements];
-        setElements(newElements);
-        setHistory([newElements]);
+      if (templateElements.length > 0) {
+        setElements(templateElements);
+        setHistory([templateElements]);
         setHistoryIndex(0);
       }
 
