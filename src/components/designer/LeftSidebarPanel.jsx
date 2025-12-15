@@ -5,8 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   Type, Image, Square, Circle, Upload, Layout, Shapes, Palette,
   Star, Triangle, Hexagon, Heart, Loader2, Search, X, Smile,
-  Eye, EyeOff, Lock, Unlock, Trash2, ChevronUp, ChevronDown, GripVertical
+  Eye, EyeOff, Lock, Unlock, Trash2, ChevronUp, ChevronDown, GripVertical,
+  AlertTriangle, Crosshair
 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Template categories with templates
 const TEMPLATE_CATEGORIES = {
@@ -83,6 +85,8 @@ export default function LeftSidebarPanel({
   setElements,
   updateElement,
   deleteElement,
+  canvasWidth,
+  canvasHeight,
 }) {
   const fileInputRef = useRef(null);
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -120,6 +124,25 @@ export default function LeftSidebarPanel({
     const newElements = [...elements];
     [newElements[index], newElements[newIndex]] = [newElements[newIndex], newElements[index]];
     setElements(newElements);
+  };
+
+  const isElementOffCanvas = (element) => {
+    if (!canvasWidth || !canvasHeight) return false;
+    return (
+      (element.x + element.width < 0) || 
+      (element.x > canvasWidth) || 
+      (element.y + element.height < 0) || 
+      (element.y > canvasHeight)
+    );
+  };
+
+  const centerElementOnCanvas = (elementId) => {
+    const element = elements.find(el => el.id === elementId);
+    if (!element || !canvasWidth || !canvasHeight) return;
+    updateElement(elementId, {
+      x: (canvasWidth - element.width) / 2,
+      y: (canvasHeight - element.height) / 2,
+    });
   };
 
   const renderContent = () => {
@@ -292,54 +315,86 @@ export default function LeftSidebarPanel({
 
       case 'layers':
         return (
-          <div className="space-y-2">
-            <h4 className="text-xs font-semibold text-[#a6adc8] uppercase tracking-wider mb-3">Layers</h4>
-            {elements.length === 0 ? (
-              <div className="text-center py-8 text-[#6c7086]">
-                <p className="text-sm">No layers yet</p>
-                <p className="text-xs mt-1">Add elements to see them here</p>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {[...elements].reverse().map((el, idx) => (
-                  <div
-                    key={el.id}
-                    onClick={() => setSelectedElement(el.id)}
-                    className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
-                      selectedElement === el.id 
-                        ? 'bg-[#89b4fa]/20 border border-[#89b4fa]' 
-                        : 'hover:bg-[#313244] border border-transparent'
-                    }`}
-                  >
-                    <GripVertical className="w-4 h-4 text-[#6c7086]" />
-                    
-                    <div className="w-8 h-8 bg-[#313244] rounded flex items-center justify-center flex-shrink-0">
-                      {el.type === 'text' && <Type className="w-4 h-4 text-[#cdd6f4]" />}
-                      {el.type === 'shape' && <Square className="w-4 h-4 text-[#cdd6f4]" />}
-                      {(el.type === 'image' || el.type === 'clipart') && <Image className="w-4 h-4 text-[#cdd6f4]" />}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[#cdd6f4] truncate">
-                        {el.type === 'text' ? el.text?.slice(0, 15) || 'Text' : el.type}
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-center gap-1">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); updateElement(el.id, { visible: !el.visible }); }}
-                        className="p-1 text-[#6c7086] hover:text-white"
+          <TooltipProvider>
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-[#a6adc8] uppercase tracking-wider mb-3">Layers</h4>
+              {elements.length === 0 ? (
+                <div className="text-center py-8 text-[#6c7086]">
+                  <p className="text-sm">No layers yet</p>
+                  <p className="text-xs mt-1">Add elements to see them here</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {[...elements].reverse().map((el, idx) => {
+                    const isOffCanvas = isElementOffCanvas(el);
+                    return (
+                      <div
+                        key={el.id}
+                        onClick={() => setSelectedElement(el.id)}
+                        className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                          selectedElement === el.id 
+                            ? 'bg-[#89b4fa]/20 border border-[#89b4fa]' 
+                            : 'hover:bg-[#313244] border border-transparent'
+                        } ${isOffCanvas ? 'bg-amber-900/20' : ''}`}
                       >
-                        {el.visible !== false ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); deleteElement(el.id); }}
-                        className="p-1 text-[#6c7086] hover:text-[#f38ba8]"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
+                        <GripVertical className="w-4 h-4 text-[#6c7086]" />
+                        
+                        {isOffCanvas && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                            </TooltipTrigger>
+                            <TooltipContent>Element is outside canvas</TooltipContent>
+                          </Tooltip>
+                        )}
+                        
+                        <div className="w-8 h-8 bg-[#313244] rounded flex items-center justify-center flex-shrink-0">
+                          {el.type === 'text' && <Type className="w-4 h-4 text-[#cdd6f4]" />}
+                          {el.type === 'shape' && <Square className="w-4 h-4 text-[#cdd6f4]" />}
+                          {(el.type === 'image' || el.type === 'clipart') && <Image className="w-4 h-4 text-[#cdd6f4]" />}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-[#cdd6f4] truncate">
+                            {el.type === 'text' ? el.text?.slice(0, 15) || 'Text' : el.type}
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center gap-1">
+                          {isOffCanvas && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); centerElementOnCanvas(el.id); }}
+                                  className="p-1 text-amber-500 hover:text-amber-400"
+                                >
+                                  <Crosshair className="w-3 h-3" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>Center on canvas</TooltipContent>
+                            </Tooltip>
+                          )}
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); updateElement(el.id, { visible: !el.visible }); }}
+                            className="p-1 text-[#6c7086] hover:text-white"
+                          >
+                            {el.visible !== false ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); deleteElement(el.id); }}
+                            className="p-1 text-[#6c7086] hover:text-[#f38ba8]"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </TooltipProvider>
+        );
                 ))}
               </div>
             )}

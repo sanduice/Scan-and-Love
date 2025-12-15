@@ -891,6 +891,7 @@ export default function DesignTool() {
               zoom={zoom}
               setZoom={setZoom}
               elements={elements}
+              setElements={setElements}
               selectedElement={selectedElement}
               setSelectedElement={setSelectedElement}
               updateElement={updateElement}
