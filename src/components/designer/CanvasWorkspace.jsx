@@ -49,10 +49,8 @@ export default function CanvasWorkspace({
   const groupDragStartRef = useRef(null);
   const elementsRef = useRef(elements);
   
-  // Keep elementsRef in sync with the latest elements prop
-  useEffect(() => {
-    elementsRef.current = elements;
-  }, [elements]);
+  // Update synchronously during render (not in useEffect) to ensure immediate access
+  elementsRef.current = elements;
   const PIXELS_PER_INCH = 10;
   const scale = (zoom / 100) * PIXELS_PER_INCH;
   const canvasPixelWidth = width * scale;
