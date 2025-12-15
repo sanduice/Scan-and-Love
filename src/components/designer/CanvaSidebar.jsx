@@ -88,6 +88,38 @@ const LINES_ARROWS = [
   { id: 'double-arrow', name: 'Double ↔', icon: MoveHorizontal },
 ];
 
+// Speech bubbles and callout shapes
+const SPEECH_BUBBLES = [
+  // Speech bubbles with tails
+  { id: 'speech-round-bl', name: 'Round (BL)', svg: 'M20,4 C28.84,4 36,10.27 36,18 C36,25.73 28.84,32 20,32 L10,32 L14,26 C8.5,24 4,21.5 4,18 C4,10.27 11.16,4 20,4 Z' },
+  { id: 'speech-round-br', name: 'Round (BR)', svg: 'M20,4 C11.16,4 4,10.27 4,18 C4,25.73 11.16,32 20,32 L30,32 L26,26 C31.5,24 36,21.5 36,18 C36,10.27 28.84,4 20,4 Z' },
+  { id: 'speech-round-bc', name: 'Round (BC)', svg: 'M20,2 C31,2 38,9 38,18 C38,27 31,34 20,34 L24,34 L20,42 L16,34 L20,34 C9,34 2,27 2,18 C2,9 9,2 20,2 Z' },
+  { id: 'speech-rect-bl', name: 'Rect (BL)', svg: 'M4,4 L36,4 L36,28 L14,28 L6,38 L10,28 L4,28 Z' },
+  { id: 'speech-rect-br', name: 'Rect (BR)', svg: 'M4,4 L36,4 L36,28 L30,28 L34,38 L26,28 L4,28 Z' },
+  { id: 'speech-rect-bc', name: 'Rect (BC)', svg: 'M4,4 L36,4 L36,26 L24,26 L20,36 L16,26 L4,26 Z' },
+  { id: 'speech-rect-fold', name: 'Folded', svg: 'M4,4 L32,4 L36,8 L36,36 L4,36 Z M32,4 L32,8 L36,8' },
+  // Thought/cloud bubbles
+  { id: 'thought-cloud', name: 'Thought', svg: 'M30,18 C32,14 32,8 26,6 C24,2 18,2 14,4 C10,2 4,4 4,10 C2,12 2,18 6,20 C4,24 6,28 12,28 L12,32 L8,36 L12,32 C14,30 18,30 20,28 L28,28 C34,28 36,22 30,18 Z' },
+  { id: 'cloud-bubble', name: 'Cloud', svg: 'M28,26 C32,26 34,22 32,18 C36,16 36,10 30,8 C30,4 24,2 20,4 C16,0 8,2 8,8 C4,8 2,14 6,18 C2,20 4,26 10,26 Z' },
+  { id: 'cloud-bumpy', name: 'Bumpy', svg: 'M10,28 C4,28 2,22 6,18 C2,14 4,8 10,8 C10,2 18,0 22,4 C26,0 34,2 34,8 C38,8 40,14 36,18 C40,22 38,28 32,28 Z' },
+  // Callout shapes
+  { id: 'callout-left', name: 'Call Left', svg: 'M12,4 L36,4 L36,32 L12,32 L4,18 Z' },
+  { id: 'callout-right', name: 'Call Right', svg: 'M4,4 L28,4 L36,18 L28,32 L4,32 Z' },
+  // Banners & Ribbons
+  { id: 'ribbon-wave', name: 'Wave', svg: 'M0,8 L4,0 L4,8 L36,8 L36,0 L40,8 L40,32 L36,40 L36,32 L4,32 L4,40 L0,32 Z' },
+  { id: 'ribbon-banner', name: 'Banner', svg: 'M0,4 L40,4 L40,28 L34,28 L40,40 L30,28 L10,28 L0,40 L6,28 L0,28 Z' },
+  { id: 'ribbon-scroll', name: 'Scroll', svg: 'M6,8 L34,8 L38,4 L38,12 L34,8 L34,32 L38,28 L38,36 L34,32 L6,32 L2,36 L2,28 L6,32 L6,8 L2,12 L2,4 Z' },
+  { id: 'badge-shield', name: 'Shield', svg: 'M4,4 L36,4 L36,24 L20,36 L4,24 Z' },
+  // Brackets & Frames
+  { id: 'bracket-left', name: 'Bracket L', svg: 'M16,4 L8,4 L8,16 L4,20 L8,24 L8,36 L16,36 L16,32 L12,32 L12,22 L8,20 L12,18 L12,8 L16,8 Z' },
+  { id: 'bracket-curly', name: 'Curly', svg: 'M14,4 L10,4 C8,4 6,6 6,8 L6,16 C6,18 4,20 2,20 C4,20 6,22 6,24 L6,32 C6,34 8,36 10,36 L14,36 L14,32 L12,32 C10,32 10,30 10,28 L10,22 C10,20 8,18 6,18 C8,18 10,16 10,14 L10,8 C10,6 10,4 12,4 L14,4 Z' },
+  { id: 'bracket-round', name: 'Round', svg: 'M14,4 C8,4 4,10 4,20 C4,30 8,36 14,36 L14,32 C10,32 8,28 8,20 C8,12 10,8 14,8 Z' },
+  // Decorative frames
+  { id: 'frame-scallop', name: 'Scallop', svg: 'M20,2 C22,2 24,4 24,6 C26,4 30,4 32,6 C34,4 38,4 38,8 C40,10 40,14 38,16 C40,18 40,22 38,24 C40,26 40,30 38,32 C38,36 34,36 32,34 C30,36 26,36 24,34 C22,36 18,36 16,34 C14,36 10,36 8,34 C6,36 2,36 2,32 C0,30 0,26 2,24 C0,22 0,18 2,16 C0,14 0,10 2,8 C2,4 6,4 8,6 C10,4 14,4 16,6 C18,4 18,2 20,2 Z' },
+  { id: 'frame-ticket', name: 'Ticket', svg: 'M4,8 C4,6 6,4 8,4 L32,4 C34,4 36,6 36,8 L36,14 C34,14 32,16 32,18 C32,20 34,22 36,22 L36,28 C36,30 34,32 32,32 L8,32 C6,32 4,30 4,28 L4,22 C6,22 8,20 8,18 C8,16 6,14 4,14 Z' },
+  { id: 'starburst', name: 'Starburst', svg: 'M20,0 L23,14 L36,8 L26,18 L40,20 L26,22 L36,32 L23,26 L20,40 L17,26 L4,32 L14,22 L0,20 L14,18 L4,8 L17,14 Z' },
+];
+
 // Expanded clipart categories
 const CLIPART_CATEGORIES = [
   {
@@ -454,6 +486,24 @@ export default function CanvaSidebar({
                   title={shape.name}
                 >
                   <shape.icon className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-[9px] text-muted-foreground mt-1 truncate w-full text-center">{shape.name}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Speech Bubbles & Callouts */}
+            <h4 className="font-medium text-foreground text-sm mb-3">Speech Bubbles & Callouts</h4>
+            <div className="grid grid-cols-4 gap-2 mb-6">
+              {SPEECH_BUBBLES.map((shape) => (
+                <button
+                  key={shape.id}
+                  onClick={() => onAddShape(shape.id)}
+                  className="aspect-square flex flex-col items-center justify-center p-2 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
+                  title={shape.name}
+                >
+                  <svg viewBox="0 0 40 40" className="w-6 h-6 text-muted-foreground fill-current">
+                    <path d={shape.svg} />
+                  </svg>
                   <span className="text-[9px] text-muted-foreground mt-1 truncate w-full text-center">{shape.name}</span>
                 </button>
               ))}
