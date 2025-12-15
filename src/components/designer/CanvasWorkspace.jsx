@@ -112,11 +112,15 @@ export default function CanvasWorkspace({
   }, [contextMenu]);
 
   const handleElementMouseDown = useCallback((e, elementId) => {
-    e.stopPropagation();
     if (e.button === 2) return; // Right-click handled separately
     
     const element = elements.find(el => el.id === elementId);
-    if (!element || element.locked) return;
+    if (!element) return;
+    
+    // For locked elements, don't stop propagation - let event bubble up for marquee selection
+    if (element.locked) return;
+    
+    e.stopPropagation(); // Only stop propagation for unlocked elements
     if (editingTextId === elementId) return;
 
     // Shift+click adds/removes from selection
@@ -417,8 +421,11 @@ export default function CanvasWorkspace({
         
         // Only select if marquee has some size
         if (Math.abs(maxX - minX) > 0.5 || Math.abs(maxY - minY) > 0.5) {
-          const selectedIds = elements
+        const selectedIds = elements
             .filter(el => {
+              // Skip locked elements - they shouldn't be selected via marquee
+              if (el.locked) return false;
+              
               const elRight = el.x + el.width;
               const elBottom = el.y + el.height;
               // Check if element intersects with marquee
@@ -527,7 +534,7 @@ export default function CanvasWorkspace({
       width: element.width * scale,
       height: element.height * scale,
       transform: `rotate(${element.rotation || 0}deg)`,
-      cursor: element.locked ? 'not-allowed' : isEditing ? 'text' : 'move',
+      cursor: element.locked ? 'default' : isEditing ? 'text' : 'move',
       opacity: element.visible === false ? 0.3 : 1,
       // Keep element at its natural z-index position
       zIndex: elementIndex + 1,

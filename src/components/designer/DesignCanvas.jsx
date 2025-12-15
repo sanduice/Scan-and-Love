@@ -147,7 +147,7 @@ export default function DesignCanvas({
       width: element.width * scale,
       height: element.height * scale,
       transform: `rotate(${element.rotation || 0}deg)`,
-      cursor: element.locked ? 'not-allowed' : isEditing ? 'text' : 'move',
+      cursor: element.locked ? 'default' : isEditing ? 'text' : 'move',
       opacity: element.visible === false ? 0.3 : 1,
       zIndex: isSelected ? 1000 : 1,
     };
