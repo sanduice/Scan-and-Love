@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { usePricing } from '@/components/pricing/PricingCalculator';
 import { supabase } from '@/lib/supabase';
+import TemplateSelectionDialog from './TemplateSelectionDialog';
 
 // Helper to get or create session ID for anonymous users (matches SessionManager)
 const getSessionId = () => {
@@ -826,6 +827,9 @@ export default function ProductConfigurator({
     }
   };
 
+  // Template selection dialog state
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+
   // Start design tool
   const startDesigning = () => {
     // Special routing for Stickers
@@ -859,14 +863,9 @@ export default function ProductConfigurator({
       navigate(`${createPageUrl('NameBadgeDesigner')}?type=${type}&shape=${shape}`);
       return;
     }
-    let designUrl = `${createPageUrl('DesignTool')}?product=${product.slug || 'vinyl-banner'}&width=${width}&height=${height}`;
-    if (sizeKey) {
-      designUrl += `&sizeKey=${encodeURIComponent(sizeKey)}`;
-    }
-    if (selectedOptions.thickness) {
-      designUrl += `&material=${encodeURIComponent(selectedOptions.thickness)}`;
-    }
-    navigate(designUrl);
+    
+    // For products with design tool - show template selection popup
+    setShowTemplateDialog(true);
   };
   const renderOptionGroup = (label, options, selectedKey, optionKey) => {
     if (!options || options.length === 0) return null;
@@ -1323,5 +1322,18 @@ export default function ProductConfigurator({
             </div>
           </div>
         </div>}
+
+      {/* Template Selection Dialog */}
+      <TemplateSelectionDialog
+        open={showTemplateDialog}
+        onOpenChange={setShowTemplateDialog}
+        product={product}
+        selectedSize={{ width, height }}
+        selectedOptions={{ 
+          material: selectedOptions.thickness, 
+          finish: selectedOptions.finish,
+          sizeKey 
+        }}
+      />
     </div>;
 }
