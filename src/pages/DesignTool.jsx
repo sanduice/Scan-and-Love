@@ -901,6 +901,7 @@ export default function DesignTool() {
               onEndTextEdit={handleEndTextEdit}
               showGrid={showGrid}
               showBleed={showBleed}
+              saveToHistory={saveToHistory}
             />
 
             {/* Floating Toolbar */}
