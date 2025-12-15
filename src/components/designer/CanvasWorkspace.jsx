@@ -474,7 +474,14 @@ export default function CanvasWorkspace({
       return;
     }
     
-    if (e.target === e.currentTarget || e.target.closest('[data-canvas-bg]')) {
+    // Don't clear if clicking on an element or its controls
+    const isClickOnElement = e.target.closest('[data-element-id]');
+    const isClickOnResizeHandle = e.target.closest('[data-resize-handle]');
+    const isClickOnRotateHandle = e.target.closest('[data-rotate-handle]');
+    const isClickOnContextMenu = e.target.closest('[data-context-menu]');
+    
+    // Clear selection if clicking on workspace (anywhere except elements/controls)
+    if (!isClickOnElement && !isClickOnResizeHandle && !isClickOnRotateHandle && !isClickOnContextMenu) {
       if (!e.shiftKey) {
         clearSelection();
       }
