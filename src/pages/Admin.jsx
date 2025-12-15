@@ -12,7 +12,7 @@ import {
   Package, Users, DollarSign, Search, Eye, LayoutDashboard,
   Truck, CheckCircle, XCircle, Clock, Loader2, RefreshCw,
   Printer, AlertTriangle, TrendingUp, Settings, Tag, ShoppingBag,
-  BarChart3, Menu, X, ChevronRight, FileText, Database
+  BarChart3, Menu, X, ChevronRight, FileText, Database, LayoutTemplate
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -31,6 +31,7 @@ import PricingManager from '@/components/admin/PricingManager';
 import ReportsDashboard from '@/components/admin/ReportsDashboard';
 import TaxSettings from '@/components/admin/TaxSettings';
 import ExemptionRequests from '@/components/admin/ExemptionRequests';
+import TemplatesManager from '@/components/admin/TemplatesManager';
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -54,6 +55,7 @@ const NAV_ITEMS = [
   { id: 'invoices', label: 'Invoices', icon: DollarSign },
   { id: 'production', label: 'Production', icon: Printer },
   { id: 'products', label: 'Products', icon: ShoppingBag },
+  { id: 'templates', label: 'Templates', icon: LayoutTemplate },
   { id: 'categories', label: 'Categories', icon: Tag },
   { id: 'pricing', label: 'Pricing', icon: DollarSign },
   { id: 'customers', label: 'Customers', icon: Users },
@@ -422,6 +424,13 @@ export default function Admin() {
         return (
           <div className="bg-white rounded-xl shadow-sm border p-6">
             <CategoriesManager />
+          </div>
+        );
+
+      case 'templates':
+        return (
+          <div className="bg-white rounded-xl shadow-sm border p-6">
+            <TemplatesManager />
           </div>
         );
 

@@ -214,38 +214,69 @@ export type Database = {
       design_templates: {
         Row: {
           category: string | null
+          category_id: string | null
           created_at: string
+          description: string | null
           design_data: Json | null
+          file_type: string | null
           id: string
           is_active: boolean | null
           name: string
+          preview_images: Json | null
           product_id: string | null
+          sizes: Json | null
+          sort_order: number | null
+          source_file_url: string | null
+          tags: string[] | null
           thumbnail_url: string | null
           updated_at: string
         }
         Insert: {
           category?: string | null
+          category_id?: string | null
           created_at?: string
+          description?: string | null
           design_data?: Json | null
+          file_type?: string | null
           id?: string
           is_active?: boolean | null
           name: string
+          preview_images?: Json | null
           product_id?: string | null
+          sizes?: Json | null
+          sort_order?: number | null
+          source_file_url?: string | null
+          tags?: string[] | null
           thumbnail_url?: string | null
           updated_at?: string
         }
         Update: {
           category?: string | null
+          category_id?: string | null
           created_at?: string
+          description?: string | null
           design_data?: Json | null
+          file_type?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
+          preview_images?: Json | null
           product_id?: string | null
+          sizes?: Json | null
+          sort_order?: number | null
+          source_file_url?: string | null
+          tags?: string[] | null
           thumbnail_url?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "design_templates_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "design_templates_product_id_fkey"
             columns: ["product_id"]
