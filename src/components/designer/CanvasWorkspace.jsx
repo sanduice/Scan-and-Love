@@ -284,13 +284,24 @@ export default function CanvasWorkspace({
         />
       );
     } else if (element.type === 'shape') {
+      // Handle border radius - can be numeric from SVG parser or string
+      let borderRadius = 0;
+      if (element.shape === 'circle') {
+        borderRadius = '50%';
+      } else if (element.shape === 'rounded-rect') {
+        borderRadius = element.borderRadius ? `${element.borderRadius * scale}px` : '12px';
+      } else if (element.borderRadius) {
+        borderRadius = `${element.borderRadius * scale}px`;
+      }
+
       const shapeStyle = {
         width: '100%',
         height: '100%',
         backgroundColor: element.fill || '#3B82F6',
-        border: element.stroke !== 'none' ? `${element.strokeWidth || 2}px solid ${element.stroke}` : 'none',
-        borderRadius: element.shape === 'circle' ? '50%' : 
-                      element.shape === 'rounded-rect' ? '12px' : 0,
+        border: element.stroke && element.stroke !== 'none' 
+          ? `${(element.strokeWidth || 2) * scale}px solid ${element.stroke}` 
+          : 'none',
+        borderRadius,
         opacity: element.opacity ?? 1,
         boxShadow: element.shadow || 'none',
         pointerEvents: 'none',
