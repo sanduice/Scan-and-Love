@@ -47,6 +47,7 @@ export default function CanvasWorkspace({
   // Refs for immediate drag state synchronization (fixes stale closure issue)
   const isDraggingRef = useRef(false);
   const groupDragStartRef = useRef(null);
+  const dragStartRef = useRef({ x: 0, y: 0 });
   const elementsRef = useRef(elements);
   const selectedElementsRef = useRef(selectedElements);
   
@@ -161,6 +162,7 @@ export default function CanvasWorkspace({
     // Set refs IMMEDIATELY for synchronous access in mousemove handler
     isDraggingRef.current = true;
     groupDragStartRef.current = positions;
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
     
     // Also set state for React re-renders
     setIsDragging(true);
@@ -309,8 +311,9 @@ export default function CanvasWorkspace({
       
       if (!currentlyDragging && !isResizing && !isRotating) return;
 
-      const dx = (e.clientX - dragStart.x) / scale;
-      const dy = (e.clientY - dragStart.y) / scale;
+      // Use ref for immediate access (fixes stale closure issue)
+      const dx = (e.clientX - dragStartRef.current.x) / scale;
+      const dy = (e.clientY - dragStartRef.current.y) / scale;
 
       // Always use latest elements during interactions (fixes "newly added element can't move" timing issues)
       const liveElements = elementsRef.current;
@@ -502,7 +505,7 @@ export default function CanvasWorkspace({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, isResizing, isRotating, isPanning, isMarqueeSelecting, dragStart, elementStart, resizeHandle, panStart, elements, scale, width, height, updateElement, groupDragStart, marqueeStart, marqueeEnd, selectElement, saveToHistory, setElements]);
+  }, [isDragging, isResizing, isRotating, isPanning, isMarqueeSelecting, elementStart, resizeHandle, panStart, elements, scale, width, height, updateElement, marqueeStart, marqueeEnd, selectElement, saveToHistory, setElements]);
 
   const handleCanvasClick = (e) => {
     // Skip if marquee selection just completed
