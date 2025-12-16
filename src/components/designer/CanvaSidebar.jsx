@@ -234,6 +234,8 @@ const ATYPICAL_SHAPES = [
   // Geometric abstract
   { id: 'geo-hexagon', name: 'Geo Hex', svg: 'M20,2 L36,11 L36,29 L20,38 L4,29 L4,11 Z M20,10 L28,15 L28,25 L20,30 L12,25 L12,15 Z', color: '#10B981' },
   { id: 'geo-diamond', name: 'Geo Dia', svg: 'M20,2 L38,20 L20,38 L2,20 Z M20,10 L30,20 L20,30 L10,20 Z', color: '#6366F1' },
+  // Arch shapes
+  { id: 'arch-rounded', name: 'Arch', svg: 'M4,18 A16,16 0 0 1 36,18 L36,38 L4,38 Z', color: '#43A363' },
 ];
 
 // Speech bubbles and callout shapes
