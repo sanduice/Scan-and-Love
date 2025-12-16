@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import LayersPanel from '@/components/designer/LayersPanel';
+import PageThumbnails from '@/components/designer/PageThumbnails';
 import SocialShare from '@/components/SocialShare';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -106,12 +107,31 @@ export default function DesignTool() {
   const [showGrid, setShowGrid] = useState(false);
   const [showBleed, setShowBleed] = useState(true);
 
-  const [elements, setElements] = useState([]);
+  // Multi-page state
+  const [pages, setPages] = useState([
+    { id: 'front', label: 'Front Side', elements: [] }
+  ]);
+  const [activePageIndex, setActivePageIndex] = useState(0);
+  
+  // Derived elements for current page
+  const elements = pages[activePageIndex]?.elements || [];
+  
+  // Wrapper to update elements for current page
+  const setElements = useCallback((newElementsOrUpdater) => {
+    setPages(prev => prev.map((page, i) => {
+      if (i !== activePageIndex) return page;
+      const newElements = typeof newElementsOrUpdater === 'function' 
+        ? newElementsOrUpdater(page.elements) 
+        : newElementsOrUpdater;
+      return { ...page, elements: newElements };
+    }));
+  }, [activePageIndex]);
+
   const [selectedElement, setSelectedElement] = useState(null);
   const [editingTextId, setEditingTextId] = useState(null);
-  const [history, setHistory] = useState([[]]);
+  const [history, setHistory] = useState([[{ id: 'front', label: 'Front Side', elements: [] }]]);
   const [historyIndex, setHistoryIndex] = useState(0);
-  const [lastSavedElements, setLastSavedElements] = useState(null); // Track saved state for exit warning
+  const [lastSavedPages, setLastSavedPages] = useState(null); // Track saved state for exit warning
 
   const [isSaving, setIsSaving] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -236,10 +256,12 @@ export default function DesignTool() {
       }
 
       if (templateElements.length > 0) {
-        setElements(templateElements);
-        setHistory([templateElements]);
+        const newPages = [{ id: 'front', label: 'Front Side', elements: templateElements }];
+        setPages(newPages);
+        setActivePageIndex(0);
+        setHistory([newPages]);
         setHistoryIndex(0);
-        setLastSavedElements(JSON.stringify(templateElements)); // Mark as saved state
+        setLastSavedPages(JSON.stringify(newPages)); // Mark as saved state
       }
 
       toast.success(`Editing template: "${template.name}"`);
@@ -319,10 +341,12 @@ export default function DesignTool() {
       }
 
       if (templateElements.length > 0) {
-        setElements(templateElements);
-        setHistory([templateElements]);
+        const newPages = [{ id: 'front', label: 'Front Side', elements: templateElements }];
+        setPages(newPages);
+        setActivePageIndex(0);
+        setHistory([newPages]);
         setHistoryIndex(0);
-        setLastSavedElements(JSON.stringify(templateElements)); // Mark as saved state
+        setLastSavedPages(JSON.stringify(newPages)); // Mark as saved state
       }
 
       // Set design name from template
@@ -344,31 +368,60 @@ export default function DesignTool() {
       setCanvasWidth(design.width);
       setCanvasHeight(design.height);
       try {
-        const loadedElements = design.elements_json ? JSON.parse(design.elements_json) : [];
-        setElements(loadedElements);
-        setHistory([loadedElements]);
-        setLastSavedElements(JSON.stringify(loadedElements)); // Mark as saved state
+        // Support both new pages_json and legacy elements_json formats
+        let loadedPages;
+        if (design.pages_json) {
+          loadedPages = JSON.parse(design.pages_json);
+        } else if (design.elements_json) {
+          // Backwards compatibility - convert old single-page format
+          const loadedElements = JSON.parse(design.elements_json);
+          loadedPages = [{ id: 'front', label: 'Front Side', elements: loadedElements }];
+        } else {
+          loadedPages = [{ id: 'front', label: 'Front Side', elements: [] }];
+        }
+        setPages(loadedPages);
+        setActivePageIndex(0);
+        setHistory([loadedPages]);
+        setHistoryIndex(0);
+        setLastSavedPages(JSON.stringify(loadedPages)); // Mark as saved state
       } catch (e) {
-        setElements([]);
+        setPages([{ id: 'front', label: 'Front Side', elements: [] }]);
       }
       setDesignName(design.name || 'My Design');
       if (design.quantity) setQuantity(design.quantity);
     }
   };
 
-  const saveToHistory = useCallback((newElements) => {
-    setHistory(prev => {
-      const newHistory = prev.slice(0, historyIndex + 1);
-      newHistory.push([...newElements]);
-      return newHistory.slice(-50);
-    });
+  const saveToHistory = useCallback((newElementsOrPages, isPages = false) => {
+    if (isPages) {
+      // Save entire pages state
+      setHistory(prev => {
+        const newHistory = prev.slice(0, historyIndex + 1);
+        newHistory.push(JSON.parse(JSON.stringify(newElementsOrPages)));
+        return newHistory.slice(-50);
+      });
+    } else {
+      // Save current page elements - create new pages array with updated elements
+      setPages(currentPages => {
+        const newPages = currentPages.map((page, i) => 
+          i === activePageIndex ? { ...page, elements: newElementsOrPages } : page
+        );
+        setHistory(prev => {
+          const newHistory = prev.slice(0, historyIndex + 1);
+          newHistory.push(JSON.parse(JSON.stringify(newPages)));
+          return newHistory.slice(-50);
+        });
+        return currentPages; // Don't actually update pages here, just save to history
+      });
+    }
     setHistoryIndex(prev => Math.min(prev + 1, 49));
-  }, [historyIndex]);
+  }, [historyIndex, activePageIndex]);
 
   const undo = () => {
     if (historyIndex > 0) {
       setHistoryIndex(historyIndex - 1);
-      setElements([...history[historyIndex - 1]]);
+      const prevPages = history[historyIndex - 1];
+      setPages(JSON.parse(JSON.stringify(prevPages)));
       setSelectedElement(null);
       setEditingTextId(null);
     }
@@ -377,7 +430,8 @@ export default function DesignTool() {
   const redo = () => {
     if (historyIndex < history.length - 1) {
       setHistoryIndex(historyIndex + 1);
-      setElements([...history[historyIndex + 1]]);
+      const nextPages = history[historyIndex + 1];
+      setPages(JSON.parse(JSON.stringify(nextPages)));
       setSelectedElement(null);
       setEditingTextId(null);
     }
@@ -577,10 +631,11 @@ export default function DesignTool() {
 
   // Check if there are unsaved changes
   const hasUnsavedChanges = useMemo(() => {
-    if (elements.length === 0) return false;
-    if (lastSavedElements === null) return true; // Never saved
-    return JSON.stringify(elements) !== lastSavedElements;
-  }, [elements, lastSavedElements]);
+    const totalElements = pages.reduce((sum, page) => sum + page.elements.length, 0);
+    if (totalElements === 0) return false;
+    if (lastSavedPages === null) return true; // Never saved
+    return JSON.stringify(pages) !== lastSavedPages;
+  }, [pages, lastSavedPages]);
 
   const handleBackClick = () => {
     if (hasUnsavedChanges) {
@@ -673,7 +728,7 @@ export default function DesignTool() {
 
       if (error) throw error;
       
-      setLastSavedElements(JSON.stringify(elements)); // Mark as saved
+      setLastSavedPages(JSON.stringify(pages)); // Mark as saved
       toast.success('Template saved successfully!');
     } catch (err) {
       console.error('Failed to save template:', err);
@@ -703,7 +758,8 @@ export default function DesignTool() {
         product_type: productType,
         width: canvasWidth,
         height: canvasHeight,
-        elements_json: JSON.stringify(elements),
+        elements_json: JSON.stringify(elements), // Backwards compatibility
+        pages_json: JSON.stringify(pages), // New multi-page format
         options_json: JSON.stringify(options),
         quantity,
         unit_price: parseFloat(pricing.unitPrice),
@@ -720,7 +776,7 @@ export default function DesignTool() {
         setSavedDesignId(result.id);
         window.history.replaceState({}, '', `${window.location.pathname}?product=${productType}&width=${canvasWidth}&height=${canvasHeight}&designId=${result.id}`);
       }
-      setLastSavedElements(JSON.stringify(elements)); // Mark as saved
+      setLastSavedPages(JSON.stringify(pages)); // Mark as saved
       toast.success('Design saved!');
       setShowSaveDialog(false);
     } catch (err) {
@@ -731,7 +787,8 @@ export default function DesignTool() {
   };
 
   const handleAddToCart = async () => {
-    if (elements.length === 0) {
+    const totalElements = pages.reduce((sum, page) => sum + page.elements.length, 0);
+    if (totalElements === 0) {
       toast.error('Please add some elements to your design first');
       return;
     }
@@ -754,7 +811,8 @@ export default function DesignTool() {
         product_type: productType,
         width: canvasWidth,
         height: canvasHeight,
-        elements_json: JSON.stringify(elements),
+        elements_json: JSON.stringify(elements), // Backwards compatibility
+        pages_json: JSON.stringify(pages), // New multi-page format
         options_json: JSON.stringify(options),
         quantity,
         unit_price: parseFloat(pricing.unitPrice),
@@ -787,6 +845,46 @@ export default function DesignTool() {
       await downloadPNG(elements, canvasWidth, canvasHeight, 150, `${designName}.png`);
     }
     toast.success(`Downloaded as ${format.toUpperCase()}`);
+  };
+
+  // Multi-page management
+  const handleAddPage = (type) => {
+    if (pages.length >= 2) {
+      toast.error('Maximum 2 sides allowed for banners');
+      return;
+    }
+    
+    const newPage = {
+      id: 'back',
+      label: 'Back Side',
+      elements: type === 'duplicate' 
+        ? pages[0].elements.map(el => ({ ...el, id: Date.now() + Math.random() }))
+        : []
+    };
+    
+    const newPages = [...pages, newPage];
+    setPages(newPages);
+    setActivePageIndex(1);
+    saveToHistory(newPages, true);
+    toast.success('Back side added');
+  };
+
+  const handleDeletePage = (pageIndex) => {
+    if (pages.length <= 1) {
+      toast.error('Cannot delete the only page');
+      return;
+    }
+    
+    const newPages = pages.filter((_, i) => i !== pageIndex);
+    setPages(newPages);
+    
+    // Adjust active index if needed
+    if (activePageIndex >= newPages.length) {
+      setActivePageIndex(Math.max(0, newPages.length - 1));
+    }
+    
+    saveToHistory(newPages, true);
+    toast.success('Page deleted');
   };
 
   const selectedEl = elements.find(el => el.id === selectedElement);
@@ -1075,6 +1173,23 @@ export default function DesignTool() {
                 </TooltipTrigger>
                 <TooltipContent>Toggle Layers Panel</TooltipContent>
               </Tooltip>
+            </div>
+
+            {/* Bottom Center - Page Thumbnails */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+              <PageThumbnails 
+                pages={pages}
+                activePageIndex={activePageIndex}
+                onPageSelect={(index) => {
+                  setActivePageIndex(index);
+                  setSelectedElement(null);
+                  setEditingTextId(null);
+                }}
+                onAddPage={handleAddPage}
+                onDeletePage={handleDeletePage}
+                canvasWidth={canvasWidth}
+                canvasHeight={canvasHeight}
+              />
             </div>
           </div>
 
