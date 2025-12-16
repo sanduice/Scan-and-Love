@@ -392,8 +392,10 @@ export default function CanvasWorkspace({
           }
         }
 
-        // Scale font size proportionally for text elements
-        if (element.type === 'text' && elementStart.fontSize) {
+        // Scale font size proportionally for text elements ONLY with corner handles
+        const isCornerHandle = ['nw', 'ne', 'sw', 'se'].includes(resizeHandle);
+        
+        if (element.type === 'text' && elementStart.fontSize && isCornerHandle) {
           const scaleX = newWidth / elementStart.width;
           const scaleY = newHeight / elementStart.height;
           const scaleFactor = Math.max(scaleX, scaleY);
