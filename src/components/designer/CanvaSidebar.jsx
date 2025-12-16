@@ -697,7 +697,7 @@ export default function CanvaSidebar({
               {ATYPICAL_SHAPES.map((shape) => (
                 <button
                   key={shape.id}
-                  onClick={() => onAddShape(shape.id, shape.color)}
+                  onClick={() => onAddShape(shape.id, shape.color, shape.svg)}
                   className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
                   title={shape.name}
                 >
