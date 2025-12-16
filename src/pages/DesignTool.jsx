@@ -202,19 +202,24 @@ export default function DesignTool() {
       setTemplateEditData(template);
       setDesignName(template.name || 'Template');
 
-      let templateElements = [];
+      let loadedPages = null;
 
-      // Load elements from design_data if available
-      if (template.design_data?.elements && template.design_data.elements.length > 0) {
-        templateElements = template.design_data.elements;
+      // Check for multi-page format first (new format)
+      if (template.design_data?.pages && template.design_data.pages.length > 0) {
+        loadedPages = template.design_data.pages;
       }
-      // If template has a source file URL (SVG), parse it into editable elements
+      // Fall back to single-page elements format (backwards compatibility)
+      else if (template.design_data?.elements && template.design_data.elements.length > 0) {
+        loadedPages = [{ id: 'front', label: 'Front Side', elements: template.design_data.elements }];
+      }
+      // If no design_data, try parsing source file URL (SVG)
       else if (template.source_file_url) {
         const fileUrl = template.source_file_url;
         const isSvg = fileUrl.toLowerCase().includes('.svg') || 
                       fileUrl.includes('image/svg') ||
                       template.file_type === 'vector';
 
+        let templateElements = [];
         if (isSvg) {
           toast.info('Parsing SVG template...', { duration: 2000 });
           try {
@@ -253,15 +258,16 @@ export default function DesignTool() {
             name: 'Template Image'
           }];
         }
+        loadedPages = [{ id: 'front', label: 'Front Side', elements: templateElements }];
       }
 
-      if (templateElements.length > 0) {
-        const newPages = [{ id: 'front', label: 'Front Side', elements: templateElements }];
-        setPages(newPages);
+      // Apply loaded pages
+      if (loadedPages && loadedPages.length > 0) {
+        setPages(loadedPages);
         setActivePageIndex(0);
-        setHistory([newPages]);
+        setHistory([loadedPages]);
         setHistoryIndex(0);
-        setLastSavedPages(JSON.stringify(newPages)); // Mark as saved state
+        setLastSavedPages(JSON.stringify(loadedPages)); // Mark as saved state
       }
 
       toast.success(`Editing template: "${template.name}"`);
@@ -702,7 +708,8 @@ export default function DesignTool() {
     };
   }, [pricingData, options.printSides, quantity, canvasWidth, canvasHeight]);
 
-  const createThumbnail = () => generateThumbnailWithImages(elements, canvasWidth, canvasHeight);
+  // Always use front page (pages[0]) for thumbnail to ensure consistency
+  const createThumbnail = () => generateThumbnailWithImages(pages[0]?.elements || [], canvasWidth, canvasHeight);
 
   // Save template (admin template edit mode)
   const saveTemplate = async () => {
@@ -716,11 +723,14 @@ export default function DesignTool() {
       // Generate new thumbnail
       const thumbnail = await createThumbnail();
 
-      // Update design_templates table
+      // Update design_templates table - save ALL pages, not just current
       const { error } = await supabase
         .from('design_templates')
         .update({
-          design_data: { elements },
+          design_data: { 
+            pages, // Save all pages for multi-page support
+            elements: pages[0]?.elements || [] // Keep backwards compatibility
+          },
           thumbnail_url: thumbnail,
           updated_at: new Date().toISOString()
         })
