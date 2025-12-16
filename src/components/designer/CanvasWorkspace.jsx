@@ -980,38 +980,7 @@ export default function CanvasWorkspace({
                 </div>
                 <div className="absolute -bottom-10 left-1/2 w-px h-6 bg-blue-500 -ml-px" style={{ bottom: -24 }} />
 
-                {/* Floating toolbar above element */}
-                <div 
-                  className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white rounded-full shadow-lg border border-gray-200 px-2 py-1.5"
-                  style={{ 
-                    top: -48, 
-                    pointerEvents: 'auto',
-                    zIndex: 10000 
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                    onClick={handleDuplicate}
-                    title="Duplicate"
-                  >
-                    <Copy className="w-4 h-4 text-gray-600" />
-                  </button>
-                  <button
-                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                    onClick={handleToggleLock}
-                    title="Lock"
-                  >
-                    <Lock className="w-4 h-4 text-gray-600" />
-                  </button>
-                  <button
-                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-red-500 hover:bg-red-50"
-                    onClick={handleDeleteSelected}
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
+                {/* Floating toolbar removed - rendered separately */}
               </>
             )}
           </div>
@@ -1204,6 +1173,60 @@ export default function CanvasWorkspace({
                 <ChevronDown className="w-4 h-4" />
               </div>
             )}
+            {/* Floating toolbar - positioned above selected element but clamped to canvas */}
+            {selectedElement && !elements.find(el => el.id === selectedElement)?.locked && (() => {
+              const element = elements.find(el => el.id === selectedElement);
+              if (!element) return null;
+              
+              const toolbarWidth = 120;
+              const toolbarHeight = 40;
+              const toolbarPadding = 48;
+              
+              // Calculate element center X
+              const elementCenterX = element.x * scale + (element.width * scale) / 2;
+              // Clamp X so toolbar stays within canvas
+              const clampedX = Math.max(toolbarWidth / 2 + 8, Math.min(canvasPixelWidth - toolbarWidth / 2 - 8, elementCenterX));
+              
+              // Calculate Y position - above element or at top of canvas if element is near top
+              const elementTop = element.y * scale;
+              const clampedY = Math.max(8, elementTop - toolbarPadding);
+              
+              return (
+                <div 
+                  className="absolute flex items-center gap-1 bg-white rounded-full shadow-lg border border-gray-200 px-2 py-1.5"
+                  style={{ 
+                    left: clampedX,
+                    top: clampedY,
+                    transform: 'translateX(-50%)',
+                    pointerEvents: 'auto',
+                    zIndex: 10000 
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                    onClick={handleDuplicate}
+                    title="Duplicate"
+                  >
+                    <Copy className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <button
+                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                    onClick={handleToggleLock}
+                    title="Lock"
+                  >
+                    <Lock className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <button
+                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-red-500 hover:bg-red-50"
+                    onClick={handleDeleteSelected}
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Floating recovery panel */}
