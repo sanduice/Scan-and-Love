@@ -55,7 +55,8 @@ export default function LayersPanel({
   const getIcon = (type) => {
     switch (type) {
       case 'text': return Type;
-      case 'image': return Image;
+      case 'image': 
+      case 'clipart': return Image;
       default: return Square;
     }
   };
@@ -64,6 +65,7 @@ export default function LayersPanel({
     switch (element.type) {
       case 'text': return element.text?.substring(0, 20) || 'Text';
       case 'image': return 'Image';
+      case 'clipart': return 'Graphic';
       case 'shape': return element.shape || 'Shape';
       default: return 'Element';
     }
@@ -138,8 +140,8 @@ export default function LayersPanel({
                             
                             {/* Thumbnail */}
                             <div className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0 bg-gray-100 overflow-hidden">
-                              {element.type === 'image' ? (
-                                <img src={element.src} alt="" className="w-full h-full object-cover rounded" />
+                              {(element.type === 'image' || element.type === 'clipart') ? (
+                                <img src={element.src} alt="" className="w-full h-full object-contain rounded" />
                               ) : element.type === 'shape' ? (
                                 <div 
                                   className="w-6 h-6" 
