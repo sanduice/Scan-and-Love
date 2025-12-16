@@ -8,10 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
-  ChevronLeft, Save, ShoppingCart, Undo, Redo, ZoomIn, ZoomOut,
-  Loader2, Download, FileDown, Grid3X3, Eye, Settings,
-  Minus, Plus, Share2
+  ChevronLeft, Save, ShoppingCart, Undo, Redo,
+  Loader2, Download, Grid3X3, Eye, Settings,
+  Minus, Plus, Share2, Layers
 } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import LayersPanel from '@/components/designer/LayersPanel';
 import SocialShare from '@/components/SocialShare';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -135,6 +138,7 @@ export default function DesignTool() {
   const [showTemplateWarning, setShowTemplateWarning] = useState(false);
   const [pendingTemplate, setPendingTemplate] = useState(null);
   const [showExitWarning, setShowExitWarning] = useState(false);
+  const [showLayersPanel, setShowLayersPanel] = useState(false);
 
   // Use dynamic pricing hook
   const pricingData = usePricing(productType, options.material, { 
@@ -847,16 +851,8 @@ export default function DesignTool() {
             </div>
           </div>
 
-          {/* Center - Zoom */}
-          <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 py-1">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(Math.max(25, zoom - 25))}>
-              <Minus className="w-4 h-4" />
-            </Button>
-            <span className="text-sm font-medium w-12 text-center">{zoom}%</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(Math.min(400, zoom + 25))}>
-              <Plus className="w-4 h-4" />
-            </Button>
-          </div>
+          {/* Spacer for center alignment */}
+          <div className="w-32" />
 
           {/* Right - Actions */}
           <div className="flex items-center gap-3">
@@ -993,8 +989,8 @@ export default function DesignTool() {
               />
             )}
 
-            {/* Bottom Toolbar */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white rounded-full px-4 py-2 shadow-lg border">
+            {/* Bottom Left - Grid/Bleed Toggles */}
+            <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-white rounded-lg px-3 py-2 shadow-lg border">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -1021,20 +1017,90 @@ export default function DesignTool() {
                 </TooltipTrigger>
                 <TooltipContent>Toggle Bleed Area</TooltipContent>
               </Tooltip>
-              <div className="w-px h-4 bg-gray-200" />
-              {[50, 100, 150, 200].map(z => (
-                <button
-                  key={z}
-                  onClick={() => setZoom(z)}
-                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                    zoom === z ? 'bg-blue-500 text-white' : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  {z}%
-                </button>
-              ))}
+            </div>
+
+            {/* Bottom Right - Zoom Slider + Layers Toggle */}
+            <div className="absolute bottom-4 right-4 flex items-center gap-3 bg-white rounded-lg px-3 py-2 shadow-lg border">
+              {/* Zoom Slider */}
+              <div className="flex items-center gap-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7" 
+                      onClick={() => setZoom(Math.max(25, zoom - 10))}
+                    >
+                      <Minus className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Zoom Out</TooltipContent>
+                </Tooltip>
+                <Slider
+                  value={[zoom]}
+                  onValueChange={(v) => setZoom(v[0])}
+                  min={25}
+                  max={400}
+                  step={5}
+                  className="w-28"
+                />
+                <span className="text-sm font-medium w-12 text-center">{zoom}%</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-7 w-7" 
+                      onClick={() => setZoom(Math.min(400, zoom + 10))}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Zoom In</TooltipContent>
+                </Tooltip>
+              </div>
+              
+              <div className="w-px h-6 bg-gray-200" />
+              
+              {/* Layers Toggle */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant={showLayersPanel ? 'default' : 'ghost'} 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={() => setShowLayersPanel(!showLayersPanel)}
+                  >
+                    <Layers className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Toggle Layers Panel</TooltipContent>
+              </Tooltip>
             </div>
           </div>
+
+          {/* Layers Panel Sheet */}
+          <Sheet open={showLayersPanel} onOpenChange={setShowLayersPanel}>
+            <SheetContent side="right" className="w-80 p-0 bg-gray-900 border-l border-gray-700">
+              <SheetHeader className="p-4 border-b border-gray-700">
+                <SheetTitle className="text-white flex items-center gap-2">
+                  <Layers className="w-5 h-5" />
+                  Layers
+                </SheetTitle>
+              </SheetHeader>
+              <LayersPanel
+                elements={elements}
+                selectedElement={selectedElement}
+                setSelectedElement={setSelectedElement}
+                setElements={setElements}
+                updateElement={updateElement}
+                deleteElement={deleteElement}
+                canvasWidth={canvasWidth}
+                canvasHeight={canvasHeight}
+                saveToHistory={saveToHistory}
+              />
+            </SheetContent>
+          </Sheet>
         </div>
 
         {/* Size Dialog */}
