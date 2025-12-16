@@ -904,7 +904,7 @@ export default function CanvasWorkspace({
       if (element.svgPath) {
         content = (
           <svg 
-            viewBox="0 0 40 40" 
+            viewBox={element.svgViewBox || "0 0 40 40"} 
             className="w-full h-full"
             style={{ pointerEvents: 'none' }}
             preserveAspectRatio="none"

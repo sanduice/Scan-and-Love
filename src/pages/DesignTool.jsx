@@ -530,7 +530,7 @@ export default function DesignTool() {
     });
   };
 
-  const handleAddShape = (shape, color, svgPath) => {
+  const handleAddShape = (shape, color, svgPath, svgViewBox) => {
     // Handle line shapes with different dimensions
     const isLine = shape.startsWith('line-') || shape === 'double-arrow';
     const isArrowShape = shape.startsWith('arrow-');
@@ -585,9 +585,28 @@ export default function DesignTool() {
       width = canvasWidth * 0.2;
       height = canvasHeight * 0.15;
     } else if (isBlob) {
-      width = canvasWidth * 0.25;
-      height = canvasWidth * 0.25;
-    } else if (shape === 'circle' || shape === 'hexagon' || 
+      // Use viewBox to determine aspect ratio if available
+      if (svgViewBox) {
+        const [, , vbWidth, vbHeight] = svgViewBox.split(' ').map(Number);
+        const aspectRatio = vbWidth / vbHeight;
+        if (aspectRatio > 1) {
+          // Horizontal shape
+          width = canvasWidth * 0.4;
+          height = width / aspectRatio;
+        } else if (aspectRatio < 1) {
+          // Vertical shape
+          height = canvasHeight * 0.4;
+          width = height * aspectRatio;
+        } else {
+          // Square
+          width = canvasWidth * 0.25;
+          height = canvasWidth * 0.25;
+        }
+      } else {
+        width = canvasWidth * 0.25;
+        height = canvasWidth * 0.25;
+      }
+    } else if (shape === 'circle' || shape === 'hexagon' ||
                shape === 'pentagon' || shape === 'octagon' || shape === 'diamond') {
       width = canvasWidth * 0.2;
       height = canvasWidth * 0.2;
@@ -605,6 +624,7 @@ export default function DesignTool() {
       width,
       height,
       svgPath,
+      svgViewBox,
     });
   };
 
