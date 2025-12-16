@@ -282,6 +282,7 @@ export default function CanvasWorkspace({
     if (saveToHistory) saveToHistory(newElements);
   }, [selectedElement, elements, setElements, setSelectedElement, saveToHistory]);
 
+  const handleDoubleClick = useCallback((e, elementId) => {
     e.stopPropagation();
     const element = elements.find(el => el.id === elementId);
     if (element?.type === 'text' && onStartTextEdit) {
