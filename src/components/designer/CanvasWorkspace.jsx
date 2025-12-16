@@ -900,20 +900,39 @@ export default function CanvasWorkspace({
       // Check if this is a line shape
       const isLine = element.shape === 'line-h' || element.shape === 'line-v';
 
-      const shapeStyle = {
-        width: '100%',
-        height: '100%',
-        backgroundColor: element.fill || '#3B82F6',
-        border: element.stroke && element.stroke !== 'none' 
-          ? `${(element.strokeWidth || 2) * scale}px solid ${element.stroke}` 
-          : 'none',
-        borderRadius: isLine ? '4px' : borderRadius,
-        clipPath: SHAPE_CLIP_PATHS[element.shape] || undefined,
-        opacity: element.opacity ?? 1,
-        boxShadow: element.shadow || 'none',
-        pointerEvents: 'none',
-      };
-      content = <div style={shapeStyle} />;
+      // If shape has an SVG path (for shapes with curves like arches), render using inline SVG
+      if (element.svgPath) {
+        content = (
+          <svg 
+            viewBox="0 0 40 40" 
+            className="w-full h-full"
+            style={{ pointerEvents: 'none' }}
+            preserveAspectRatio="none"
+          >
+            <path 
+              d={element.svgPath} 
+              fill={element.fill || '#3B82F6'}
+              stroke={element.stroke && element.stroke !== 'none' ? element.stroke : 'none'}
+              strokeWidth={element.strokeWidth || 0}
+            />
+          </svg>
+        );
+      } else {
+        const shapeStyle = {
+          width: '100%',
+          height: '100%',
+          backgroundColor: element.fill || '#3B82F6',
+          border: element.stroke && element.stroke !== 'none' 
+            ? `${(element.strokeWidth || 2) * scale}px solid ${element.stroke}` 
+            : 'none',
+          borderRadius: isLine ? '4px' : borderRadius,
+          clipPath: SHAPE_CLIP_PATHS[element.shape] || undefined,
+          opacity: element.opacity ?? 1,
+          boxShadow: element.shadow || 'none',
+          pointerEvents: 'none',
+        };
+        content = <div style={shapeStyle} />;
+      }
     }
 
     return (

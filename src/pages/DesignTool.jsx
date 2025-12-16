@@ -530,7 +530,7 @@ export default function DesignTool() {
     });
   };
 
-  const handleAddShape = (shape, color) => {
+  const handleAddShape = (shape, color, svgPath) => {
     // Handle line shapes with different dimensions
     const isLine = shape.startsWith('line-') || shape === 'double-arrow';
     const isArrowShape = shape.startsWith('arrow-');
@@ -546,7 +546,7 @@ export default function DesignTool() {
     const isFlowchart = shape.startsWith('flow-') || shape.startsWith('pie-');
     const isBlob = shape.startsWith('blob-') || shape.startsWith('organic-') || shape.startsWith('abstract-') || 
                    shape.startsWith('squiggle-') || shape.startsWith('wave-') || shape.startsWith('geo-') ||
-                   shape === 'zigzag-arrow';
+                   shape === 'zigzag-arrow' || shape === 'arch-rounded';
     const isStar = shape.startsWith('star-') || shape === 'star-sparkle';
     const isHeart = shape.startsWith('heart-');
     const isFlower = shape.startsWith('flower-');
@@ -604,6 +604,7 @@ export default function DesignTool() {
       strokeWidth: 0,
       width,
       height,
+      svgPath,
     });
   };
 
