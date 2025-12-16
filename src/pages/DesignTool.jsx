@@ -546,7 +546,7 @@ export default function DesignTool() {
     const isFlowchart = shape.startsWith('flow-') || shape.startsWith('pie-');
     const isBlob = shape.startsWith('blob-') || shape.startsWith('organic-') || shape.startsWith('abstract-') || 
                    shape.startsWith('squiggle-') || shape.startsWith('wave-') || shape.startsWith('geo-') ||
-                   shape === 'zigzag-arrow' || shape === 'arch-rounded';
+                   shape === 'zigzag-arrow' || shape === 'arch-rounded' || shape.startsWith('half-ring-');
     const isStar = shape.startsWith('star-') || shape === 'star-sparkle';
     const isHeart = shape.startsWith('heart-');
     const isFlower = shape.startsWith('flower-');

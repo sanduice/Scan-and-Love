@@ -236,6 +236,9 @@ const ATYPICAL_SHAPES = [
   { id: 'geo-diamond', name: 'Geo Dia', svg: 'M20,2 L38,20 L20,38 L2,20 Z M20,10 L30,20 L20,30 L10,20 Z', color: '#6366F1' },
   // Arch shapes
   { id: 'arch-rounded', name: 'Arch', svg: 'M4,18 A16,16 0 0 1 36,18 L36,38 L4,38 Z', color: '#43A363' },
+  // Half-ring/donut shapes
+  { id: 'half-ring-bottom', name: 'Half Ring', svg: 'M40,18 C40,29 31,38 20,38 C9,38 0,29 0,18 L12,18 C12,22 16,26 20,26 C24,26 28,22 28,18 Z', color: '#336BB7' },
+  { id: 'half-ring-top', name: 'Half Ring Up', svg: 'M0,22 C0,11 9,2 20,2 C31,2 40,11 40,22 L28,22 C28,18 24,14 20,14 C16,14 12,18 12,22 Z', color: '#336BB7' },
 ];
 
 // Speech bubbles and callout shapes
