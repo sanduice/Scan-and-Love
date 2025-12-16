@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
@@ -68,13 +68,23 @@ const NAV_ITEMS = [
 
 export default function Admin() {
   const queryClient = useQueryClient();
-  const [activeSection, setActiveSection] = useState('dashboard');
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
+  
+  const [activeSection, setActiveSection] = useState(tabFromUrl || 'dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderDialog, setShowOrderDialog] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  // Sync activeSection with URL tab parameter
+  useEffect(() => {
+    if (tabFromUrl && tabFromUrl !== activeSection) {
+      setActiveSection(tabFromUrl);
+    }
+  }, [tabFromUrl]);
 
   // Get current user info
   const { data: currentUser } = useQuery({
