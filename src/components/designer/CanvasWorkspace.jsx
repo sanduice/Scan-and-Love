@@ -951,23 +951,8 @@ export default function CanvasWorkspace({
         className="flex items-center justify-center min-h-full min-w-full p-16"
         style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px)` }}
       >
-        {/* Canvas shadow */}
-        <div 
-          className="relative"
-          style={{ filter: 'drop-shadow(0 10px 40px rgba(0,0,0,0.25))' }}
-        >
-          {/* Bleed area */}
-          {showBleed && (
-            <div
-              className="absolute border-2 border-dashed border-red-300 bg-red-50/30"
-              style={{
-                top: -bleedSize,
-                left: -bleedSize,
-                width: canvasPixelWidth + bleedSize * 2,
-                height: canvasPixelHeight + bleedSize * 2,
-              }}
-            />
-          )}
+        {/* Canvas container */}
+        <div className="relative">
 
           {/* Main canvas with overflow hidden to clip elements */}
           <div
