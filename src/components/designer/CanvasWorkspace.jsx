@@ -20,7 +20,7 @@ export default function CanvasWorkspace({
   showGrid,
   showBleed,
   saveToHistory,
-) {
+}) {
   const containerRef = useRef(null);
   const canvasContainerRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
