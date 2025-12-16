@@ -630,7 +630,7 @@ export default function TemplatesManager() {
                   {/* Template Image */}
                   <div 
                     className="aspect-video bg-muted relative cursor-pointer" 
-                    onClick={() => { setEditingTemplate(template); setShowDialog(true); }}
+                    onClick={() => handleEditDesign(template)}
                   >
                     {template.thumbnail_url ? (
                       <img 
