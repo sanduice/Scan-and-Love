@@ -20,8 +20,9 @@ export default function CanvasWorkspace({
   showGrid,
   showBleed,
   saveToHistory,
-}) {
+) {
   const containerRef = useRef(null);
+  const canvasContainerRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
@@ -1047,7 +1048,7 @@ export default function CanvasWorkspace({
         style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px)` }}
       >
         {/* Canvas container */}
-        <div className="relative">
+        <div ref={canvasContainerRef} className="relative">
           {/* Bleed area */}
           {showBleed && (
             <div
@@ -1173,60 +1174,7 @@ export default function CanvasWorkspace({
                 <ChevronDown className="w-4 h-4" />
               </div>
             )}
-            {/* Floating toolbar - positioned above selected element but clamped to canvas */}
-            {selectedElement && !elements.find(el => el.id === selectedElement)?.locked && (() => {
-              const element = elements.find(el => el.id === selectedElement);
-              if (!element) return null;
-              
-              const toolbarWidth = 120;
-              const toolbarHeight = 40;
-              const toolbarPadding = 48;
-              
-              // Calculate element center X
-              const elementCenterX = element.x * scale + (element.width * scale) / 2;
-              // Clamp X so toolbar stays within canvas
-              const clampedX = Math.max(toolbarWidth / 2 + 8, Math.min(canvasPixelWidth - toolbarWidth / 2 - 8, elementCenterX));
-              
-              // Calculate Y position - above element or at top of canvas if element is near top
-              const elementTop = element.y * scale;
-              const clampedY = Math.max(8, elementTop - toolbarPadding);
-              
-              return (
-                <div 
-                  className="absolute flex items-center gap-1 bg-white rounded-full shadow-lg border border-gray-200 px-2 py-1.5"
-                  style={{ 
-                    left: clampedX,
-                    top: clampedY,
-                    transform: 'translateX(-50%)',
-                    pointerEvents: 'auto',
-                    zIndex: 10000 
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                    onClick={handleDuplicate}
-                    title="Duplicate"
-                  >
-                    <Copy className="w-4 h-4 text-gray-600" />
-                  </button>
-                  <button
-                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                    onClick={handleToggleLock}
-                    title="Lock"
-                  >
-                    <Lock className="w-4 h-4 text-gray-600" />
-                  </button>
-                  <button
-                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-red-500 hover:bg-red-50"
-                    onClick={handleDeleteSelected}
-                    title="Delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              );
-            })()}
+            {/* Floating toolbar removed - rendered at main container level */}
           </div>
 
           {/* Floating recovery panel */}
@@ -1253,6 +1201,60 @@ export default function CanvasWorkspace({
           </div>
         </div>
       </div>
+
+      {/* Floating toolbar - rendered outside canvas at main container level */}
+      {selectedElement && !elements.find(el => el.id === selectedElement)?.locked && (() => {
+        const element = elements.find(el => el.id === selectedElement);
+        if (!element || !canvasContainerRef.current) return null;
+        
+        const canvasRect = canvasContainerRef.current.getBoundingClientRect();
+        const containerRect = containerRef.current?.getBoundingClientRect() || { left: 0, top: 0 };
+        
+        // Element position in viewport coordinates
+        const elementVisualX = canvasRect.left + element.x * scale;
+        const elementVisualY = canvasRect.top + element.y * scale;
+        const elementVisualWidth = element.width * scale;
+        const elementVisualHeight = element.height * scale;
+        
+        // Toolbar positioned to the right of the element with 8px gap
+        const toolbarX = elementVisualX + elementVisualWidth + 8;
+        const toolbarY = elementVisualY;
+        
+        return (
+          <div 
+            className="fixed flex flex-col items-center gap-1 bg-white rounded-lg shadow-lg border border-gray-200 p-1.5"
+            style={{ 
+              left: toolbarX,
+              top: toolbarY,
+              pointerEvents: 'auto',
+              zIndex: 10000 
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={handleDuplicate}
+              title="Duplicate"
+            >
+              <Copy className="w-4 h-4 text-gray-600" />
+            </button>
+            <button
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={handleToggleLock}
+              title="Lock"
+            >
+              <Lock className="w-4 h-4 text-gray-600" />
+            </button>
+            <button
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-red-500 hover:bg-red-50"
+              onClick={handleDeleteSelected}
+              title="Delete"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        );
+      })()}
     </div>
   );
 }
