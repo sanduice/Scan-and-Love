@@ -997,15 +997,12 @@ export default function CanvasWorkspace({
         className="flex items-center justify-center min-h-full min-w-full p-16"
         style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px)` }}
       >
-        {/* Canvas shadow */}
-        <div 
-          className="relative"
-          style={{ filter: 'drop-shadow(0 10px 40px rgba(0,0,0,0.25))' }}
-        >
+        {/* Canvas container */}
+        <div className="relative">
           {/* Bleed area */}
           {showBleed && (
             <div
-              className="absolute border-2 border-dashed border-red-300 bg-red-50/30"
+              className="absolute border border-dashed border-gray-300"
               style={{
                 top: -bleedSize,
                 left: -bleedSize,
