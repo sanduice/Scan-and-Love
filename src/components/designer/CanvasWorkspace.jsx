@@ -33,6 +33,17 @@ export default function CanvasWorkspace({
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [contextMenu, setContextMenu] = useState(null);
   const [alignmentGuides, setAlignmentGuides] = useState({ showVertical: false, showHorizontal: false });
+  
+  // Multi-select and marquee selection state
+  const [selectedElements, setSelectedElements] = useState([]);
+  const [isMarqueeSelecting, setIsMarqueeSelecting] = useState(false);
+  const [marqueeStart, setMarqueeStart] = useState({ x: 0, y: 0 });
+  const [marqueeEnd, setMarqueeEnd] = useState({ x: 0, y: 0 });
+  const [groupDragStart, setGroupDragStart] = useState({});
+  
+  // Keep refs for immediate access during drag operations
+  const elementsRef = useRef(elements);
+  elementsRef.current = elements;
 
   const PIXELS_PER_INCH = 10;
   const scale = (zoom / 100) * PIXELS_PER_INCH;
@@ -102,16 +113,62 @@ export default function CanvasWorkspace({
   }, [contextMenu]);
 
   const handleElementMouseDown = useCallback((e, elementId) => {
-    e.stopPropagation();
     if (e.button === 2) return; // Right-click handled separately
     
     const element = elements.find(el => el.id === elementId);
-    if (!element || element.locked) return;
+    if (!element) return;
+    
+    // Allow event propagation for locked elements (for marquee over them)
+    if (element.locked) return;
+    
+    e.stopPropagation();
     if (editingTextId === elementId) return;
 
-    setSelectedElement(elementId);
+    // Shift+click = toggle selection (add/remove from multi-select)
+    if (e.shiftKey) {
+      setSelectedElements(prev => {
+        if (prev.includes(elementId)) {
+          const newSelection = prev.filter(id => id !== elementId);
+          if (newSelection.length === 1) {
+            setSelectedElement(newSelection[0]);
+          } else if (newSelection.length === 0) {
+            setSelectedElement(null);
+          }
+          return newSelection;
+        } else {
+          setSelectedElement(elementId);
+          return [...prev, elementId];
+        }
+      });
+    } else {
+      // Check if clicking on an already selected element in a group
+      const isInCurrentSelection = selectedElements.includes(elementId);
+      if (isInCurrentSelection && selectedElements.length > 1) {
+        // Start group drag without changing selection
+      } else {
+        // Normal click = single select
+        setSelectedElement(elementId);
+        setSelectedElements([elementId]);
+      }
+    }
+
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
+    
+    // Store start positions for all selected elements (for group drag)
+    const currentSelection = e.shiftKey ? 
+      (selectedElements.includes(elementId) ? selectedElements : [...selectedElements, elementId]) :
+      (selectedElements.includes(elementId) && selectedElements.length > 1 ? selectedElements : [elementId]);
+    
+    const startPositions = {};
+    currentSelection.forEach(id => {
+      const el = elements.find(e => e.id === id);
+      if (el) {
+        startPositions[id] = { x: el.x, y: el.y };
+      }
+    });
+    setGroupDragStart(startPositions);
+    
     setElementStart({ 
       x: element.x, 
       y: element.y, 
@@ -119,7 +176,7 @@ export default function CanvasWorkspace({
       height: element.height,
       rotation: element.rotation || 0
     });
-  }, [elements, editingTextId, setSelectedElement]);
+  }, [elements, editingTextId, setSelectedElement, selectedElements]);
 
   const handleContextMenu = useCallback((e, elementId) => {
     e.preventDefault();
@@ -231,6 +288,16 @@ export default function CanvasWorkspace({
         return;
       }
 
+      // Handle marquee selection
+      if (isMarqueeSelecting) {
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const x = (e.clientX - rect.left - panOffset.x - 64) / scale;
+        const y = (e.clientY - rect.top - panOffset.y - 64) / scale;
+        setMarqueeEnd({ x, y });
+        return;
+      }
+
       if (!isDragging && !isResizing && !isRotating) return;
 
       const element = elements.find(el => el.id === selectedElement);
@@ -240,39 +307,56 @@ export default function CanvasWorkspace({
       const dy = (e.clientY - dragStart.y) / scale;
 
       if (isDragging) {
-        // Calculate new position
-        let newX = elementStart.x + dx;
-        let newY = elementStart.y + dy;
+        // Check if we're doing a group drag (multiple elements selected)
+        const activeSelection = selectedElements.length > 1 ? selectedElements : [selectedElement];
         
-        // Calculate element center
-        const elementCenterX = newX + element.width / 2;
-        const elementCenterY = newY + element.height / 2;
-        
-        // Canvas center
-        const canvasCenterX = width / 2;
-        const canvasCenterY = height / 2;
-        
-        // Snap threshold (in inches)
-        const threshold = 0.15;
-        
-        // Check alignment
-        const isHorizontallyCentered = Math.abs(elementCenterX - canvasCenterX) < threshold;
-        const isVerticallyCentered = Math.abs(elementCenterY - canvasCenterY) < threshold;
-        
-        // Snap to center if within threshold
-        if (isHorizontallyCentered) {
-          newX = canvasCenterX - element.width / 2;
+        if (activeSelection.length > 1 && Object.keys(groupDragStart).length > 0) {
+          // Group drag - move all selected elements
+          activeSelection.forEach(id => {
+            const startPos = groupDragStart[id];
+            if (startPos) {
+              updateElement(id, { 
+                x: startPos.x + dx, 
+                y: startPos.y + dy 
+              });
+            }
+          });
+          setAlignmentGuides({ showVertical: false, showHorizontal: false });
+        } else {
+          // Single element drag with alignment guides
+          let newX = elementStart.x + dx;
+          let newY = elementStart.y + dy;
+          
+          // Calculate element center
+          const elementCenterX = newX + element.width / 2;
+          const elementCenterY = newY + element.height / 2;
+          
+          // Canvas center
+          const canvasCenterX = width / 2;
+          const canvasCenterY = height / 2;
+          
+          // Snap threshold (in inches)
+          const threshold = 0.15;
+          
+          // Check alignment
+          const isHorizontallyCentered = Math.abs(elementCenterX - canvasCenterX) < threshold;
+          const isVerticallyCentered = Math.abs(elementCenterY - canvasCenterY) < threshold;
+          
+          // Snap to center if within threshold
+          if (isHorizontallyCentered) {
+            newX = canvasCenterX - element.width / 2;
+          }
+          if (isVerticallyCentered) {
+            newY = canvasCenterY - element.height / 2;
+          }
+          
+          setAlignmentGuides({
+            showVertical: isHorizontallyCentered,
+            showHorizontal: isVerticallyCentered,
+          });
+          
+          updateElement(selectedElement, { x: newX, y: newY });
         }
-        if (isVerticallyCentered) {
-          newY = canvasCenterY - element.height / 2;
-        }
-        
-        setAlignmentGuides({
-          showVertical: isHorizontallyCentered,
-          showHorizontal: isVerticallyCentered,
-        });
-        
-        updateElement(selectedElement, { x: newX, y: newY });
       } else if (isResizing && resizeHandle) {
         let newWidth = elementStart.width;
         let newHeight = elementStart.height;
@@ -329,7 +413,53 @@ export default function CanvasWorkspace({
       }
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e) => {
+      // Handle marquee selection completion
+      if (isMarqueeSelecting) {
+        const minX = Math.min(marqueeStart.x, marqueeEnd.x);
+        const maxX = Math.max(marqueeStart.x, marqueeEnd.x);
+        const minY = Math.min(marqueeStart.y, marqueeEnd.y);
+        const maxY = Math.max(marqueeStart.y, marqueeEnd.y);
+        
+        // Only select if the marquee has some size
+        if (Math.abs(maxX - minX) > 0.5 || Math.abs(maxY - minY) > 0.5) {
+          // Find all unlocked elements within the marquee rectangle
+          const selectedIds = elements
+            .filter(el => {
+              if (el.locked) return false; // Skip locked elements
+              
+              // Check if element overlaps with marquee rectangle
+              const elLeft = el.x;
+              const elRight = el.x + el.width;
+              const elTop = el.y;
+              const elBottom = el.y + el.height;
+              
+              return elLeft < maxX && elRight > minX && 
+                     elTop < maxY && elBottom > minY;
+            })
+            .map(el => el.id);
+          
+          if (selectedIds.length > 0) {
+            if (e?.shiftKey) {
+              // Additive selection with Shift
+              setSelectedElements(prev => [...new Set([...prev, ...selectedIds])]);
+            } else {
+              setSelectedElements(selectedIds);
+            }
+            if (selectedIds.length === 1) {
+              setSelectedElement(selectedIds[0]);
+            } else {
+              setSelectedElement(selectedIds[selectedIds.length - 1]);
+            }
+          }
+        }
+        
+        setIsMarqueeSelecting(false);
+        setMarqueeStart({ x: 0, y: 0 });
+        setMarqueeEnd({ x: 0, y: 0 });
+        return;
+      }
+      
       // Save to history when drag/resize/rotate operation completes
       if ((isDragging || isResizing || isRotating) && selectedElement && saveToHistory) {
         saveToHistory(elements);
@@ -340,6 +470,7 @@ export default function CanvasWorkspace({
       setResizeHandle(null);
       setIsPanning(false);
       setAlignmentGuides({ showVertical: false, showHorizontal: false });
+      setGroupDragStart({});
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -348,11 +479,19 @@ export default function CanvasWorkspace({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, isResizing, isRotating, isPanning, selectedElement, dragStart, elementStart, resizeHandle, panStart, elements, scale, width, height, updateElement]);
+  }, [isDragging, isResizing, isRotating, isPanning, isMarqueeSelecting, selectedElement, selectedElements, dragStart, elementStart, resizeHandle, panStart, elements, scale, width, height, updateElement, groupDragStart, marqueeStart, marqueeEnd, panOffset, saveToHistory]);
 
   const handleCanvasClick = (e) => {
+    // Don't clear selection if clicking on resize handles, rotate handle, or context menu
+    if (e.target.closest('[data-resize-handle]') || e.target.closest('[data-rotate-handle]')) {
+      return;
+    }
+    
     if (e.target === e.currentTarget || e.target.closest('[data-canvas-bg]')) {
-      setSelectedElement(null);
+      if (!e.shiftKey) {
+        setSelectedElement(null);
+        setSelectedElements([]);
+      }
       if (editingTextId && onEndTextEdit) {
         onEndTextEdit();
       }
@@ -360,16 +499,84 @@ export default function CanvasWorkspace({
   };
 
   const handleCanvasMouseDown = (e) => {
+    // Check if clicking on canvas background (not on an element)
+    const isOnElement = e.target.closest('[data-element-id]');
+    const isOnResizeHandle = e.target.closest('[data-resize-handle]');
+    const isOnRotateHandle = e.target.closest('[data-rotate-handle]');
+    
+    if (isOnElement || isOnResizeHandle || isOnRotateHandle) {
+      return;
+    }
+    
     if (e.target === e.currentTarget || e.target.closest('[data-canvas-bg]')) {
+      // Middle mouse or Alt+Click = panning
       if (e.button === 1 || (e.button === 0 && e.altKey)) {
         setIsPanning(true);
         setPanStart({ x: e.clientX, y: e.clientY });
+        return;
+      }
+      
+      // Left click without Alt = start marquee selection
+      if (e.button === 0) {
+        // Close context menu
+        setContextMenu(null);
+        
+        // Clear selection unless Shift is held
+        if (!e.shiftKey) {
+          setSelectedElements([]);
+          setSelectedElement(null);
+        }
+        
+        // Get position relative to canvas
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        
+        const x = (e.clientX - rect.left - panOffset.x - 64) / scale;
+        const y = (e.clientY - rect.top - panOffset.y - 64) / scale;
+        
+        setIsMarqueeSelecting(true);
+        setMarqueeStart({ x, y });
+        setMarqueeEnd({ x, y });
       }
     }
   };
 
+  // Keyboard shortcuts for delete and escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't handle if editing text or typing in an input
+      if (editingTextId || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+      }
+      
+      // Delete or Backspace = delete selected elements
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        const toDelete = selectedElements.length > 0 ? selectedElements : (selectedElement ? [selectedElement] : []);
+        if (toDelete.length > 0) {
+          const newElements = elements.filter(el => !toDelete.includes(el.id));
+          setElements(newElements);
+          setSelectedElement(null);
+          setSelectedElements([]);
+          if (saveToHistory) saveToHistory(newElements);
+        }
+      }
+      
+      // Escape = clear selection
+      if (e.key === 'Escape') {
+        setSelectedElement(null);
+        setSelectedElements([]);
+        setContextMenu(null);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editingTextId, selectedElement, selectedElements, elements, setElements, saveToHistory]);
+
   const renderElement = (element) => {
-    const isSelected = selectedElement === element.id;
+    const isSelected = selectedElement === element.id || selectedElements.includes(element.id);
+    const isPrimarySelected = selectedElement === element.id;
     const isEditing = editingTextId === element.id;
     const elementIndex = elements.indexOf(element);
 
@@ -380,7 +587,7 @@ export default function CanvasWorkspace({
       width: element.width * scale,
       height: element.height * scale,
       transform: `rotate(${element.rotation || 0}deg)`,
-      cursor: element.locked ? 'not-allowed' : isEditing ? 'text' : 'move',
+      cursor: element.locked ? 'default' : isEditing ? 'text' : 'move',
       opacity: element.visible === false ? 0.3 : 1,
       // Keep element at its natural z-index position
       zIndex: elementIndex + 1,
@@ -647,8 +854,16 @@ export default function CanvasWorkspace({
     return (
       <div
         key={element.id}
+        data-element-id={element.id}
+        data-locked={element.locked ? 'true' : 'false'}
         style={style}
-        onClick={(e) => { e.stopPropagation(); setSelectedElement(element.id); }}
+        onClick={(e) => { 
+          e.stopPropagation(); 
+          if (!element.locked && !e.shiftKey) {
+            setSelectedElement(element.id);
+            setSelectedElements([element.id]);
+          }
+        }}
         onMouseDown={(e) => handleElementMouseDown(e, element.id)}
         onDoubleClick={(e) => handleDoubleClick(e, element.id)}
         onContextMenu={(e) => handleContextMenu(e, element.id)}
@@ -661,40 +876,47 @@ export default function CanvasWorkspace({
             {/* Selection border */}
             <div 
               className="absolute inset-0 border-2 rounded-sm"
-              style={{ borderColor: '#3B82F6' }}
+              style={{ borderColor: isPrimarySelected ? '#3B82F6' : '#60A5FA' }}
             />
             
-            {/* Resize handles */}
-            {['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].map((handle) => {
-              const positions = {
-                nw: { top: -6, left: -6, cursor: 'nw-resize' },
-                n: { top: -6, left: '50%', marginLeft: -6, cursor: 'n-resize' },
-                ne: { top: -6, right: -6, cursor: 'ne-resize' },
-                e: { top: '50%', right: -6, marginTop: -6, cursor: 'e-resize' },
-                se: { bottom: -6, right: -6, cursor: 'se-resize' },
-                s: { bottom: -6, left: '50%', marginLeft: -6, cursor: 's-resize' },
-                sw: { bottom: -6, left: -6, cursor: 'sw-resize' },
-                w: { top: '50%', left: -6, marginTop: -6, cursor: 'w-resize' },
-              };
-              return (
-                <div
-                  key={handle}
-                  className="absolute w-3 h-3 bg-white rounded-full shadow-lg border-2 border-blue-500 hover:scale-125 transition-transform"
-                  style={{ ...positions[handle], cursor: positions[handle].cursor, pointerEvents: 'auto' }}
-                  onMouseDown={(e) => handleResizeStart(e, element.id, handle)}
-                />
-              );
-            })}
+            {/* Only show resize/rotate handles for primary selected element */}
+            {isPrimarySelected && (
+              <>
+                {/* Resize handles */}
+                {['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].map((handle) => {
+                  const positions = {
+                    nw: { top: -6, left: -6, cursor: 'nw-resize' },
+                    n: { top: -6, left: '50%', marginLeft: -6, cursor: 'n-resize' },
+                    ne: { top: -6, right: -6, cursor: 'ne-resize' },
+                    e: { top: '50%', right: -6, marginTop: -6, cursor: 'e-resize' },
+                    se: { bottom: -6, right: -6, cursor: 'se-resize' },
+                    s: { bottom: -6, left: '50%', marginLeft: -6, cursor: 's-resize' },
+                    sw: { bottom: -6, left: -6, cursor: 'sw-resize' },
+                    w: { top: '50%', left: -6, marginTop: -6, cursor: 'w-resize' },
+                  };
+                  return (
+                    <div
+                      key={handle}
+                      data-resize-handle={handle}
+                      className="absolute w-3 h-3 bg-white rounded-full shadow-lg border-2 border-blue-500 hover:scale-125 transition-transform"
+                      style={{ ...positions[handle], cursor: positions[handle].cursor, pointerEvents: 'auto' }}
+                      onMouseDown={(e) => handleResizeStart(e, element.id, handle)}
+                    />
+                  );
+                })}
 
-            {/* Rotation handle */}
-            <div
-              className="absolute -top-10 left-1/2 -ml-4 w-8 h-8 bg-white rounded-full shadow-lg border-2 border-blue-500 flex items-center justify-center cursor-grab hover:scale-110 transition-transform"
-              style={{ pointerEvents: 'auto' }}
-              onMouseDown={(e) => handleRotateStart(e, element.id)}
-            >
-              <RotateCw className="w-4 h-4 text-blue-500" />
-            </div>
-            <div className="absolute -top-10 left-1/2 w-px h-6 bg-blue-500 -ml-px" style={{ top: -24 }} />
+                {/* Rotation handle */}
+                <div
+                  data-rotate-handle="true"
+                  className="absolute -top-10 left-1/2 -ml-4 w-8 h-8 bg-white rounded-full shadow-lg border-2 border-blue-500 flex items-center justify-center cursor-grab hover:scale-110 transition-transform"
+                  style={{ pointerEvents: 'auto' }}
+                  onMouseDown={(e) => handleRotateStart(e, element.id)}
+                >
+                  <RotateCw className="w-4 h-4 text-blue-500" />
+                </div>
+                <div className="absolute -top-10 left-1/2 w-px h-6 bg-blue-500 -ml-px" style={{ top: -24 }} />
+              </>
+            )}
           </div>
         )}
 
@@ -844,6 +1066,19 @@ export default function CanvasWorkspace({
 
             {/* Elements */}
             {elements.filter(el => el.visible !== false).map(renderElement)}
+
+            {/* Marquee Selection Rectangle */}
+            {isMarqueeSelecting && (
+              <div
+                className="absolute border-2 border-blue-500 bg-blue-500/10 pointer-events-none z-[9999]"
+                style={{
+                  left: Math.min(marqueeStart.x, marqueeEnd.x) * scale,
+                  top: Math.min(marqueeStart.y, marqueeEnd.y) * scale,
+                  width: Math.abs(marqueeEnd.x - marqueeStart.x) * scale,
+                  height: Math.abs(marqueeEnd.y - marqueeStart.y) * scale,
+                }}
+              />
+            )}
 
             {/* Empty state */}
             {elements.length === 0 && (
