@@ -7,11 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-  ChevronLeft, Save, ShoppingCart, Undo, Redo,
-  Loader2, Download, Eye, Settings,
-  Minus, Plus, Share2, Layers, X
-} from 'lucide-react';
+import { ChevronLeft, Save, ShoppingCart, Undo, Redo, Loader2, Download, Eye, Settings, Minus, Plus, Share2, Layers, X } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import LayersPanel from '@/components/designer/LayersPanel';
 import PageThumbnails from '@/components/designer/PageThumbnails';
@@ -25,38 +21,184 @@ import DesignToolbar from '@/components/designer/DesignToolbar';
 import { generateThumbnail, generateThumbnailWithImages, generateSVG, downloadSVG, downloadPNG, generateArtworkDataURL } from '@/components/designer/CanvasExporter';
 import { parseSvgToElements } from '@/components/designer/SvgParser';
 import { AlertTriangle } from 'lucide-react';
-
 import { usePricing } from '@/components/pricing/PricingCalculator';
-
 const PRODUCT_DEFAULTS = {
-  'vinyl-banner': { material: '13 oz Vinyl', minWidth: 12, maxWidth: 192, minHeight: 12, maxHeight: 120 },
-  'yard-sign': { material: 'Coroplast 4mm', minWidth: 6, maxWidth: 48, minHeight: 6, maxHeight: 36 },
-  'foam-board': { material: '3/16 Foam Board', minWidth: 8, maxWidth: 48, minHeight: 8, maxHeight: 96 },
-  'pull-up-banner': { material: 'Premium Vinyl', minWidth: 24, maxWidth: 48, minHeight: 60, maxHeight: 96 },
-  'retractable-banner': { material: 'Premium Vinyl', minWidth: 24, maxWidth: 60, minHeight: 78, maxHeight: 92 },
-  'plastic-sign': { material: '3mm PVC (Sintra)', minWidth: 4, maxWidth: 96, minHeight: 4, maxHeight: 96 },
-  'pvc-sign': { material: '3mm PVC (Sintra)', minWidth: 4, maxWidth: 96, minHeight: 4, maxHeight: 96 },
-  'a-frame-sign': { material: 'Coroplast', minWidth: 18, maxWidth: 36, minHeight: 24, maxHeight: 48 },
-  'aluminum-sign': { material: 'Aluminum .040', minWidth: 6, maxWidth: 96, minHeight: 6, maxHeight: 48 },
-  'feather-flag': { material: 'Polyester Flag', minWidth: 20, maxWidth: 40, minHeight: 80, maxHeight: 200 },
-  'table-throw': { material: 'Polyester Fabric', minWidth: 60, maxWidth: 160, minHeight: 60, maxHeight: 100 },
-  'floor-decal': { material: 'Anti-Slip Vinyl', minWidth: 6, maxWidth: 600, minHeight: 6, maxHeight: 52 },
-  'vinyl-lettering': { material: 'Standard Vinyl', minWidth: 2, maxWidth: 1200, minHeight: 2, maxHeight: 48 },
-  'static-cling': { material: 'White Static Cling', minWidth: 4, maxWidth: 1200, minHeight: 4, maxHeight: 52 },
-  'transfer-sticker': { material: 'Standard Vinyl', minWidth: 1, maxWidth: 12, minHeight: 1, maxHeight: 12 },
-  'pop-up-display': { material: 'Tension Fabric', minWidth: 80, maxWidth: 240, minHeight: 80, maxHeight: 100 },
-  'step-and-repeat': { material: '13oz Matte Vinyl', minWidth: 48, maxWidth: 120, minHeight: 48, maxHeight: 120 },
-  'die-cut-sticker': { material: 'White Vinyl', minWidth: 1, maxWidth: 12, minHeight: 1, maxHeight: 12 },
-  'mesh-banner': { material: '8oz Mesh Vinyl', minWidth: 12, maxWidth: 1200, minHeight: 12, maxHeight: 120 },
-  'fabric-banner': { material: 'Polyester Fabric', minWidth: 12, maxWidth: 1200, minHeight: 12, maxHeight: 96 },
-  
-  'x-banner': { material: '13oz Vinyl', minWidth: 24, maxWidth: 32, minHeight: 63, maxHeight: 70 },
-  'car-magnet': { material: '30mil Magnet', minWidth: 9, maxWidth: 72, minHeight: 9, maxHeight: 24 },
-  'acrylic-sign': { material: 'Clear Acrylic', minWidth: 6, maxWidth: 96, minHeight: 6, maxHeight: 48 },
-  'canvas-print': { material: 'Standard Canvas', minWidth: 8, maxWidth: 60, minHeight: 8, maxHeight: 60 },
-  'window-perf': { material: 'Perforated Vinyl', minWidth: 12, maxWidth: 1200, minHeight: 12, maxHeight: 58 },
+  'vinyl-banner': {
+    material: '13 oz Vinyl',
+    minWidth: 12,
+    maxWidth: 192,
+    minHeight: 12,
+    maxHeight: 120
+  },
+  'yard-sign': {
+    material: 'Coroplast 4mm',
+    minWidth: 6,
+    maxWidth: 48,
+    minHeight: 6,
+    maxHeight: 36
+  },
+  'foam-board': {
+    material: '3/16 Foam Board',
+    minWidth: 8,
+    maxWidth: 48,
+    minHeight: 8,
+    maxHeight: 96
+  },
+  'pull-up-banner': {
+    material: 'Premium Vinyl',
+    minWidth: 24,
+    maxWidth: 48,
+    minHeight: 60,
+    maxHeight: 96
+  },
+  'retractable-banner': {
+    material: 'Premium Vinyl',
+    minWidth: 24,
+    maxWidth: 60,
+    minHeight: 78,
+    maxHeight: 92
+  },
+  'plastic-sign': {
+    material: '3mm PVC (Sintra)',
+    minWidth: 4,
+    maxWidth: 96,
+    minHeight: 4,
+    maxHeight: 96
+  },
+  'pvc-sign': {
+    material: '3mm PVC (Sintra)',
+    minWidth: 4,
+    maxWidth: 96,
+    minHeight: 4,
+    maxHeight: 96
+  },
+  'a-frame-sign': {
+    material: 'Coroplast',
+    minWidth: 18,
+    maxWidth: 36,
+    minHeight: 24,
+    maxHeight: 48
+  },
+  'aluminum-sign': {
+    material: 'Aluminum .040',
+    minWidth: 6,
+    maxWidth: 96,
+    minHeight: 6,
+    maxHeight: 48
+  },
+  'feather-flag': {
+    material: 'Polyester Flag',
+    minWidth: 20,
+    maxWidth: 40,
+    minHeight: 80,
+    maxHeight: 200
+  },
+  'table-throw': {
+    material: 'Polyester Fabric',
+    minWidth: 60,
+    maxWidth: 160,
+    minHeight: 60,
+    maxHeight: 100
+  },
+  'floor-decal': {
+    material: 'Anti-Slip Vinyl',
+    minWidth: 6,
+    maxWidth: 600,
+    minHeight: 6,
+    maxHeight: 52
+  },
+  'vinyl-lettering': {
+    material: 'Standard Vinyl',
+    minWidth: 2,
+    maxWidth: 1200,
+    minHeight: 2,
+    maxHeight: 48
+  },
+  'static-cling': {
+    material: 'White Static Cling',
+    minWidth: 4,
+    maxWidth: 1200,
+    minHeight: 4,
+    maxHeight: 52
+  },
+  'transfer-sticker': {
+    material: 'Standard Vinyl',
+    minWidth: 1,
+    maxWidth: 12,
+    minHeight: 1,
+    maxHeight: 12
+  },
+  'pop-up-display': {
+    material: 'Tension Fabric',
+    minWidth: 80,
+    maxWidth: 240,
+    minHeight: 80,
+    maxHeight: 100
+  },
+  'step-and-repeat': {
+    material: '13oz Matte Vinyl',
+    minWidth: 48,
+    maxWidth: 120,
+    minHeight: 48,
+    maxHeight: 120
+  },
+  'die-cut-sticker': {
+    material: 'White Vinyl',
+    minWidth: 1,
+    maxWidth: 12,
+    minHeight: 1,
+    maxHeight: 12
+  },
+  'mesh-banner': {
+    material: '8oz Mesh Vinyl',
+    minWidth: 12,
+    maxWidth: 1200,
+    minHeight: 12,
+    maxHeight: 120
+  },
+  'fabric-banner': {
+    material: 'Polyester Fabric',
+    minWidth: 12,
+    maxWidth: 1200,
+    minHeight: 12,
+    maxHeight: 96
+  },
+  'x-banner': {
+    material: '13oz Vinyl',
+    minWidth: 24,
+    maxWidth: 32,
+    minHeight: 63,
+    maxHeight: 70
+  },
+  'car-magnet': {
+    material: '30mil Magnet',
+    minWidth: 9,
+    maxWidth: 72,
+    minHeight: 9,
+    maxHeight: 24
+  },
+  'acrylic-sign': {
+    material: 'Clear Acrylic',
+    minWidth: 6,
+    maxWidth: 96,
+    minHeight: 6,
+    maxHeight: 48
+  },
+  'canvas-print': {
+    material: 'Standard Canvas',
+    minWidth: 8,
+    maxWidth: 60,
+    minHeight: 8,
+    maxHeight: 60
+  },
+  'window-perf': {
+    material: 'Perforated Vinyl',
+    minWidth: 12,
+    maxWidth: 1200,
+    minHeight: 12,
+    maxHeight: 58
+  }
 };
-
 export default function DesignTool() {
   const navigate = useNavigate();
   const urlParams = new URLSearchParams(window.location.search);
@@ -68,21 +210,24 @@ export default function DesignTool() {
   const designId = urlParams.get('designId');
   const templateId = urlParams.get('templateId');
   const editTemplateId = urlParams.get('editTemplateId');
-  
+
   // Template editing mode
   const isTemplateEditMode = !!editTemplateId;
   const [templateEditData, setTemplateEditData] = useState(null);
 
   // Fetch product configuration dynamically
-  const { data: productData = [] } = useQuery({
+  const {
+    data: productData = []
+  } = useQuery({
     queryKey: ['product-config', productType],
-    queryFn: () => base44.entities.Product.filter({ slug: productType }),
-    staleTime: 1000 * 60 * 60, // 1 hour
-    enabled: !isTemplateEditMode, // Skip product fetch in template edit mode
+    queryFn: () => base44.entities.Product.filter({
+      slug: productType
+    }),
+    staleTime: 1000 * 60 * 60,
+    // 1 hour
+    enabled: !isTemplateEditMode // Skip product fetch in template edit mode
   });
-
   const product = productData[0];
-  
   const productConfig = useMemo(() => {
     const defaults = PRODUCT_DEFAULTS[productType] || PRODUCT_DEFAULTS['vinyl-banner'];
     if (product) {
@@ -93,12 +238,11 @@ export default function DesignTool() {
         minHeight: product.min_height || defaults.minHeight,
         maxHeight: product.max_height || defaults.maxHeight,
         material: product.material_options?.[0]?.name || defaults.material,
-        materials: product.material_options || [],
+        materials: product.material_options || []
       };
     }
     return defaults;
   }, [product, productType]);
-
   const [canvasWidth, setCanvasWidth] = useState(initialWidth);
   const [canvasHeight, setCanvasHeight] = useState(initialHeight);
   const [sizeKey, setSizeKey] = useState(initialSizeKey);
@@ -108,28 +252,34 @@ export default function DesignTool() {
   const [showBleed, setShowBleed] = useState(true);
 
   // Multi-page state
-  const [pages, setPages] = useState([
-    { id: 'front', label: 'Front Side', elements: [] }
-  ]);
+  const [pages, setPages] = useState([{
+    id: 'front',
+    label: 'Front Side',
+    elements: []
+  }]);
   const [activePageIndex, setActivePageIndex] = useState(0);
-  
+
   // Derived elements for current page
   const elements = pages[activePageIndex]?.elements || [];
-  
+
   // Wrapper to update elements for current page
-  const setElements = useCallback((newElementsOrUpdater) => {
+  const setElements = useCallback(newElementsOrUpdater => {
     setPages(prev => prev.map((page, i) => {
       if (i !== activePageIndex) return page;
-      const newElements = typeof newElementsOrUpdater === 'function' 
-        ? newElementsOrUpdater(page.elements) 
-        : newElementsOrUpdater;
-      return { ...page, elements: newElements };
+      const newElements = typeof newElementsOrUpdater === 'function' ? newElementsOrUpdater(page.elements) : newElementsOrUpdater;
+      return {
+        ...page,
+        elements: newElements
+      };
     }));
   }, [activePageIndex]);
-
   const [selectedElement, setSelectedElement] = useState(null);
   const [editingTextId, setEditingTextId] = useState(null);
-  const [history, setHistory] = useState([[{ id: 'front', label: 'Front Side', elements: [] }]]);
+  const [history, setHistory] = useState([[{
+    id: 'front',
+    label: 'Front Side',
+    elements: []
+  }]]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [lastSavedPages, setLastSavedPages] = useState(null); // Track saved state for exit warning
 
@@ -139,30 +289,31 @@ export default function DesignTool() {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [designName, setDesignName] = useState('My Design');
   const [savedDesignId, setSavedDesignId] = useState(designId || null);
-
   const [options, setOptions] = useState({
     material: initialMaterial || productConfig.material,
     printSides: 'Single Sided',
     finish: 'Welded Hem',
-    grommets: 'Every 2-3 ft',
+    grommets: 'Every 2-3 ft'
   });
 
   // Update options if productConfig loads later and we didn't have an initial material
   useEffect(() => {
     if (!initialMaterial && productConfig.material && options.material !== productConfig.material) {
-      setOptions(prev => ({ ...prev, material: productConfig.material }));
+      setOptions(prev => ({
+        ...prev,
+        material: productConfig.material
+      }));
     }
   }, [productConfig.material, initialMaterial]);
-
   const [showTemplateWarning, setShowTemplateWarning] = useState(false);
   const [pendingTemplate, setPendingTemplate] = useState(null);
   const [showExitWarning, setShowExitWarning] = useState(false);
   const [showLayersPanel, setShowLayersPanel] = useState(false);
 
   // Use dynamic pricing hook
-  const pricingData = usePricing(productType, options.material, { 
-    width: canvasWidth, 
-    height: canvasHeight, 
+  const pricingData = usePricing(productType, options.material, {
+    width: canvasWidth,
+    height: canvasHeight,
     quantity,
     sizeKey
   });
@@ -182,15 +333,12 @@ export default function DesignTool() {
       loadTemplate(templateId);
     }
   }, [editTemplateId, templateId]);
-
-  const loadTemplateForEditing = async (id) => {
+  const loadTemplateForEditing = async id => {
     try {
-      const { data: template, error } = await supabase
-        .from('design_templates')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-
+      const {
+        data: template,
+        error
+      } = await supabase.from('design_templates').select('*').eq('id', id).maybeSingle();
       if (error) throw error;
       if (!template) {
         toast.error('Template not found');
@@ -201,7 +349,6 @@ export default function DesignTool() {
       // Store template metadata for saving later
       setTemplateEditData(template);
       setDesignName(template.name || 'Template');
-
       let loadedPages = null;
 
       // Check for multi-page format first (new format)
@@ -210,18 +357,21 @@ export default function DesignTool() {
       }
       // Fall back to single-page elements format (backwards compatibility)
       else if (template.design_data?.elements && template.design_data.elements.length > 0) {
-        loadedPages = [{ id: 'front', label: 'Front Side', elements: template.design_data.elements }];
+        loadedPages = [{
+          id: 'front',
+          label: 'Front Side',
+          elements: template.design_data.elements
+        }];
       }
       // If no design_data, try parsing source file URL (SVG)
       else if (template.source_file_url) {
         const fileUrl = template.source_file_url;
-        const isSvg = fileUrl.toLowerCase().includes('.svg') || 
-                      fileUrl.includes('image/svg') ||
-                      template.file_type === 'vector';
-
+        const isSvg = fileUrl.toLowerCase().includes('.svg') || fileUrl.includes('image/svg') || template.file_type === 'vector';
         let templateElements = [];
         if (isSvg) {
-          toast.info('Parsing SVG template...', { duration: 2000 });
+          toast.info('Parsing SVG template...', {
+            duration: 2000
+          });
           try {
             templateElements = await parseSvgToElements(fileUrl, canvasWidth, canvasHeight);
             toast.success(`Parsed ${templateElements.length} elements from template!`);
@@ -258,7 +408,11 @@ export default function DesignTool() {
             name: 'Template Image'
           }];
         }
-        loadedPages = [{ id: 'front', label: 'Front Side', elements: templateElements }];
+        loadedPages = [{
+          id: 'front',
+          label: 'Front Side',
+          elements: templateElements
+        }];
       }
 
       // Apply loaded pages
@@ -269,28 +423,23 @@ export default function DesignTool() {
         setHistoryIndex(0);
         setLastSavedPages(JSON.stringify(loadedPages)); // Mark as saved state
       }
-
       toast.success(`Editing template: "${template.name}"`);
     } catch (err) {
       console.error('Error loading template for editing:', err);
       toast.error('Failed to load template');
     }
   };
-
-  const loadTemplate = async (id) => {
+  const loadTemplate = async id => {
     try {
-      const { data: template, error } = await supabase
-        .from('design_templates')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-
+      const {
+        data: template,
+        error
+      } = await supabase.from('design_templates').select('*').eq('id', id).maybeSingle();
       if (error) throw error;
       if (!template) {
         toast.error('Template not found');
         return;
       }
-
       let templateElements = [];
 
       // Apply template design data to canvas if available
@@ -300,12 +449,11 @@ export default function DesignTool() {
       // If template has a source file URL (SVG), parse it into editable elements
       else if (template.source_file_url) {
         const fileUrl = template.source_file_url;
-        const isSvg = fileUrl.toLowerCase().includes('.svg') || 
-                      fileUrl.includes('image/svg') ||
-                      template.file_type === 'vector';
-
+        const isSvg = fileUrl.toLowerCase().includes('.svg') || fileUrl.includes('image/svg') || template.file_type === 'vector';
         if (isSvg) {
-          toast.info('Parsing SVG template...', { duration: 2000 });
+          toast.info('Parsing SVG template...', {
+            duration: 2000
+          });
           try {
             templateElements = await parseSvgToElements(fileUrl, canvasWidth, canvasHeight);
             toast.success(`Parsed ${templateElements.length} elements from template!`);
@@ -345,9 +493,12 @@ export default function DesignTool() {
           }];
         }
       }
-
       if (templateElements.length > 0) {
-        const newPages = [{ id: 'front', label: 'Front Side', elements: templateElements }];
+        const newPages = [{
+          id: 'front',
+          label: 'Front Side',
+          elements: templateElements
+        }];
         setPages(newPages);
         setActivePageIndex(0);
         setHistory([newPages]);
@@ -359,16 +510,16 @@ export default function DesignTool() {
       if (template.name) {
         setDesignName(`${template.name} - Custom`);
       }
-
       toast.success(`Template "${template.name}" loaded!`);
     } catch (err) {
       console.error('Error loading template:', err);
       toast.error('Failed to load template');
     }
   };
-
-  const loadDesign = async (id) => {
-    const designs = await base44.entities.SavedDesign.filter({ id });
+  const loadDesign = async id => {
+    const designs = await base44.entities.SavedDesign.filter({
+      id
+    });
     if (designs.length > 0) {
       const design = designs[0];
       setCanvasWidth(design.width);
@@ -381,9 +532,17 @@ export default function DesignTool() {
         } else if (design.elements_json) {
           // Backwards compatibility - convert old single-page format
           const loadedElements = JSON.parse(design.elements_json);
-          loadedPages = [{ id: 'front', label: 'Front Side', elements: loadedElements }];
+          loadedPages = [{
+            id: 'front',
+            label: 'Front Side',
+            elements: loadedElements
+          }];
         } else {
-          loadedPages = [{ id: 'front', label: 'Front Side', elements: [] }];
+          loadedPages = [{
+            id: 'front',
+            label: 'Front Side',
+            elements: []
+          }];
         }
         setPages(loadedPages);
         setActivePageIndex(0);
@@ -391,13 +550,16 @@ export default function DesignTool() {
         setHistoryIndex(0);
         setLastSavedPages(JSON.stringify(loadedPages)); // Mark as saved state
       } catch (e) {
-        setPages([{ id: 'front', label: 'Front Side', elements: [] }]);
+        setPages([{
+          id: 'front',
+          label: 'Front Side',
+          elements: []
+        }]);
       }
       setDesignName(design.name || 'My Design');
       if (design.quantity) setQuantity(design.quantity);
     }
   };
-
   const saveToHistory = useCallback((newElementsOrPages, isPages = false) => {
     if (isPages) {
       // Save entire pages state
@@ -409,9 +571,10 @@ export default function DesignTool() {
     } else {
       // Save current page elements - create new pages array with updated elements
       setPages(currentPages => {
-        const newPages = currentPages.map((page, i) => 
-          i === activePageIndex ? { ...page, elements: newElementsOrPages } : page
-        );
+        const newPages = currentPages.map((page, i) => i === activePageIndex ? {
+          ...page,
+          elements: newElementsOrPages
+        } : page);
         setHistory(prev => {
           const newHistory = prev.slice(0, historyIndex + 1);
           newHistory.push(JSON.parse(JSON.stringify(newPages)));
@@ -422,7 +585,6 @@ export default function DesignTool() {
     }
     setHistoryIndex(prev => Math.min(prev + 1, 49));
   }, [historyIndex, activePageIndex]);
-
   const undo = () => {
     if (historyIndex > 0) {
       setHistoryIndex(historyIndex - 1);
@@ -432,7 +594,6 @@ export default function DesignTool() {
       setEditingTextId(null);
     }
   };
-
   const redo = () => {
     if (historyIndex < history.length - 1) {
       setHistoryIndex(historyIndex + 1);
@@ -442,8 +603,7 @@ export default function DesignTool() {
       setEditingTextId(null);
     }
   };
-
-  const addElement = (element) => {
+  const addElement = element => {
     const newElement = {
       id: Date.now(),
       ...element,
@@ -452,49 +612,46 @@ export default function DesignTool() {
       rotation: element.rotation ?? 0,
       locked: false,
       visible: true,
-      opacity: 1,
+      opacity: 1
     };
     const newElements = [...elements, newElement];
     setElements(newElements);
     saveToHistory(newElements);
     setSelectedElement(newElement.id);
   };
-
   const updateElement = (id, updates) => {
-    const newElements = elements.map(el =>
-      el.id === id ? { ...el, ...updates } : el
-    );
+    const newElements = elements.map(el => el.id === id ? {
+      ...el,
+      ...updates
+    } : el);
     setElements(newElements);
   };
-
   const updateElementWithHistory = (id, updates) => {
-    const newElements = elements.map(el =>
-      el.id === id ? { ...el, ...updates } : el
-    );
+    const newElements = elements.map(el => el.id === id ? {
+      ...el,
+      ...updates
+    } : el);
     setElements(newElements);
     saveToHistory(newElements);
   };
-
-  const deleteElement = (id) => {
+  const deleteElement = id => {
     const newElements = elements.filter(el => el.id !== id);
     setElements(newElements);
     saveToHistory(newElements);
     if (selectedElement === id) setSelectedElement(null);
   };
-
-  const duplicateElement = (id) => {
+  const duplicateElement = id => {
     const element = elements.find(el => el.id === id);
     if (element) {
       addElement({
         ...element,
         id: undefined,
         x: element.x + 2,
-        y: element.y + 2,
+        y: element.y + 2
       });
     }
   };
-
-  const moveLayerUp = (id) => {
+  const moveLayerUp = id => {
     const index = elements.findIndex(el => el.id === id);
     if (index < elements.length - 1) {
       const newElements = [...elements];
@@ -503,8 +660,7 @@ export default function DesignTool() {
       saveToHistory(newElements);
     }
   };
-
-  const moveLayerDown = (id) => {
+  const moveLayerDown = id => {
     const index = elements.findIndex(el => el.id === id);
     if (index > 0) {
       const newElements = [...elements];
@@ -515,7 +671,7 @@ export default function DesignTool() {
   };
 
   // Add handlers
-  const handleAddText = (preset) => {
+  const handleAddText = preset => {
     addElement({
       type: 'text',
       text: preset.label || 'Your Text',
@@ -526,34 +682,27 @@ export default function DesignTool() {
       textAlign: 'center',
       color: preset.color || '#000000',
       width: canvasWidth * 0.6,
-      height: preset.fontSize * 2 || 8,
+      height: preset.fontSize * 2 || 8
     });
   };
-
   const handleAddShape = (shape, color) => {
     // Handle line shapes with different dimensions
     const isLine = shape.startsWith('line-') || shape === 'double-arrow';
     const isArrowShape = shape.startsWith('arrow-');
-    const isVertical = shape === 'line-v' || shape === 'arrow-up' || shape === 'arrow-down' || 
-                       shape === 'arrow-simple-up' || shape === 'arrow-simple-down' ||
-                       shape === 'arrow-block-up' || shape === 'arrow-block-down' ||
-                       shape === 'arrow-vertical';
+    const isVertical = shape === 'line-v' || shape === 'arrow-up' || shape === 'arrow-down' || shape === 'arrow-simple-up' || shape === 'arrow-simple-down' || shape === 'arrow-block-up' || shape === 'arrow-block-down' || shape === 'arrow-vertical';
     const isSpeechBubble = shape.startsWith('speech-') || shape.startsWith('thought-') || shape.startsWith('cloud-');
     const isCallout = shape.startsWith('callout-');
     const isRibbon = shape.startsWith('ribbon-') || shape === 'badge-shield' || shape === 'badge-ribbon';
     const isBracket = shape.startsWith('bracket-') || shape.startsWith('frame-');
     const isStarburst = shape === 'starburst' || shape === 'star-burst' || shape === 'seal-star';
     const isFlowchart = shape.startsWith('flow-') || shape.startsWith('pie-');
-    const isBlob = shape.startsWith('blob-') || shape.startsWith('organic-') || shape.startsWith('abstract-') || 
-                   shape.startsWith('squiggle-') || shape.startsWith('wave-') || shape.startsWith('geo-') ||
-                   shape === 'zigzag-arrow';
+    const isBlob = shape.startsWith('blob-') || shape.startsWith('organic-') || shape.startsWith('abstract-') || shape.startsWith('squiggle-') || shape.startsWith('wave-') || shape.startsWith('geo-') || shape === 'zigzag-arrow';
     const isStar = shape.startsWith('star-') || shape === 'star-sparkle';
     const isHeart = shape.startsWith('heart-');
     const isFlower = shape.startsWith('flower-');
     const isChevron = shape.startsWith('chevron-');
     const isWeather = ['cloud', 'sun', 'sun-rays', 'moon-crescent', 'lightning', 'snowflake', 'raindrop'].includes(shape);
     const isMiscDeco = ['location-pin', 'smiley', 'cross-plus', 'cross-x', 'checkmark', 'clover'].includes(shape);
-    
     let width, height;
     if (isLine) {
       if (isVertical) {
@@ -587,15 +736,13 @@ export default function DesignTool() {
     } else if (isBlob) {
       width = canvasWidth * 0.25;
       height = canvasWidth * 0.25;
-    } else if (shape === 'circle' || shape === 'hexagon' || 
-               shape === 'pentagon' || shape === 'octagon' || shape === 'diamond') {
+    } else if (shape === 'circle' || shape === 'hexagon' || shape === 'pentagon' || shape === 'octagon' || shape === 'diamond') {
       width = canvasWidth * 0.2;
       height = canvasWidth * 0.2;
     } else {
       width = canvasWidth * 0.25;
       height = canvasHeight * 0.25;
     }
-    
     addElement({
       type: 'shape',
       shape,
@@ -603,29 +750,26 @@ export default function DesignTool() {
       stroke: 'none',
       strokeWidth: 0,
       width,
-      height,
+      height
     });
   };
-
-  const handleAddImage = (url) => {
+  const handleAddImage = url => {
     addElement({
       type: 'image',
       src: url,
       width: Math.min(20, canvasWidth * 0.4),
-      height: Math.min(15, canvasHeight * 0.4),
+      height: Math.min(15, canvasHeight * 0.4)
     });
   };
-
-  const handleAddClipart = (url) => {
+  const handleAddClipart = url => {
     addElement({
       type: 'clipart',
       src: url,
       width: Math.min(10, canvasWidth * 0.15),
-      height: Math.min(10, canvasHeight * 0.25),
+      height: Math.min(10, canvasHeight * 0.25)
     });
   };
-
-  const handleApplyTemplate = (template) => {
+  const handleApplyTemplate = template => {
     // If there are existing elements, show warning first
     if (elements.length > 0) {
       setPendingTemplate(template);
@@ -642,7 +786,6 @@ export default function DesignTool() {
     if (lastSavedPages === null) return true; // Never saved
     return JSON.stringify(pages) !== lastSavedPages;
   }, [pages, lastSavedPages]);
-
   const handleBackClick = () => {
     if (hasUnsavedChanges) {
       setShowExitWarning(true);
@@ -650,28 +793,25 @@ export default function DesignTool() {
       navigateBack();
     }
   };
-
   const navigateBack = () => {
     // If editing a template, go back to admin templates
     if (isTemplateEditMode) {
       navigate('/admin?tab=templates');
       return;
     }
-    
     if (productType) {
       navigate(`${createPageUrl('ProductDetail')}?slug=${productType}`);
     } else {
       navigate(createPageUrl('Home'));
     }
   };
-
-  const applyTemplateConfirmed = (template) => {
+  const applyTemplateConfirmed = template => {
     const newElements = template.elements.map((el, i) => ({
       ...el,
       id: Date.now() + i,
       locked: false,
       visible: true,
-      opacity: 1,
+      opacity: 1
     }));
     setElements(newElements);
     saveToHistory(newElements);
@@ -680,9 +820,10 @@ export default function DesignTool() {
     setPendingTemplate(null);
     toast.success(`Applied "${template.name}" template`);
   };
-
-  const handleStartTextEdit = (id) => setEditingTextId(id);
-  const handleTextEditChange = (id, newText) => updateElement(id, { text: newText });
+  const handleStartTextEdit = id => setEditingTextId(id);
+  const handleTextEditChange = (id, newText) => updateElement(id, {
+    text: newText
+  });
   const handleEndTextEdit = () => {
     if (editingTextId) saveToHistory(elements);
     setEditingTextId(null);
@@ -691,20 +832,19 @@ export default function DesignTool() {
   // Price calculation wrapper using hook
   const pricing = useMemo(() => {
     let total = parseFloat(pricingData.total) || 0;
-    
+
     // Apply modifiers locally since hook handles base price
     if (options.printSides === 'Double Sided') total *= 1.5;
-    
+
     // Fallback min price if DB returns 0 (safety net)
     if (total === 0) {
-       const sqft = (canvasWidth * canvasHeight) / 144;
-       total = Math.max(25, sqft * 3 * quantity);
+      const sqft = canvasWidth * canvasHeight / 144;
+      total = Math.max(25, sqft * 3 * quantity);
     }
-
     return {
       total: total.toFixed(2),
       unitPrice: (total / quantity).toFixed(2),
-      sqft: pricingData.sqft?.toFixed(2) || ((canvasWidth * canvasHeight) / 144).toFixed(2),
+      sqft: pricingData.sqft?.toFixed(2) || (canvasWidth * canvasHeight / 144).toFixed(2)
     };
   }, [pricingData, options.printSides, quantity, canvasWidth, canvasHeight]);
 
@@ -717,27 +857,24 @@ export default function DesignTool() {
       toast.error('No template loaded');
       return;
     }
-
     setIsSaving(true);
     try {
       // Generate new thumbnail
       const thumbnail = await createThumbnail();
 
       // Update design_templates table - save ALL pages, not just current
-      const { error } = await supabase
-        .from('design_templates')
-        .update({
-          design_data: { 
-            pages, // Save all pages for multi-page support
-            elements: pages[0]?.elements || [] // Keep backwards compatibility
-          },
-          thumbnail_url: thumbnail,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', templateEditData.id);
-
+      const {
+        error
+      } = await supabase.from('design_templates').update({
+        design_data: {
+          pages,
+          // Save all pages for multi-page support
+          elements: pages[0]?.elements || [] // Keep backwards compatibility
+        },
+        thumbnail_url: thumbnail,
+        updated_at: new Date().toISOString()
+      }).eq('id', templateEditData.id);
       if (error) throw error;
-      
       setLastSavedPages(JSON.stringify(pages)); // Mark as saved
       toast.success('Template saved successfully!');
     } catch (err) {
@@ -747,7 +884,6 @@ export default function DesignTool() {
       setIsSaving(false);
     }
   };
-
   const handleSave = async () => {
     // Check if user is logged in
     const isAuth = await base44.auth.isAuthenticated();
@@ -756,29 +892,28 @@ export default function DesignTool() {
       base44.auth.redirectToLogin(window.location.href);
       return;
     }
-
     setIsSaving(true);
     try {
       // Use async versions that embed images as base64
       const thumbnail = await createThumbnail();
       const artworkDataUrl = await generateArtworkDataURL(elements, canvasWidth, canvasHeight, 150);
-
       const designData = {
         name: designName,
         product_type: productType,
         width: canvasWidth,
         height: canvasHeight,
-        elements_json: JSON.stringify(elements), // Backwards compatibility
-        pages_json: JSON.stringify(pages), // New multi-page format
+        elements_json: JSON.stringify(elements),
+        // Backwards compatibility
+        pages_json: JSON.stringify(pages),
+        // New multi-page format
         options_json: JSON.stringify(options),
         quantity,
         unit_price: parseFloat(pricing.unitPrice),
         thumbnail_url: thumbnail,
         artwork_url: artworkDataUrl,
         material: options.material,
-        finish: options.finish,
+        finish: options.finish
       };
-
       if (savedDesignId) {
         await base44.entities.SavedDesign.update(savedDesignId, designData);
       } else {
@@ -795,7 +930,6 @@ export default function DesignTool() {
       setIsSaving(false);
     }
   };
-
   const handleAddToCart = async () => {
     const totalElements = pages.reduce((sum, page) => sum + page.elements.length, 0);
     if (totalElements === 0) {
@@ -810,7 +944,6 @@ export default function DesignTool() {
       base44.auth.redirectToLogin(window.location.href);
       return;
     }
-
     setIsAddingToCart(true);
     try {
       // Use async versions that embed images as base64
@@ -821,8 +954,10 @@ export default function DesignTool() {
         product_type: productType,
         width: canvasWidth,
         height: canvasHeight,
-        elements_json: JSON.stringify(elements), // Backwards compatibility
-        pages_json: JSON.stringify(pages), // New multi-page format
+        elements_json: JSON.stringify(elements),
+        // Backwards compatibility
+        pages_json: JSON.stringify(pages),
+        // New multi-page format
         options_json: JSON.stringify(options),
         quantity,
         unit_price: parseFloat(pricing.unitPrice),
@@ -830,9 +965,8 @@ export default function DesignTool() {
         thumbnail_url: thumbnail,
         artwork_url: artworkDataUrl,
         material: options.material,
-        finish: options.finish,
+        finish: options.finish
       };
-
       if (savedDesignId) {
         await base44.entities.SavedDesign.update(savedDesignId, designData);
       } else {
@@ -847,8 +981,7 @@ export default function DesignTool() {
       setIsAddingToCart(false);
     }
   };
-
-  const handleDownload = async (format) => {
+  const handleDownload = async format => {
     if (format === 'svg') {
       downloadSVG(elements, canvasWidth, canvasHeight, 150, `${designName}.svg`);
     } else if (format === 'png') {
@@ -858,57 +991,47 @@ export default function DesignTool() {
   };
 
   // Multi-page management
-  const handleAddPage = (type) => {
+  const handleAddPage = type => {
     if (pages.length >= 2) {
       toast.error('Maximum 2 sides allowed for banners');
       return;
     }
-    
     const newPage = {
       id: 'back',
       label: 'Back Side',
-      elements: type === 'duplicate' 
-        ? pages[0].elements.map(el => ({ ...el, id: Date.now() + Math.random() }))
-        : []
+      elements: type === 'duplicate' ? pages[0].elements.map(el => ({
+        ...el,
+        id: Date.now() + Math.random()
+      })) : []
     };
-    
     const newPages = [...pages, newPage];
     setPages(newPages);
     setActivePageIndex(1);
     saveToHistory(newPages, true);
     toast.success('Back side added');
   };
-
-  const handleDeletePage = (pageIndex) => {
+  const handleDeletePage = pageIndex => {
     if (pages.length <= 1) {
       toast.error('Cannot delete the only page');
       return;
     }
-    
     const newPages = pages.filter((_, i) => i !== pageIndex);
     setPages(newPages);
-    
+
     // Adjust active index if needed
     if (activePageIndex >= newPages.length) {
       setActivePageIndex(Math.max(0, newPages.length - 1));
     }
-    
     saveToHistory(newPages, true);
     toast.success('Page deleted');
   };
-
   const selectedEl = elements.find(el => el.id === selectedElement);
-
-  return (
-    <TooltipProvider>
+  return <TooltipProvider>
       <div className="h-screen flex flex-col bg-[#F2F3F6] overflow-hidden">
         {/* Top Header */}
         <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <button 
-              onClick={handleBackClick}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-            >
+            <button onClick={handleBackClick} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
               <ChevronLeft className="w-5 h-5" />
               <span className="font-medium hidden sm:inline">
                 {isTemplateEditMode ? 'Back to Templates' : 'Back'}
@@ -918,19 +1041,14 @@ export default function DesignTool() {
             <div className="h-5 w-px bg-gray-200" />
 
             {/* Template Mode Indicator */}
-            {isTemplateEditMode && (
-              <>
+            {isTemplateEditMode && <>
                 <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
                   Editing Template
                 </div>
                 <div className="h-5 w-px bg-gray-200" />
-              </>
-            )}
+              </>}
 
-            <button
-              onClick={() => setShowSizeDialog(true)}
-              className="flex items-center gap-2 text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors"
-            >
+            <button onClick={() => setShowSizeDialog(true)} className="flex items-center gap-2 text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors">
               <span className="font-medium">{canvasWidth}" × {canvasHeight}"</span>
               <Settings className="w-4 h-4" />
             </button>
@@ -964,8 +1082,7 @@ export default function DesignTool() {
           {/* Right - Actions */}
           <div className="flex items-center gap-3">
             {/* Quantity & Price - Only show in normal mode */}
-            {!isTemplateEditMode && (
-              <>
+            {!isTemplateEditMode && <>
                 <div className="hidden md:flex items-center gap-3">
                   <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 py-1">
                     <span className="text-sm text-gray-600">Qty:</span>
@@ -985,8 +1102,7 @@ export default function DesignTool() {
                 </div>
 
                 <div className="h-8 w-px bg-gray-200" />
-              </>
-            )}
+              </>}
 
             {/* Download */}
             <Tooltip>
@@ -999,8 +1115,7 @@ export default function DesignTool() {
             </Tooltip>
 
             {/* Share - Only in normal mode */}
-            {!isTemplateEditMode && (
-              <Dialog>
+            {!isTemplateEditMode && <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="icon">
                     <Share2 className="w-4 h-4" />
@@ -1017,112 +1132,53 @@ export default function DesignTool() {
                     <SocialShare title={`Check out my design: ${designName}`} />
                   </div>
                 </DialogContent>
-              </Dialog>
-            )}
+              </Dialog>}
 
             {/* Save / Save Template Button */}
-            {isTemplateEditMode ? (
-              <Button 
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                onClick={saveTemplate} 
-                disabled={isSaving}
-              >
+            {isTemplateEditMode ? <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" onClick={saveTemplate} disabled={isSaving}>
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                 Save Template
-              </Button>
-            ) : (
-              <>
+              </Button> : <>
                 <Button variant="outline" onClick={() => setShowSaveDialog(true)} disabled={isSaving}>
                   {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                   Save
                 </Button>
 
                 {/* Add to Cart */}
-                <Button
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                  onClick={handleAddToCart}
-                  disabled={isAddingToCart}
-                >
+                <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={handleAddToCart} disabled={isAddingToCart}>
                   {isAddingToCart ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShoppingCart className="w-4 h-4 mr-2" />}
                   Add to Cart
                 </Button>
-              </>
-            )}
+              </>}
           </div>
         </header>
 
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden">
           {/* Left Panel - Canva-style Sidebar */}
-          <CanvaSidebar
-            onAddText={handleAddText}
-            onAddShape={handleAddShape}
-            onAddImage={handleAddImage}
-            onAddClipart={handleAddClipart}
-            canvasWidth={canvasWidth}
-            canvasHeight={canvasHeight}
-          />
+          <CanvaSidebar onAddText={handleAddText} onAddShape={handleAddShape} onAddImage={handleAddImage} onAddClipart={handleAddClipart} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />
 
           {/* Canvas Area - shrinks when layers panel is open */}
           <div className="flex-1 relative transition-all duration-300 ease-in-out">
-            <CanvasWorkspace
-              width={canvasWidth}
-              height={canvasHeight}
-              zoom={zoom}
-              setZoom={setZoom}
-              elements={elements}
-              setElements={setElements}
-              selectedElement={selectedElement}
-              setSelectedElement={setSelectedElement}
-              updateElement={updateElement}
-              onStartTextEdit={handleStartTextEdit}
-              editingTextId={editingTextId}
-              onTextEditChange={handleTextEditChange}
-              onEndTextEdit={handleEndTextEdit}
-              showGrid={showGrid}
-              showBleed={showBleed}
-              saveToHistory={saveToHistory}
-            />
+            <CanvasWorkspace width={canvasWidth} height={canvasHeight} zoom={zoom} setZoom={setZoom} elements={elements} setElements={setElements} selectedElement={selectedElement} setSelectedElement={setSelectedElement} updateElement={updateElement} onStartTextEdit={handleStartTextEdit} editingTextId={editingTextId} onTextEditChange={handleTextEditChange} onEndTextEdit={handleEndTextEdit} showGrid={showGrid} showBleed={showBleed} saveToHistory={saveToHistory} />
 
             {/* Floating Toolbar */}
-            {selectedEl && (
-              <DesignToolbar
-                element={selectedEl}
-                updateElement={updateElementWithHistory}
-                deleteElement={deleteElement}
-                duplicateElement={duplicateElement}
-                moveLayerUp={moveLayerUp}
-                moveLayerDown={moveLayerDown}
-              />
-            )}
+            {selectedEl && <DesignToolbar element={selectedEl} updateElement={updateElementWithHistory} deleteElement={deleteElement} duplicateElement={duplicateElement} moveLayerUp={moveLayerUp} moveLayerDown={moveLayerDown} />}
 
             {/* Bottom Left - Page Thumbnails */}
             <div className="absolute bottom-4 left-4 z-10">
-              <PageThumbnails 
-                pages={pages}
-                activePageIndex={activePageIndex}
-                onPageSelect={(index) => {
-                  setActivePageIndex(index);
-                  setSelectedElement(null);
-                  setEditingTextId(null);
-                }}
-                onAddPage={handleAddPage}
-                onDeletePage={handleDeletePage}
-                canvasWidth={canvasWidth}
-                canvasHeight={canvasHeight}
-              />
+              <PageThumbnails pages={pages} activePageIndex={activePageIndex} onPageSelect={index => {
+              setActivePageIndex(index);
+              setSelectedElement(null);
+              setEditingTextId(null);
+            }} onAddPage={handleAddPage} onDeletePage={handleDeletePage} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />
             </div>
             
             {/* Bottom Left (after pages) - Bleed Toggle */}
             <div className="absolute bottom-4 left-[280px] flex items-center gap-2 bg-white rounded-lg px-3 py-2 shadow-lg border">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant={showBleed ? 'default' : 'ghost'}
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setShowBleed(!showBleed)}
-                  >
+                  <Button variant={showBleed ? 'default' : 'ghost'} size="icon" className="h-8 w-8" onClick={() => setShowBleed(!showBleed)}>
                     <Eye className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
@@ -1133,55 +1189,14 @@ export default function DesignTool() {
             {/* Bottom Right - Zoom Slider + Layers Toggle */}
             <div className="absolute bottom-4 right-4 flex items-center gap-3 bg-white rounded-lg px-3 py-2 shadow-lg border">
               {/* Zoom Slider */}
-              <div className="flex items-center gap-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-7 w-7" 
-                      onClick={() => setZoom(Math.max(25, zoom - 10))}
-                    >
-                      <Minus className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Zoom Out</TooltipContent>
-                </Tooltip>
-                <Slider
-                  value={[zoom]}
-                  onValueChange={(v) => setZoom(v[0])}
-                  min={25}
-                  max={400}
-                  step={5}
-                  className="w-28"
-                />
-                <span className="text-sm font-medium w-12 text-center">{zoom}%</span>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-7 w-7" 
-                      onClick={() => setZoom(Math.min(400, zoom + 10))}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Zoom In</TooltipContent>
-                </Tooltip>
-              </div>
+              
               
               <div className="w-px h-6 bg-gray-200" />
               
               {/* Layers Toggle */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button 
-                    variant={showLayersPanel ? 'default' : 'ghost'} 
-                    size="icon" 
-                    className="h-8 w-8"
-                    onClick={() => setShowLayersPanel(!showLayersPanel)}
-                  >
+                  <Button variant={showLayersPanel ? 'default' : 'ghost'} size="icon" className="h-8 w-8" onClick={() => setShowLayersPanel(!showLayersPanel)}>
                     <Layers className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
@@ -1192,8 +1207,7 @@ export default function DesignTool() {
           </div>
 
           {/* Right - Inline Layers Panel (push layout, not overlay) */}
-          {showLayersPanel && (
-            <div className="w-72 bg-white border-l border-gray-200 flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out">
+          {showLayersPanel && <div className="w-72 bg-white border-l border-gray-200 flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out">
               {/* Header */}
               <div className="h-12 px-4 flex items-center justify-between border-b border-gray-100">
                 <div className="flex items-center gap-2">
@@ -1201,32 +1215,16 @@ export default function DesignTool() {
                   <span className="font-medium text-gray-900">Layers</span>
                   <span className="text-sm text-gray-500">{elements.length} items</span>
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-7 w-7"
-                  onClick={() => setShowLayersPanel(false)}
-                >
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowLayersPanel(false)}>
                   <X className="w-4 h-4" />
                 </Button>
               </div>
               
               {/* Layer content */}
               <div className="flex-1 overflow-y-auto">
-                <LayersPanel
-                  elements={elements}
-                  selectedElement={selectedElement}
-                  setSelectedElement={setSelectedElement}
-                  setElements={setElements}
-                  updateElement={updateElement}
-                  deleteElement={deleteElement}
-                  canvasWidth={canvasWidth}
-                  canvasHeight={canvasHeight}
-                  saveToHistory={saveToHistory}
-                />
+                <LayersPanel elements={elements} selectedElement={selectedElement} setSelectedElement={setSelectedElement} setElements={setElements} updateElement={updateElement} deleteElement={deleteElement} canvasWidth={canvasWidth} canvasHeight={canvasHeight} saveToHistory={saveToHistory} />
               </div>
-            </div>
-          )}
+            </div>}
         </div>
 
         {/* Size Dialog */}
@@ -1239,31 +1237,16 @@ export default function DesignTool() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Width (inches)</Label>
-                  <Input
-                    type="number"
-                    value={canvasWidth}
-                    onChange={(e) => setCanvasWidth(Math.max(productConfig.minWidth, Math.min(productConfig.maxWidth, Number(e.target.value))))}
-                    className="mt-1"
-                  />
+                  <Input type="number" value={canvasWidth} onChange={e => setCanvasWidth(Math.max(productConfig.minWidth, Math.min(productConfig.maxWidth, Number(e.target.value))))} className="mt-1" />
                 </div>
                 <div>
                   <Label>Height (inches)</Label>
-                  <Input
-                    type="number"
-                    value={canvasHeight}
-                    onChange={(e) => setCanvasHeight(Math.max(productConfig.minHeight, Math.min(productConfig.maxHeight, Number(e.target.value))))}
-                    className="mt-1"
-                  />
+                  <Input type="number" value={canvasHeight} onChange={e => setCanvasHeight(Math.max(productConfig.minHeight, Math.min(productConfig.maxHeight, Number(e.target.value))))} className="mt-1" />
                 </div>
               </div>
               <div>
                 <Label>Quantity</Label>
-                <Input
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                  className="mt-1"
-                />
+                <Input type="number" value={quantity} onChange={e => setQuantity(Math.max(1, Number(e.target.value)))} className="mt-1" />
               </div>
               <div className="pt-4 border-t space-y-2">
                 <div className="flex justify-between text-sm">
@@ -1296,12 +1279,7 @@ export default function DesignTool() {
             </DialogHeader>
             <div className="py-4">
               <Label>Design Name</Label>
-              <Input
-                value={designName}
-                onChange={(e) => setDesignName(e.target.value)}
-                placeholder="My Custom Banner"
-                className="mt-2"
-              />
+              <Input value={designName} onChange={e => setDesignName(e.target.value)} placeholder="My Custom Banner" className="mt-2" />
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
@@ -1334,15 +1312,12 @@ export default function DesignTool() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => {
-                setShowTemplateWarning(false);
-                setPendingTemplate(null);
-              }}>
+              setShowTemplateWarning(false);
+              setPendingTemplate(null);
+            }}>
                 Cancel
               </Button>
-              <Button 
-                onClick={() => pendingTemplate && applyTemplateConfirmed(pendingTemplate)} 
-                className="bg-amber-500 hover:bg-amber-600"
-              >
+              <Button onClick={() => pendingTemplate && applyTemplateConfirmed(pendingTemplate)} className="bg-amber-500 hover:bg-amber-600">
                 Yes, Replace Design
               </Button>
             </DialogFooter>
@@ -1370,19 +1345,15 @@ export default function DesignTool() {
               <Button variant="outline" onClick={() => setShowExitWarning(false)}>
                 Stay
               </Button>
-              <Button 
-                onClick={() => {
-                  setShowExitWarning(false);
-                  navigateBack();
-                }} 
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
+              <Button onClick={() => {
+              setShowExitWarning(false);
+              navigateBack();
+            }} className="bg-red-600 hover:bg-red-700 text-white">
                 Exit Without Saving
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
-    </TooltipProvider>
-  );
+    </TooltipProvider>;
 }
