@@ -105,10 +105,12 @@ export default function LayersPanel({
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
-                              isSelected ? 'bg-blue-600/20 border border-blue-500' : 'hover:bg-gray-700 border border-transparent'
-                            } ${isOffCanvas ? 'bg-amber-900/20' : ''} ${
-                              snapshot.isDragging ? 'bg-blue-600/30 shadow-lg' : ''
+                            className={`flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-colors border ${
+                              isSelected 
+                                ? 'bg-blue-50 border-blue-400' 
+                                : 'hover:bg-gray-50 border-transparent'
+                            } ${isOffCanvas ? 'bg-amber-50' : ''} ${
+                              snapshot.isDragging ? 'bg-blue-100 shadow-md' : ''
                             }`}
                             onClick={() => setSelectedElement(element.id)}
                           >
@@ -117,7 +119,7 @@ export default function LayersPanel({
                               {...provided.dragHandleProps}
                               className={`cursor-grab active:cursor-grabbing ${element.locked ? 'opacity-30' : ''}`}
                             >
-                              <GripVertical className="w-4 h-4 text-gray-500" />
+                              <GripVertical className="w-4 h-4 text-gray-300" />
                             </div>
                             
                             {/* Off-canvas warning indicator */}
@@ -136,19 +138,19 @@ export default function LayersPanel({
                             
                             {/* Thumbnail */}
                             <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${
-                              element.type === 'shape' ? '' : 'bg-gray-700'
+                              element.type === 'shape' ? '' : 'bg-gray-100'
                             }`} style={element.type === 'shape' ? { backgroundColor: element.fill } : {}}>
                               {element.type === 'image' ? (
                                 <img src={element.src} alt="" className="w-full h-full object-cover rounded" />
                               ) : (
-                                <Icon className="w-4 h-4 text-gray-300" />
+                                <Icon className="w-4 h-4 text-gray-500" />
                               )}
                             </div>
                             
                             {/* Label */}
                             <div className="flex-1 min-w-0">
-                              <div className="text-sm text-white truncate">{getLabel(element)}</div>
-                              <div className="text-xs text-gray-400">
+                              <div className="text-sm text-gray-900 truncate">{getLabel(element)}</div>
+                              <div className="text-xs text-gray-500">
                                 {element.width?.toFixed(1)}" × {element.height?.toFixed(1)}"
                               </div>
                             </div>
@@ -162,7 +164,7 @@ export default function LayersPanel({
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-6 w-6 p-0 text-amber-500 hover:text-amber-400"
+                                      className="h-6 w-6 p-0 text-amber-500 hover:text-amber-600"
                                       onClick={(e) => { e.stopPropagation(); centerElementOnCanvas(element.id); }}
                                     >
                                       <Crosshair className="w-3 h-3" />
@@ -176,7 +178,7 @@ export default function LayersPanel({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                                className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
                                 onClick={(e) => { e.stopPropagation(); updateElement(element.id, { visible: !element.visible }); }}
                               >
                                 {element.visible === false ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
@@ -184,7 +186,7 @@ export default function LayersPanel({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 p-0 text-gray-400 hover:text-white"
+                                className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
                                 onClick={(e) => { e.stopPropagation(); updateElement(element.id, { locked: !element.locked }); }}
                               >
                                 {element.locked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
@@ -192,7 +194,7 @@ export default function LayersPanel({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 p-0 text-gray-400 hover:text-red-400"
+                                className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
                                 onClick={(e) => { e.stopPropagation(); deleteElement(element.id); }}
                               >
                                 <Trash2 className="w-3 h-3" />

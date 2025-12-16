@@ -10,10 +10,10 @@ import { Label } from '@/components/ui/label';
 import { 
   ChevronLeft, Save, ShoppingCart, Undo, Redo,
   Loader2, Download, Grid3X3, Eye, Settings,
-  Minus, Plus, Share2, Layers
+  Minus, Plus, Share2, Layers, X
 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import LayersPanel from '@/components/designer/LayersPanel';
 import LayersPanel from '@/components/designer/LayersPanel';
 import SocialShare from '@/components/SocialShare';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
@@ -956,8 +956,8 @@ export default function DesignTool() {
             canvasHeight={canvasHeight}
           />
 
-          {/* Canvas Area */}
-          <div className="flex-1 relative">
+          {/* Canvas Area - shrinks when layers panel is open */}
+          <div className="flex-1 relative transition-all duration-300 ease-in-out">
             <CanvasWorkspace
               width={canvasWidth}
               height={canvasHeight}
@@ -1079,28 +1079,42 @@ export default function DesignTool() {
             </div>
           </div>
 
-          {/* Layers Panel Sheet */}
-          <Sheet open={showLayersPanel} onOpenChange={setShowLayersPanel}>
-            <SheetContent side="right" className="w-80 p-0 bg-gray-900 border-l border-gray-700">
-              <SheetHeader className="p-4 border-b border-gray-700">
-                <SheetTitle className="text-white flex items-center gap-2">
-                  <Layers className="w-5 h-5" />
-                  Layers
-                </SheetTitle>
-              </SheetHeader>
-              <LayersPanel
-                elements={elements}
-                selectedElement={selectedElement}
-                setSelectedElement={setSelectedElement}
-                setElements={setElements}
-                updateElement={updateElement}
-                deleteElement={deleteElement}
-                canvasWidth={canvasWidth}
-                canvasHeight={canvasHeight}
-                saveToHistory={saveToHistory}
-              />
-            </SheetContent>
-          </Sheet>
+          {/* Right - Inline Layers Panel (push layout, not overlay) */}
+          {showLayersPanel && (
+            <div className="w-72 bg-white border-l border-gray-200 flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out">
+              {/* Header */}
+              <div className="h-12 px-4 flex items-center justify-between border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-gray-600" />
+                  <span className="font-medium text-gray-900">Layers</span>
+                  <span className="text-sm text-gray-500">{elements.length} items</span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7"
+                  onClick={() => setShowLayersPanel(false)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              {/* Layer content */}
+              <div className="flex-1 overflow-y-auto">
+                <LayersPanel
+                  elements={elements}
+                  selectedElement={selectedElement}
+                  setSelectedElement={setSelectedElement}
+                  setElements={setElements}
+                  updateElement={updateElement}
+                  deleteElement={deleteElement}
+                  canvasWidth={canvasWidth}
+                  canvasHeight={canvasHeight}
+                  saveToHistory={saveToHistory}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Size Dialog */}
