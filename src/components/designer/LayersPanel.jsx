@@ -137,11 +137,18 @@ export default function LayersPanel({
                             )}
                             
                             {/* Thumbnail */}
-                            <div className={`w-8 h-8 rounded flex items-center justify-center flex-shrink-0 ${
-                              element.type === 'shape' ? '' : 'bg-gray-100'
-                            }`} style={element.type === 'shape' ? { backgroundColor: element.fill } : {}}>
+                            <div className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0 bg-gray-100 overflow-hidden">
                               {element.type === 'image' ? (
                                 <img src={element.src} alt="" className="w-full h-full object-cover rounded" />
+                              ) : element.type === 'shape' ? (
+                                <div 
+                                  className="w-6 h-6" 
+                                  style={{ 
+                                    backgroundColor: element.fill || '#60A5FA',
+                                    clipPath: element.clipPath || 'none',
+                                    borderRadius: element.shape === 'circle' ? '50%' : element.shape === 'rounded-rect' ? '4px' : '0'
+                                  }} 
+                                />
                               ) : (
                                 <Icon className="w-4 h-4 text-gray-500" />
                               )}
@@ -150,9 +157,6 @@ export default function LayersPanel({
                             {/* Label */}
                             <div className="flex-1 min-w-0">
                               <div className="text-sm text-gray-900 truncate">{getLabel(element)}</div>
-                              <div className="text-xs text-gray-500">
-                                {element.width?.toFixed(1)}" × {element.height?.toFixed(1)}"
-                              </div>
                             </div>
                             
                             {/* Actions */}
