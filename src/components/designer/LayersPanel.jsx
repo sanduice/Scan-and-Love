@@ -2,7 +2,7 @@ import React from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Button } from '@/components/ui/button';
 import { 
-  Eye, EyeOff, Lock, Unlock, Trash2, GripVertical,
+  Eye, EyeOff, Lock, Unlock, GripVertical,
   Type, Image, Square, AlertTriangle, Crosshair
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -107,7 +107,7 @@ export default function LayersPanel({
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-colors border ${
+                            className={`group flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-colors border ${
                               isSelected 
                                 ? 'bg-blue-50 border-blue-400' 
                                 : 'hover:bg-gray-50 border-transparent'
@@ -161,7 +161,7 @@ export default function LayersPanel({
                               <div className="text-sm text-gray-900 truncate">{getLabel(element)}</div>
                             </div>
                             
-                            {/* Actions */}
+                            {/* Actions - show on hover, permanent if hidden/locked */}
                             <div className="flex items-center gap-0.5">
                               {/* Center on canvas button for off-canvas elements */}
                               {isOffCanvas && (
@@ -181,30 +181,48 @@ export default function LayersPanel({
                                   </TooltipContent>
                                 </Tooltip>
                               )}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-                                onClick={(e) => { e.stopPropagation(); updateElement(element.id, { visible: !element.visible }); }}
-                              >
-                                {element.visible === false ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
-                                onClick={(e) => { e.stopPropagation(); updateElement(element.id, { locked: !element.locked }); }}
-                              >
-                                {element.locked ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 text-gray-400 hover:text-red-500"
-                                onClick={(e) => { e.stopPropagation(); deleteElement(element.id); }}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
+                              
+                              {/* Visibility toggle - permanent if hidden, hover otherwise */}
+                              {element.visible === false ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                                  onClick={(e) => { e.stopPropagation(); updateElement(element.id, { visible: true }); }}
+                                >
+                                  <EyeOff className="w-3 h-3" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => { e.stopPropagation(); updateElement(element.id, { visible: false }); }}
+                                >
+                                  <Eye className="w-3 h-3" />
+                                </Button>
+                              )}
+                              
+                              {/* Lock toggle - permanent if locked, hover otherwise */}
+                              {element.locked ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                                  onClick={(e) => { e.stopPropagation(); updateElement(element.id, { locked: false }); }}
+                                >
+                                  <Lock className="w-3 h-3" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => { e.stopPropagation(); updateElement(element.id, { locked: true }); }}
+                                >
+                                  <Unlock className="w-3 h-3" />
+                                </Button>
+                              )}
                             </div>
                           </div>
                         )}
