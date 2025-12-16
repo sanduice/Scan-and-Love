@@ -7,7 +7,7 @@ import {
   Type, Image, Shapes, Upload, Loader2, Search, Pin,
   Square, Circle, LayoutGrid, Triangle, Star, Hexagon, 
   Minus, ArrowRight, Diamond, Heart, Pentagon, Octagon,
-  ArrowUp, ArrowDown, ArrowLeft, MoveHorizontal
+  ArrowUp, ArrowDown, ArrowLeft, MoveHorizontal, ChevronLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -482,8 +482,78 @@ export default function CanvaSidebar({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFontCategory, setSelectedFontCategory] = useState('all');
   const [selectedPhotoCategory, setSelectedPhotoCategory] = useState('all');
+  const [expandedShapeSection, setExpandedShapeSection] = useState(null);
   const fileInputRef = useRef(null);
   const hoverTimeoutRef = useRef(null);
+
+  // Shape sections configuration
+  const SHAPE_SECTIONS = [
+    { id: 'basic-shapes', title: 'Basic Shapes', items: SHAPES, renderType: 'icon' },
+    { id: 'basic-arrows', title: 'Basic Arrows', items: BASIC_ARROWS, renderType: 'svg' },
+    { id: 'stars-decorations', title: 'Stars & Decorations', items: STARS_DECORATIONS, renderType: 'svg' },
+    { id: 'flowchart', title: 'Flowchart Symbols', items: FLOWCHART_SHAPES, renderType: 'svg' },
+    { id: 'colorful-shapes', title: 'Colorful Shapes', items: ATYPICAL_SHAPES, renderType: 'colored-svg' },
+    { id: 'speech-bubbles', title: 'Speech Bubbles & Callouts', items: SPEECH_BUBBLES, renderType: 'svg' },
+    { id: 'lines-arrows', title: 'Lines & Arrows', items: LINES_ARROWS, renderType: 'icon-rotate' },
+  ];
+
+  // Render a single shape item
+  const renderShapeItem = (shape, renderType) => {
+    if (renderType === 'icon') {
+      return (
+        <button
+          key={shape.id}
+          onClick={() => onAddShape(shape.id)}
+          className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
+          title={shape.name}
+        >
+          <shape.icon className="w-7 h-7 text-muted-foreground" />
+        </button>
+      );
+    }
+    if (renderType === 'colored-svg') {
+      return (
+        <button
+          key={shape.id}
+          onClick={() => onAddShape(shape.id, shape.color, shape.svg, shape.viewBox)}
+          className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
+          title={shape.name}
+        >
+          <svg viewBox={shape.viewBox || "0 0 40 40"} className="w-8 h-8" style={{ fill: shape.color }} preserveAspectRatio="xMidYMid meet">
+            <path d={shape.svg} />
+          </svg>
+        </button>
+      );
+    }
+    if (renderType === 'icon-rotate') {
+      return (
+        <button
+          key={shape.id}
+          onClick={() => onAddShape(shape.id)}
+          className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
+          title={shape.name}
+        >
+          <shape.icon 
+            className="w-7 h-7 text-muted-foreground" 
+            style={{ transform: shape.rotate ? `rotate(${shape.rotate}deg)` : undefined }}
+          />
+        </button>
+      );
+    }
+    // Default SVG rendering
+    return (
+      <button
+        key={shape.id}
+        onClick={() => onAddShape(shape.id)}
+        className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
+        title={shape.name}
+      >
+        <svg viewBox="0 0 40 40" className="w-8 h-8 text-muted-foreground fill-current">
+          <path d={shape.svg} />
+        </svg>
+      </button>
+    );
+  };
 
   // Calculate dynamic text presets based on canvas size
   const textPresets = [
@@ -666,142 +736,74 @@ export default function CanvaSidebar({
         );
 
       case 'shapes':
+        // Expanded view - show all items from one section
+        if (expandedShapeSection) {
+          const section = SHAPE_SECTIONS.find(s => s.id === expandedShapeSection);
+          if (section) {
+            return (
+              <div className="p-4">
+                {/* Back navigation */}
+                <button 
+                  onClick={() => setExpandedShapeSection(null)}
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Back to all shapes</span>
+                </button>
+                
+                <h4 className="font-semibold text-foreground mb-4">{section.title}</h4>
+                
+                <div className="grid grid-cols-5 gap-1.5">
+                  {section.items.map((shape) => renderShapeItem(shape, section.renderType))}
+                </div>
+              </div>
+            );
+          }
+        }
+
+        // Default view - show 10 items per section with "Show all" links
         return (
           <div className="p-4">
-            {/* Basic Shapes */}
-            <h4 className="font-medium text-foreground text-sm mb-3">Basic Shapes</h4>
-            <div className="grid grid-cols-5 gap-1.5 mb-6">
-              {SHAPES.map((shape) => (
-                <button
-                  key={shape.id}
-                  onClick={() => onAddShape(shape.id)}
-                  className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
-                  title={shape.name}
-                >
-                  <shape.icon className="w-7 h-7 text-muted-foreground" />
-                </button>
-              ))}
-            </div>
-
-            {/* Basic Arrows */}
-            <h4 className="font-medium text-foreground text-sm mb-3">Basic Arrows</h4>
-            <div className="grid grid-cols-5 gap-1.5 mb-6">
-              {BASIC_ARROWS.map((shape) => (
-                <button
-                  key={shape.id}
-                  onClick={() => onAddShape(shape.id)}
-                  className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
-                  title={shape.name}
-                >
-                  <svg viewBox="0 0 40 40" className="w-8 h-8 text-muted-foreground fill-current">
-                    <path d={shape.svg} />
-                  </svg>
-                </button>
-              ))}
-            </div>
-
-            {/* Stars & Decorations */}
-            <h4 className="font-medium text-foreground text-sm mb-3">Stars & Decorations</h4>
-            <div className="grid grid-cols-5 gap-1.5 mb-6">
-              {STARS_DECORATIONS.map((shape) => (
-                <button
-                  key={shape.id}
-                  onClick={() => onAddShape(shape.id)}
-                  className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
-                  title={shape.name}
-                >
-                  <svg viewBox="0 0 40 40" className="w-8 h-8 text-muted-foreground fill-current">
-                    <path d={shape.svg} />
-                  </svg>
-                </button>
-              ))}
-            </div>
-
-            {/* Flowchart Symbols */}
-            <h4 className="font-medium text-foreground text-sm mb-3">Flowchart Symbols</h4>
-            <div className="grid grid-cols-5 gap-1.5 mb-6">
-              {FLOWCHART_SHAPES.map((shape) => (
-                <button
-                  key={shape.id}
-                  onClick={() => onAddShape(shape.id)}
-                  className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
-                  title={shape.name}
-                >
-                  <svg viewBox="0 0 40 40" className="w-8 h-8 text-muted-foreground fill-current">
-                    <path d={shape.svg} />
-                  </svg>
-                </button>
-              ))}
-            </div>
-
-            {/* Atypical Colorful Shapes */}
-            <h4 className="font-medium text-foreground text-sm mb-3">Colorful Shapes</h4>
-            <div className="grid grid-cols-5 gap-1.5 mb-6">
-              {ATYPICAL_SHAPES.map((shape) => (
-                <button
-                  key={shape.id}
-                  onClick={() => onAddShape(shape.id, shape.color, shape.svg, shape.viewBox)}
-                  className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
-                  title={shape.name}
-                >
-                  <svg viewBox={shape.viewBox || "0 0 40 40"} className="w-8 h-8" style={{ fill: shape.color }} preserveAspectRatio="xMidYMid meet">
-                    <path d={shape.svg} />
-                  </svg>
-                </button>
-              ))}
-            </div>
-
-            {/* Speech Bubbles & Callouts */}
-            <h4 className="font-medium text-foreground text-sm mb-3">Speech Bubbles & Callouts</h4>
-            <div className="grid grid-cols-5 gap-1.5 mb-6">
-              {SPEECH_BUBBLES.map((shape) => (
-                <button
-                  key={shape.id}
-                  onClick={() => onAddShape(shape.id)}
-                  className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
-                  title={shape.name}
-                >
-                  <svg viewBox="0 0 40 40" className="w-8 h-8 text-muted-foreground fill-current">
-                    <path d={shape.svg} />
-                  </svg>
-                </button>
-              ))}
-            </div>
-
-            {/* Lines & Arrows */}
-            <h4 className="font-medium text-foreground text-sm mb-3">Lines & Arrows</h4>
-            <div className="grid grid-cols-5 gap-1.5 mb-6">
-              {LINES_ARROWS.map((line) => (
-                <button
-                  key={line.id}
-                  onClick={() => onAddShape(line.id)}
-                  className="aspect-square flex items-center justify-center p-1.5 border border-gray-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-all"
-                  title={line.name}
-                >
-                  <line.icon 
-                    className="w-7 h-7 text-muted-foreground" 
-                    style={{ transform: line.rotate ? `rotate(${line.rotate}deg)` : undefined }}
-                  />
-                </button>
-              ))}
-            </div>
-
-            {/* Color Blocks */}
-            <h4 className="font-medium text-foreground text-sm mb-3">Color Blocks</h4>
-            <div className="grid grid-cols-8 gap-1.5">
-              {['#EF4444', '#F97316', '#EAB308', '#22C55E', '#14B8A6', '#3B82F6', '#8B5CF6', '#EC4899', 
-                '#1E293B', '#64748B', '#FFFFFF', '#F1F5F9'].map((color) => (
-                <button
-                  key={color}
-                  onClick={() => onAddShape('rect', color)}
-                  className={cn(
-                    "aspect-square rounded-md border-2 hover:scale-110 transition-all",
-                    color === '#FFFFFF' ? "border-gray-300" : "border-transparent hover:border-gray-400"
+            {SHAPE_SECTIONS.map((section) => (
+              <div key={section.id} className="mb-6">
+                {/* Section header with "Show all" */}
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-foreground text-sm">{section.title}</h4>
+                  {section.items.length > 10 && (
+                    <button 
+                      onClick={() => setExpandedShapeSection(section.id)}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Show all ({section.items.length})
+                    </button>
                   )}
-                  style={{ backgroundColor: color }}
-                  title={color}
-                />
-              ))}
+                </div>
+                
+                {/* Show first 10 items */}
+                <div className="grid grid-cols-5 gap-1.5">
+                  {section.items.slice(0, 10).map((shape) => renderShapeItem(shape, section.renderType))}
+                </div>
+              </div>
+            ))}
+
+            {/* Color Blocks - always show all (12 items) */}
+            <div className="mb-6">
+              <h4 className="font-medium text-foreground text-sm mb-3">Color Blocks</h4>
+              <div className="grid grid-cols-8 gap-1.5">
+                {['#EF4444', '#F97316', '#EAB308', '#22C55E', '#14B8A6', '#3B82F6', '#8B5CF6', '#EC4899', 
+                  '#1E293B', '#64748B', '#FFFFFF', '#F1F5F9'].map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => onAddShape('rect', color)}
+                    className={cn(
+                      "aspect-square rounded-md border-2 hover:scale-110 transition-all",
+                      color === '#FFFFFF' ? "border-gray-300" : "border-transparent hover:border-gray-400"
+                    )}
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         );
