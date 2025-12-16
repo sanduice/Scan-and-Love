@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { 
   ChevronLeft, Save, ShoppingCart, Undo, Redo,
-  Loader2, Download, Grid3X3, Eye, Settings,
+  Loader2, Download, Eye, Settings,
   Minus, Plus, Share2, Layers, X
 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
@@ -1086,21 +1086,25 @@ export default function DesignTool() {
               />
             )}
 
-            {/* Bottom Left - Grid/Bleed Toggles */}
-            <div className="absolute bottom-4 left-4 flex items-center gap-2 bg-white rounded-lg px-3 py-2 shadow-lg border">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={showGrid ? 'default' : 'ghost'}
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setShowGrid(!showGrid)}
-                  >
-                    <Grid3X3 className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Toggle Grid</TooltipContent>
-              </Tooltip>
+            {/* Bottom Left - Page Thumbnails */}
+            <div className="absolute bottom-4 left-4 z-10">
+              <PageThumbnails 
+                pages={pages}
+                activePageIndex={activePageIndex}
+                onPageSelect={(index) => {
+                  setActivePageIndex(index);
+                  setSelectedElement(null);
+                  setEditingTextId(null);
+                }}
+                onAddPage={handleAddPage}
+                onDeletePage={handleDeletePage}
+                canvasWidth={canvasWidth}
+                canvasHeight={canvasHeight}
+              />
+            </div>
+            
+            {/* Bottom Left (after pages) - Bleed Toggle */}
+            <div className="absolute bottom-4 left-[280px] flex items-center gap-2 bg-white rounded-lg px-3 py-2 shadow-lg border">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -1175,22 +1179,6 @@ export default function DesignTool() {
               </Tooltip>
             </div>
 
-            {/* Bottom Center - Page Thumbnails */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-              <PageThumbnails 
-                pages={pages}
-                activePageIndex={activePageIndex}
-                onPageSelect={(index) => {
-                  setActivePageIndex(index);
-                  setSelectedElement(null);
-                  setEditingTextId(null);
-                }}
-                onAddPage={handleAddPage}
-                onDeletePage={handleDeletePage}
-                canvasWidth={canvasWidth}
-                canvasHeight={canvasHeight}
-              />
-            </div>
           </div>
 
           {/* Right - Inline Layers Panel (push layout, not overlay) */}
