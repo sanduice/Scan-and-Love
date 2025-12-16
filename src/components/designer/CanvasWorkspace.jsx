@@ -48,9 +48,11 @@ export default function CanvasWorkspace({
   const isDraggingRef = useRef(false);
   const groupDragStartRef = useRef(null);
   const elementsRef = useRef(elements);
+  const selectedElementsRef = useRef(selectedElements);
   
   // Update synchronously during render (not in useEffect) to ensure immediate access
   elementsRef.current = elements;
+  selectedElementsRef.current = selectedElements;
   const PIXELS_PER_INCH = 10;
   const scale = (zoom / 100) * PIXELS_PER_INCH;
   const canvasPixelWidth = width * scale;
@@ -369,8 +371,8 @@ export default function CanvasWorkspace({
           
           updateElement(elementId, { x: newX, y: newY });
         }
-      } else if (isResizing && resizeHandle && selectedElements.length === 1) {
-        const element = liveElements.find(el => el.id === selectedElements[0]);
+      } else if (isResizing && resizeHandle && selectedElementsRef.current.length === 1) {
+        const element = liveElements.find(el => el.id === selectedElementsRef.current[0]);
         if (!element) return;
         
         let newWidth = elementStart.width;
@@ -401,9 +403,9 @@ export default function CanvasWorkspace({
           }
         }
 
-        updateElement(selectedElements[0], { width: newWidth, height: newHeight, x: newX, y: newY });
-      } else if (isRotating && selectedElements.length === 1) {
-        const element = liveElements.find(el => el.id === selectedElements[0]);
+        updateElement(selectedElementsRef.current[0], { width: newWidth, height: newHeight, x: newX, y: newY });
+      } else if (isRotating && selectedElementsRef.current.length === 1) {
+        const element = liveElements.find(el => el.id === selectedElementsRef.current[0]);
         if (!element) return;
         
         // Get canvas element position for accurate rotation calculation
@@ -427,7 +429,7 @@ export default function CanvasWorkspace({
           newRotation = Math.round(newRotation / 15) * 15;
         }
         
-        updateElement(selectedElements[0], { rotation: newRotation });
+        updateElement(selectedElementsRef.current[0], { rotation: newRotation });
       }
     };
 
@@ -477,7 +479,7 @@ export default function CanvasWorkspace({
       }
       
       // Save to history when drag/resize/rotate operation completes
-      if ((isDraggingRef.current || isDragging || isResizing || isRotating) && selectedElements.length > 0 && saveToHistory) {
+      if ((isDraggingRef.current || isDragging || isResizing || isRotating) && selectedElementsRef.current.length > 0 && saveToHistory) {
         saveToHistory(elementsRef.current);
       }
       
@@ -500,7 +502,7 @@ export default function CanvasWorkspace({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, isResizing, isRotating, isPanning, isMarqueeSelecting, selectedElements, dragStart, elementStart, resizeHandle, panStart, elements, scale, width, height, updateElement, groupDragStart, marqueeStart, marqueeEnd, selectElement, saveToHistory, setElements]);
+  }, [isDragging, isResizing, isRotating, isPanning, isMarqueeSelecting, dragStart, elementStart, resizeHandle, panStart, elements, scale, width, height, updateElement, groupDragStart, marqueeStart, marqueeEnd, selectElement, saveToHistory, setElements]);
 
   const handleCanvasClick = (e) => {
     // Skip if marquee selection just completed
