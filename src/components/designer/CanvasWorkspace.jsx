@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { RotateCw, ArrowUpToLine, ArrowDownToLine, Crosshair, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
+import { RotateCw, ArrowUpToLine, ArrowDownToLine, Crosshair, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, AlertTriangle, Copy, Lock, Unlock, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Main Canvas Workspace - Canva-style infinite canvas with pan/zoom
@@ -239,7 +239,49 @@ export default function CanvasWorkspace({
     setContextMenu(null);
   }, [contextMenu, elements, updateElement, width, height, saveToHistory]);
 
-  const handleDoubleClick = useCallback((e, elementId) => {
+  // Floating toolbar actions
+  const handleDuplicate = useCallback(() => {
+    if (!selectedElement) return;
+    const element = elements.find(el => el.id === selectedElement);
+    if (!element) return;
+    
+    const newElement = {
+      ...element,
+      id: `${element.type}-${Date.now()}`,
+      x: element.x + 20,
+      y: element.y + 20,
+    };
+    const newElements = [...elements, newElement];
+    setElements(newElements);
+    setSelectedElement(newElement.id);
+    if (saveToHistory) saveToHistory(newElements);
+  }, [selectedElement, elements, setElements, setSelectedElement, saveToHistory]);
+
+  const handleToggleLock = useCallback(() => {
+    if (!selectedElement) return;
+    const element = elements.find(el => el.id === selectedElement);
+    if (!element) return;
+    
+    updateElement(selectedElement, { locked: !element.locked });
+    const newElements = elements.map(el => 
+      el.id === selectedElement ? { ...el, locked: !element.locked } : el
+    );
+    if (saveToHistory) saveToHistory(newElements);
+    if (!element.locked) {
+      setSelectedElement(null);
+      setSelectedElements([]);
+    }
+  }, [selectedElement, elements, updateElement, setSelectedElement, saveToHistory]);
+
+  const handleDeleteSelected = useCallback(() => {
+    if (!selectedElement) return;
+    const newElements = elements.filter(el => el.id !== selectedElement);
+    setElements(newElements);
+    setSelectedElement(null);
+    setSelectedElements([]);
+    if (saveToHistory) saveToHistory(newElements);
+  }, [selectedElement, elements, setElements, setSelectedElement, saveToHistory]);
+
     e.stopPropagation();
     const element = elements.find(el => el.id === elementId);
     if (element?.type === 'text' && onStartTextEdit) {
@@ -929,13 +971,46 @@ export default function CanvasWorkspace({
                 {/* Rotation handle */}
                 <div
                   data-rotate-handle="true"
-                  className="absolute -top-10 left-1/2 -ml-4 w-8 h-8 bg-white rounded-full shadow-lg border-2 border-blue-500 flex items-center justify-center cursor-grab hover:scale-110 transition-transform"
+                  className="absolute -bottom-10 left-1/2 -ml-4 w-8 h-8 bg-white rounded-full shadow-lg border-2 border-blue-500 flex items-center justify-center cursor-grab hover:scale-110 transition-transform"
                   style={{ pointerEvents: 'auto' }}
                   onMouseDown={(e) => handleRotateStart(e, element.id)}
                 >
                   <RotateCw className="w-4 h-4 text-blue-500" />
                 </div>
-                <div className="absolute -top-10 left-1/2 w-px h-6 bg-blue-500 -ml-px" style={{ top: -24 }} />
+                <div className="absolute -bottom-10 left-1/2 w-px h-6 bg-blue-500 -ml-px" style={{ bottom: -24 }} />
+
+                {/* Floating toolbar above element */}
+                <div 
+                  className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1 bg-white rounded-full shadow-lg border border-gray-200 px-2 py-1.5"
+                  style={{ 
+                    top: -48, 
+                    pointerEvents: 'auto',
+                    zIndex: 10000 
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                    onClick={handleDuplicate}
+                    title="Duplicate"
+                  >
+                    <Copy className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <button
+                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                    onClick={handleToggleLock}
+                    title="Lock"
+                  >
+                    <Lock className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <button
+                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-red-500 hover:bg-red-50"
+                    onClick={handleDeleteSelected}
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </>
             )}
           </div>
