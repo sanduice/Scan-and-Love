@@ -12,9 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
-  Plus, Search, Edit, Trash2, Image, Loader2, 
-  ChevronDown, ChevronRight, Upload, X, FileImage, 
-  FileType, Eye, EyeOff, Copy, LayoutTemplate, Paintbrush
+  Plus, Search, Edit, Trash2, Loader2, 
+  ChevronDown, ChevronRight, X, 
+  Eye, EyeOff, Copy, LayoutTemplate, Paintbrush, ArrowRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -108,174 +108,48 @@ const CategorySidebarItem = ({ item, selectedSlug, onSelect, level = 0 }) => {
   );
 };
 
-// Size Editor Component
-const SizeEditor = ({ sizes, onChange }) => {
-  const addSize = () => {
-    onChange([...sizes, { width: 24, height: 36, label: '', unit: 'inches' }]);
-  };
-
-  const updateSize = (index, field, value) => {
-    const updated = [...sizes];
-    updated[index] = { ...updated[index], [field]: value };
-    onChange(updated);
-  };
-
-  const removeSize = (index) => {
-    onChange(sizes.filter((_, i) => i !== index));
-  };
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <Label>Size Variants</Label>
-        <Button type="button" variant="outline" size="sm" onClick={addSize}>
-          <Plus className="w-4 h-4 mr-1" /> Add Size
-        </Button>
-      </div>
-      {sizes.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No sizes defined. Add sizes to specify template dimensions.</p>
-      ) : (
-        <div className="space-y-2">
-          {sizes.map((size, index) => (
-            <div key={index} className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-              <Input
-                type="number"
-                value={size.width}
-                onChange={(e) => updateSize(index, 'width', parseFloat(e.target.value) || 0)}
-                className="w-20"
-                placeholder="Width"
-              />
-              <span className="text-muted-foreground">×</span>
-              <Input
-                type="number"
-                value={size.height}
-                onChange={(e) => updateSize(index, 'height', parseFloat(e.target.value) || 0)}
-                className="w-20"
-                placeholder="Height"
-              />
-              <Select value={size.unit} onValueChange={(v) => updateSize(index, 'unit', v)}>
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="inches">in</SelectItem>
-                  <SelectItem value="feet">ft</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input
-                value={size.label || ''}
-                onChange={(e) => updateSize(index, 'label', e.target.value)}
-                className="flex-1"
-                placeholder="Label (e.g., Small, Medium)"
-              />
-              <Button type="button" variant="ghost" size="icon" onClick={() => removeSize(index)}>
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Template Editor Dialog
-const TemplateEditor = ({ template, categories, open, onClose, onSave }) => {
+// Template Editor Dialog - Simplified for creation, full for editing
+const TemplateEditor = ({ template, categories, open, onClose, onSave, isCreating }) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     category_id: '',
-    sizes: [],
-    file_type: 'raster',
+    canvasWidth: 24,
+    canvasHeight: 36,
+    sizeUnit: 'inches',
     tags: [],
     is_active: true,
-    thumbnail_url: '',
-    source_file_url: '',
-    preview_images: [],
-    design_data: {},
-    sort_order: 0
   });
-  const [uploading, setUploading] = useState(false);
   const [tagInput, setTagInput] = useState('');
 
   useEffect(() => {
     if (template?.id) {
+      // Editing existing template - load its data
+      const firstSize = template.sizes?.[0] || { width: 24, height: 36, unit: 'inches' };
       setFormData({
         name: template.name || '',
         description: template.description || '',
         category_id: template.category_id || '',
-        sizes: template.sizes || [],
-        file_type: template.file_type || 'raster',
+        canvasWidth: firstSize.width || 24,
+        canvasHeight: firstSize.height || 36,
+        sizeUnit: firstSize.unit || 'inches',
         tags: template.tags || [],
         is_active: template.is_active ?? true,
-        thumbnail_url: template.thumbnail_url || '',
-        source_file_url: template.source_file_url || '',
-        preview_images: template.preview_images || [],
-        design_data: template.design_data || {},
-        sort_order: template.sort_order || 0
       });
     } else {
+      // Creating new template - reset to defaults
       setFormData({
         name: '',
         description: '',
         category_id: '',
-        sizes: [],
-        file_type: 'raster',
+        canvasWidth: 24,
+        canvasHeight: 36,
+        sizeUnit: 'inches',
         tags: [],
         is_active: true,
-        thumbnail_url: '',
-        source_file_url: '',
-        preview_images: [],
-        design_data: {},
-        sort_order: 0
       });
     }
-  }, [template]);
-
-  const handleFileUpload = async (file, type) => {
-    if (!file) return;
-    
-    setUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-      const filePath = `${template?.id || 'new'}/${type}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('templates')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('templates')
-        .getPublicUrl(filePath);
-
-      if (type === 'preview') {
-        setFormData(prev => ({ ...prev, thumbnail_url: publicUrl }));
-      } else if (type === 'source') {
-        setFormData(prev => ({ ...prev, source_file_url: publicUrl }));
-        // Detect file type
-        const ext = fileExt.toLowerCase();
-        if (['ai', 'psd'].includes(ext)) {
-          setFormData(prev => ({ ...prev, file_type: 'editable' }));
-        } else if (ext === 'svg') {
-          setFormData(prev => ({ ...prev, file_type: 'vector' }));
-        }
-      } else if (type === 'gallery') {
-        setFormData(prev => ({ 
-          ...prev, 
-          preview_images: [...(prev.preview_images || []), publicUrl] 
-        }));
-      }
-
-      toast.success('File uploaded');
-    } catch (error) {
-      toast.error('Upload failed: ' + error.message);
-    } finally {
-      setUploading(false);
-    }
-  };
+  }, [template, open]);
 
   const addTag = () => {
     if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
@@ -286,13 +160,6 @@ const TemplateEditor = ({ template, categories, open, onClose, onSave }) => {
 
   const removeTag = (tag) => {
     setFormData(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }));
-  };
-
-  const removeGalleryImage = (url) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      preview_images: prev.preview_images.filter(u => u !== url) 
-    }));
   };
 
   const handleSubmit = (e) => {
@@ -320,45 +187,85 @@ const TemplateEditor = ({ template, categories, open, onClose, onSave }) => {
 
   const flatCategories = useMemo(() => flattenCategories(buildCategoryTree(categories)), [categories]);
 
+  const isNewTemplate = !template?.id;
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{template?.id ? 'Edit Template' : 'Create New Template'}</DialogTitle>
+          <DialogTitle>{isNewTemplate ? 'Create New Template' : 'Edit Template'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Info */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Template Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g., Sale Banner Template"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Select 
-                value={formData.category_id || 'none'} 
-                onValueChange={(v) => setFormData(prev => ({ ...prev, category_id: v === 'none' ? null : v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Category</SelectItem>
-                  {flatCategories.map(cat => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {'—'.repeat(cat.level)} {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Template Name */}
+          <div className="space-y-2">
+            <Label htmlFor="name">Template Name *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="e.g., Sale Banner Template"
+            />
+          </div>
+
+          {/* Category */}
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <Select 
+              value={formData.category_id || 'none'} 
+              onValueChange={(v) => setFormData(prev => ({ ...prev, category_id: v === 'none' ? null : v }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No Category</SelectItem>
+                {flatCategories.map(cat => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {'—'.repeat(cat.level)} {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Canvas Size - only show for new templates or if editing */}
+          <div className="space-y-2">
+            <Label>Canvas Size</Label>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <span className="text-xs text-muted-foreground">Width</span>
+                <Input
+                  type="number"
+                  value={formData.canvasWidth}
+                  onChange={(e) => setFormData(prev => ({ ...prev, canvasWidth: parseFloat(e.target.value) || 1 }))}
+                  min={1}
+                />
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs text-muted-foreground">Height</span>
+                <Input
+                  type="number"
+                  value={formData.canvasHeight}
+                  onChange={(e) => setFormData(prev => ({ ...prev, canvasHeight: parseFloat(e.target.value) || 1 }))}
+                  min={1}
+                />
+              </div>
+              <div className="space-y-1">
+                <span className="text-xs text-muted-foreground">Unit</span>
+                <Select value={formData.sizeUnit} onValueChange={(v) => setFormData(prev => ({ ...prev, sizeUnit: v }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="inches">Inches</SelectItem>
+                    <SelectItem value="feet">Feet</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
+          {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
@@ -369,112 +276,6 @@ const TemplateEditor = ({ template, categories, open, onClose, onSave }) => {
               rows={3}
             />
           </div>
-
-          {/* Preview Image Upload */}
-          <div className="space-y-2">
-            <Label>Preview Image</Label>
-            <div className="flex items-start gap-4">
-              {formData.thumbnail_url ? (
-                <div className="relative w-32 h-32 rounded-lg overflow-hidden bg-muted">
-                  <img src={formData.thumbnail_url} alt="Preview" className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, thumbnail_url: '' }))}
-                    className="absolute top-1 right-1 p-1 bg-background/80 rounded-full"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <label className="w-32 h-32 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">
-                  <Upload className="w-8 h-8 text-muted-foreground mb-2" />
-                  <span className="text-xs text-muted-foreground">Upload</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleFileUpload(e.target.files?.[0], 'preview')}
-                    disabled={uploading}
-                  />
-                </label>
-              )}
-              <div className="text-sm text-muted-foreground">
-                <p>Upload a preview thumbnail (JPG, PNG, WebP)</p>
-                <p>Recommended: 1:1 aspect ratio</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Source File Upload */}
-          <div className="space-y-2">
-            <Label>Source/Editable File</Label>
-            <div className="flex items-start gap-4">
-              {formData.source_file_url ? (
-                <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
-                  <FileType className="w-8 h-8 text-primary" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{formData.source_file_url.split('/').pop()}</p>
-                    <Badge variant="secondary" className="mt-1">{formData.file_type}</Badge>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setFormData(prev => ({ ...prev, source_file_url: '', file_type: 'raster' }))}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ) : (
-                <label className="flex-1 border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">
-                  <Upload className="w-8 h-8 text-muted-foreground mb-2" />
-                  <span className="text-sm text-muted-foreground">Upload AI, PSD, or SVG file</span>
-                  <input
-                    type="file"
-                    accept=".ai,.psd,.svg,.eps"
-                    className="hidden"
-                    onChange={(e) => handleFileUpload(e.target.files?.[0], 'source')}
-                    disabled={uploading}
-                  />
-                </label>
-              )}
-            </div>
-          </div>
-
-          {/* Gallery Images */}
-          <div className="space-y-2">
-            <Label>Additional Gallery Images</Label>
-            <div className="flex flex-wrap gap-2">
-              {(formData.preview_images || []).map((url, idx) => (
-                <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden bg-muted">
-                  <img src={url} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => removeGalleryImage(url)}
-                    className="absolute top-1 right-1 p-0.5 bg-background/80 rounded-full"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-              <label className="w-20 h-20 border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer hover:bg-muted/50">
-                <Plus className="w-6 h-6 text-muted-foreground" />
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleFileUpload(e.target.files?.[0], 'gallery')}
-                  disabled={uploading}
-                />
-              </label>
-            </div>
-          </div>
-
-          {/* Size Variants */}
-          <SizeEditor 
-            sizes={formData.sizes || []} 
-            onChange={(sizes) => setFormData(prev => ({ ...prev, sizes }))} 
-          />
 
           {/* Tags */}
           <div className="space-y-2">
@@ -507,7 +308,7 @@ const TemplateEditor = ({ template, categories, open, onClose, onSave }) => {
           <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
             <div>
               <Label>Active</Label>
-              <p className="text-sm text-muted-foreground">Make this template available in the design tool</p>
+              <p className="text-sm text-muted-foreground">Make available in design tool</p>
             </div>
             <Switch
               checked={formData.is_active}
@@ -515,11 +316,28 @@ const TemplateEditor = ({ template, categories, open, onClose, onSave }) => {
             />
           </div>
 
-          <DialogFooter>
+          {/* Show existing thumbnail if editing */}
+          {!isNewTemplate && template?.thumbnail_url && (
+            <div className="space-y-2">
+              <Label>Preview (auto-generated from design)</Label>
+              <div className="w-32 h-32 rounded-lg overflow-hidden bg-muted">
+                <img src={template.thumbnail_url} alt="Preview" className="w-full h-full object-cover" />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="submit" disabled={uploading}>
-              {uploading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {template?.id ? 'Update Template' : 'Create Template'}
+            <Button type="submit" disabled={isCreating}>
+              {isCreating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {isNewTemplate ? (
+                <>
+                  Create Template
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </>
+              ) : (
+                'Update Template'
+              )}
             </Button>
           </DialogFooter>
         </form>
@@ -535,6 +353,7 @@ export default function TemplatesManager() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [selectedCategorySlug, setSelectedCategorySlug] = useState('all-templates');
+  const [isCreating, setIsCreating] = useState(false);
 
   // Navigate to design tool to edit template visually
   const handleEditDesign = (template) => {
@@ -566,27 +385,6 @@ export default function TemplatesManager() {
       if (error) throw error;
       return data;
     },
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data) => {
-      const { data: newTemplate, error } = await supabase
-        .from('design_templates')
-        .insert([data])
-        .select()
-        .single();
-      if (error) throw error;
-      return newTemplate;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-templates'] });
-      toast.success('Template created');
-      setShowDialog(false);
-      setEditingTemplate(null);
-    },
-    onError: (error) => {
-      toast.error('Failed to create template: ' + error.message);
-    }
   });
 
   const updateMutation = useMutation({
@@ -628,23 +426,82 @@ export default function TemplatesManager() {
     }
   });
 
-  const handleSave = (formData) => {
+  const handleSave = async (formData) => {
     if (editingTemplate?.id) {
-      updateMutation.mutate({ id: editingTemplate.id, data: formData });
+      // UPDATE MODE: Update existing template metadata
+      updateMutation.mutate({ 
+        id: editingTemplate.id, 
+        data: {
+          name: formData.name,
+          description: formData.description,
+          category_id: formData.category_id || null,
+          sizes: [{ width: formData.canvasWidth, height: formData.canvasHeight, unit: formData.sizeUnit }],
+          tags: formData.tags,
+          is_active: formData.is_active,
+        }
+      });
     } else {
-      createMutation.mutate(formData);
+      // CREATE MODE: Create draft template and navigate to design tool
+      setIsCreating(true);
+      try {
+        const newTemplate = {
+          name: formData.name,
+          description: formData.description,
+          category_id: formData.category_id || null,
+          sizes: [{ width: formData.canvasWidth, height: formData.canvasHeight, unit: formData.sizeUnit }],
+          tags: formData.tags,
+          is_active: formData.is_active,
+          design_data: { elements: [] },
+          file_type: 'vector',
+        };
+
+        const { data: created, error } = await supabase
+          .from('design_templates')
+          .insert([newTemplate])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        toast.success('Template created - opening design canvas...');
+        setShowDialog(false);
+        setEditingTemplate(null);
+        
+        // Navigate to design tool with the new template ID
+        navigate(`/DesignTool?editTemplateId=${created.id}&width=${formData.canvasWidth}&height=${formData.canvasHeight}`);
+      } catch (error) {
+        toast.error('Failed to create template: ' + error.message);
+      } finally {
+        setIsCreating(false);
+      }
     }
   };
 
   const handleDuplicate = async (template) => {
-    const duplicateData = {
-      ...template,
-      name: `${template.name} (Copy)`,
-      id: undefined,
-      created_at: undefined,
-      updated_at: undefined
-    };
-    createMutation.mutate(duplicateData);
+    try {
+      const duplicateData = {
+        name: `${template.name} (Copy)`,
+        description: template.description,
+        category_id: template.category_id,
+        sizes: template.sizes,
+        tags: template.tags,
+        is_active: false, // Duplicates start as inactive
+        design_data: template.design_data,
+        file_type: template.file_type,
+        thumbnail_url: template.thumbnail_url,
+      };
+
+      const { error } = await supabase
+        .from('design_templates')
+        .insert([duplicateData]);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['admin-templates'] });
+      toast.success('Template duplicated');
+    } catch (error) {
+      toast.error('Failed to duplicate template: ' + error.message);
+    }
   };
 
   const toggleActive = (template) => {
@@ -792,10 +649,10 @@ export default function TemplatesManager() {
                       {getFileTypeBadge(template.file_type)}
                     </div>
 
-                    {/* Size Count Badge */}
-                    {template.sizes?.length > 0 && (
+                    {/* Size Badge */}
+                    {template.sizes?.[0] && (
                       <Badge className="absolute bottom-2 left-2 bg-background/90">
-                        {template.sizes.length} size{template.sizes.length !== 1 ? 's' : ''}
+                        {template.sizes[0].width} × {template.sizes[0].height} {template.sizes[0].unit === 'inches' ? 'in' : 'ft'}
                       </Badge>
                     )}
                   </div>
@@ -882,6 +739,7 @@ export default function TemplatesManager() {
         open={showDialog}
         onClose={() => { setShowDialog(false); setEditingTemplate(null); }}
         onSave={handleSave}
+        isCreating={isCreating}
       />
     </div>
   );
