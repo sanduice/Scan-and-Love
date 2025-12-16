@@ -504,14 +504,18 @@ export default function CanvasWorkspace({
       return;
     }
     
-    if (e.target === e.currentTarget || e.target.closest('[data-canvas-bg]')) {
-      if (!e.shiftKey) {
-        setSelectedElement(null);
-        setSelectedElements([]);
-      }
-      if (editingTextId && onEndTextEdit) {
-        onEndTextEdit();
-      }
+    // Don't clear if clicking on an element
+    if (e.target.closest('[data-element-id]')) {
+      return;
+    }
+    
+    // Clear selection when clicking on workspace background, canvas, or any non-element area
+    if (!e.shiftKey) {
+      setSelectedElement(null);
+      setSelectedElements([]);
+    }
+    if (editingTextId && onEndTextEdit) {
+      onEndTextEdit();
     }
   };
 
