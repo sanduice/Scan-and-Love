@@ -139,12 +139,12 @@ export default function LayersPanel({
                             )}
                             
                             {/* Thumbnail */}
-                            <div className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0 bg-gray-100 overflow-hidden">
+                            <div className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0 bg-gray-100 overflow-hidden">
                               {(element.type === 'image' || element.type === 'clipart') ? (
-                                <img src={element.src} alt="" className="w-full h-full object-contain rounded" />
+                                <img src={element.src} alt="" className="w-5 h-5 object-contain" />
                               ) : element.type === 'shape' ? (
                                 <div 
-                                  className="w-6 h-6" 
+                                  className="w-5 h-5" 
                                   style={{ 
                                     backgroundColor: element.fill || '#60A5FA',
                                     clipPath: element.clipPath || 'none',
@@ -152,7 +152,7 @@ export default function LayersPanel({
                                   }} 
                                 />
                               ) : (
-                                <Icon className="w-4 h-4 text-gray-500" />
+                                <Icon className="w-3.5 h-3.5 text-gray-500" />
                               )}
                             </div>
                             
