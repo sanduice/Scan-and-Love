@@ -257,7 +257,13 @@ export default function CanvasWorkspace({
     setResizeHandle(handle);
     setSelectedElement(elementId);
     setDragStart({ x: e.clientX, y: e.clientY });
-    setElementStart({ x: element.x, y: element.y, width: element.width, height: element.height });
+    setElementStart({ 
+      x: element.x, 
+      y: element.y, 
+      width: element.width, 
+      height: element.height,
+      fontSize: element.type === 'text' ? (element.fontSize || 1) : null
+    });
   }, [elements, setSelectedElement]);
 
   const handleRotateStart = useCallback((e, elementId) => {
@@ -386,7 +392,16 @@ export default function CanvasWorkspace({
           }
         }
 
-        updateElement(selectedElement, { width: newWidth, height: newHeight, x: newX, y: newY });
+        // Scale font size proportionally for text elements
+        if (element.type === 'text' && elementStart.fontSize) {
+          const scaleX = newWidth / elementStart.width;
+          const scaleY = newHeight / elementStart.height;
+          const scaleFactor = Math.max(scaleX, scaleY);
+          const newFontSize = Math.max(0.1, elementStart.fontSize * scaleFactor);
+          updateElement(selectedElement, { width: newWidth, height: newHeight, x: newX, y: newY, fontSize: newFontSize });
+        } else {
+          updateElement(selectedElement, { width: newWidth, height: newHeight, x: newX, y: newY });
+        }
       } else if (isRotating) {
         // Get canvas element position for accurate rotation calculation
         const canvasRect = containerRef.current?.getBoundingClientRect();
