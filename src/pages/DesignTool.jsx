@@ -1112,24 +1112,6 @@ export default function DesignTool() {
                 canvasHeight={canvasHeight}
               />
             </div>
-            
-            {/* Bottom Left (after pages) - Bleed Toggle */}
-            <div className="absolute bottom-4 left-[280px] flex items-center gap-2 bg-white rounded-lg px-3 py-2 shadow-lg border">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant={showBleed ? 'default' : 'ghost'}
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => setShowBleed(!showBleed)}
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Toggle Bleed Area</TooltipContent>
-              </Tooltip>
-            </div>
-
             {/* Bottom Right - Zoom Slider + Layers Toggle */}
             <div className="absolute bottom-4 right-4 flex items-center gap-3 bg-white rounded-lg px-3 py-2 shadow-lg border">
               {/* Zoom Slider */}
