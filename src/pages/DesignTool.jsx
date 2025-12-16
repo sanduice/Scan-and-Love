@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import LayersPanel from '@/components/designer/LayersPanel';
-import LayersPanel from '@/components/designer/LayersPanel';
 import SocialShare from '@/components/SocialShare';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
