@@ -423,7 +423,10 @@ export default function DesignTool() {
     setHistoryIndex(prev => Math.min(prev + 1, 49));
   }, [historyIndex, activePageIndex]);
 
-  const undo = () => {
+  // Detect Mac vs Windows/Linux for keyboard shortcuts
+  const isMac = typeof navigator !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+
+  const undo = useCallback(() => {
     if (historyIndex > 0) {
       setHistoryIndex(historyIndex - 1);
       const prevPages = history[historyIndex - 1];
@@ -431,9 +434,9 @@ export default function DesignTool() {
       setSelectedElement(null);
       setEditingTextId(null);
     }
-  };
+  }, [historyIndex, history]);
 
-  const redo = () => {
+  const redo = useCallback(() => {
     if (historyIndex < history.length - 1) {
       setHistoryIndex(historyIndex + 1);
       const nextPages = history[historyIndex + 1];
@@ -441,7 +444,37 @@ export default function DesignTool() {
       setSelectedElement(null);
       setEditingTextId(null);
     }
-  };
+  }, [historyIndex, history]);
+
+  // Keyboard shortcuts for undo/redo (cross-platform)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't handle if editing text or typing in an input/textarea
+      if (editingTextId || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+      }
+      
+      // Detect modifier key: Cmd on Mac, Ctrl on Windows/Linux
+      const modifier = isMac ? e.metaKey : e.ctrlKey;
+      
+      if (!modifier) return;
+      
+      // Undo: Ctrl+Z (Windows) or Cmd+Z (Mac)
+      if (e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+      
+      // Redo: Ctrl+Y (Windows) or Ctrl+Shift+Z (Windows/Mac) or Cmd+Shift+Z (Mac)
+      if ((e.key === 'y' && !isMac) || (e.key === 'z' && e.shiftKey) || (e.key === 'Z' && e.shiftKey)) {
+        e.preventDefault();
+        redo();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [editingTextId, isMac, undo, redo]);
 
   const addElement = (element) => {
     const newElement = {
@@ -966,7 +999,7 @@ export default function DesignTool() {
                     <Undo className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
+                <TooltipContent>Undo ({isMac ? '⌘Z' : 'Ctrl+Z'})</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -974,7 +1007,7 @@ export default function DesignTool() {
                     <Redo className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Redo (Ctrl+Y)</TooltipContent>
+                <TooltipContent>Redo ({isMac ? '⌘⇧Z' : 'Ctrl+Y'})</TooltipContent>
               </Tooltip>
             </div>
           </div>
