@@ -234,3 +234,61 @@ export async function generateArtworkDataURL(elements, width, height, dpi = 150)
   const svg = await generateSVGWithImages(elements, width, height, dpi);
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
+
+// Download as PDF (generates PNG and wraps it)
+export async function downloadPDF(elements, width, height, dpi = 150, filename = 'design.pdf') {
+  const blob = await generatePNG(elements, width, height, dpi);
+  const url = URL.createObjectURL(blob);
+  
+  // Create a printable HTML document with the image
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    // Fallback: download as PNG if popup blocked
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename.replace('.pdf', '.png');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return true;
+  }
+
+  // Create print-ready document
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${filename}</title>
+      <style>
+        @page {
+          size: ${width}in ${height}in;
+          margin: 0;
+        }
+        body {
+          margin: 0;
+          padding: 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        img {
+          width: ${width}in;
+          height: ${height}in;
+          object-fit: contain;
+        }
+        @media print {
+          body { margin: 0; }
+          img { max-width: 100%; height: auto; }
+        }
+      </style>
+    </head>
+    <body>
+      <img src="${url}" alt="Design" onload="window.print(); setTimeout(() => window.close(), 1000);" />
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+  
+  return true;
+}
