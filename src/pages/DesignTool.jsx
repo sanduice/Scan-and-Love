@@ -10,19 +10,21 @@ import { Label } from '@/components/ui/label';
 import { 
   ChevronLeft, Save, ShoppingCart, Undo, Redo,
   Loader2, Download, Eye, Settings,
-  Minus, Plus, Share2, Layers, X
+  Minus, Plus, Share2, Layers, X, ChevronDown,
+  Image as ImageIcon, FileText, FileCode
 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import LayersPanel from '@/components/designer/LayersPanel';
 import PageThumbnails from '@/components/designer/PageThumbnails';
 import SocialShare from '@/components/SocialShare';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import CanvasWorkspace from '@/components/designer/CanvasWorkspace';
 import CanvaSidebar from '@/components/designer/CanvaSidebar';
 import DesignToolbar from '@/components/designer/DesignToolbar';
-import { generateThumbnail, generateThumbnailWithImages, generateSVG, downloadSVG, downloadPNG, generateArtworkDataURL } from '@/components/designer/CanvasExporter';
+import { generateThumbnail, generateThumbnailWithImages, generateSVG, downloadSVG, downloadPNG, downloadPDF, generateArtworkDataURL } from '@/components/designer/CanvasExporter';
 import { parseSvgToElements } from '@/components/designer/SvgParser';
 import { AlertTriangle } from 'lucide-react';
 
@@ -903,12 +905,21 @@ export default function DesignTool() {
   };
 
   const handleDownload = async (format) => {
-    if (format === 'svg') {
-      downloadSVG(elements, canvasWidth, canvasHeight, 150, `${designName}.svg`);
-    } else if (format === 'png') {
-      await downloadPNG(elements, canvasWidth, canvasHeight, 150, `${designName}.png`);
+    // Export all pages
+    for (let i = 0; i < pages.length; i++) {
+      const page = pages[i];
+      const pageSuffix = pages.length > 1 ? `_${page.label.replace(/\s/g, '_')}` : '';
+      const filename = `${designName}${pageSuffix}`;
+      
+      if (format === 'svg') {
+        await downloadSVG(page.elements, canvasWidth, canvasHeight, 150, `${filename}.svg`);
+      } else if (format === 'png') {
+        await downloadPNG(page.elements, canvasWidth, canvasHeight, 150, `${filename}.png`);
+      } else if (format === 'pdf') {
+        await downloadPDF(page.elements, canvasWidth, canvasHeight, 150, `${filename}.pdf`);
+      }
     }
-    toast.success(`Downloaded as ${format.toUpperCase()}`);
+    toast.success(`Downloaded ${pages.length} page(s) as ${format.toUpperCase()}`);
   };
 
   // Multi-page management
@@ -1042,15 +1053,31 @@ export default function DesignTool() {
               </>
             )}
 
-            {/* Download */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" onClick={() => handleDownload('png')}>
+            {/* Export Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
                   <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline">Export</span>
+                  <ChevronDown className="w-3 h-3" />
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent>Download PNG</TooltipContent>
-            </Tooltip>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleDownload('png')}>
+                  <ImageIcon className="w-4 h-4 mr-2" />
+                  Download as PNG
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownload('pdf')}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Download as PDF
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleDownload('svg')}>
+                  <FileCode className="w-4 h-4 mr-2" />
+                  Download as SVG (Vector)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Share - Only in normal mode */}
             {!isTemplateEditMode && (

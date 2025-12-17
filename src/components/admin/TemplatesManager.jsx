@@ -17,8 +17,47 @@ import {
   Eye, EyeOff, Copy, LayoutTemplate, Paintbrush, ArrowRight
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { generateThumbnailWithImages } from '@/components/designer/CanvasExporter';
 
-// Build hierarchical category tree from flat database data
+// Thumbnail component that generates preview from design_data if thumbnail_url is missing
+const TemplateThumbnail = ({ template }) => {
+  const [thumbnailSrc, setThumbnailSrc] = useState(template.thumbnail_url);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // If no thumbnail but has design data, generate one
+    if (!template.thumbnail_url && template.design_data) {
+      const pages = template.design_data.pages;
+      const elements = pages?.[0]?.elements || template.design_data.elements || [];
+      const size = template.sizes?.[0] || { width: 24, height: 36 };
+      
+      if (elements.length > 0) {
+        setIsLoading(true);
+        generateThumbnailWithImages(elements, size.width, size.height)
+          .then(src => setThumbnailSrc(src))
+          .catch(console.error)
+          .finally(() => setIsLoading(false));
+      }
+    }
+  }, [template]);
+
+  if (isLoading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-muted">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return thumbnailSrc ? (
+    <img src={thumbnailSrc} alt={template.name} className="w-full h-full object-cover" />
+  ) : (
+    <div className="w-full h-full flex items-center justify-center">
+      <LayoutTemplate className="w-12 h-12 text-muted-foreground/30" />
+    </div>
+  );
+};
+
 const buildCategoryTree = (categories) => {
   const buildSubcategories = (parentId) => {
     return categories
@@ -632,17 +671,7 @@ export default function TemplatesManager() {
                     className="aspect-video bg-muted relative cursor-pointer" 
                     onClick={() => handleEditDesign(template)}
                   >
-                    {template.thumbnail_url ? (
-                      <img 
-                        src={template.thumbnail_url} 
-                        alt={template.name} 
-                        className="w-full h-full object-cover" 
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <LayoutTemplate className="w-12 h-12 text-muted-foreground/30" />
-                      </div>
-                    )}
+                    <TemplateThumbnail template={template} />
                     
                     {/* File Type Badge */}
                     <div className="absolute top-2 right-2">

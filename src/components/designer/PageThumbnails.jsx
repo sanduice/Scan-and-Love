@@ -1,12 +1,12 @@
-import React, { useMemo } from 'react';
-import { Plus, X, Copy, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, X, Copy, FileText, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { generateSVG } from './CanvasExporter';
+import { generateThumbnailWithImages } from './CanvasExporter';
 
 const PageThumbnails = ({
   pages,
@@ -115,7 +115,7 @@ const PageThumbnails = ({
   );
 };
 
-// Mini preview of the canvas
+// Mini preview of the canvas - async version with embedded images
 const PagePreview = ({
   elements,
   canvasWidth,
@@ -123,17 +123,39 @@ const PagePreview = ({
   thumbnailWidth,
   thumbnailHeight,
 }) => {
-  const svgContent = useMemo(() => {
-    if (!elements || elements.length === 0) {
-      return null;
-    }
-    try {
-      // Generate a simple SVG preview at low DPI
-      return generateSVG(elements, canvasWidth, canvasHeight, 1);
-    } catch (err) {
-      console.error('Error generating preview:', err);
-      return null;
-    }
+  const [thumbnailSrc, setThumbnailSrc] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const generateThumbnail = async () => {
+      if (!elements || elements.length === 0) {
+        setThumbnailSrc(null);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const dataUrl = await generateThumbnailWithImages(elements, canvasWidth, canvasHeight);
+        if (!cancelled) {
+          setThumbnailSrc(dataUrl);
+        }
+      } catch (err) {
+        console.error('Error generating preview:', err);
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    generateThumbnail();
+
+    return () => {
+      cancelled = true;
+    };
   }, [elements, canvasWidth, canvasHeight]);
 
   return (
@@ -141,16 +163,13 @@ const PagePreview = ({
       className="bg-white w-full h-full flex items-center justify-center overflow-hidden"
       style={{ width: thumbnailWidth, height: thumbnailHeight }}
     >
-      {svgContent ? (
-        <div
-          className="w-full h-full"
-          dangerouslySetInnerHTML={{ __html: svgContent }}
-          style={{
-            transform: `scale(${thumbnailWidth / canvasWidth})`,
-            transformOrigin: 'top left',
-            width: canvasWidth,
-            height: canvasHeight,
-          }}
+      {isLoading ? (
+        <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+      ) : thumbnailSrc ? (
+        <img 
+          src={thumbnailSrc} 
+          alt="Page preview" 
+          className="w-full h-full object-contain"
         />
       ) : (
         <div className="text-gray-300 text-xs">Empty</div>
