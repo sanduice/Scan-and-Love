@@ -33,7 +33,12 @@ export default function CanvasWorkspace({
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [contextMenu, setContextMenu] = useState(null);
-  const [alignmentGuides, setAlignmentGuides] = useState({ showVertical: false, showHorizontal: false });
+  const [alignmentGuides, setAlignmentGuides] = useState({ 
+    showVertical: false, 
+    showHorizontal: false,
+    verticalLines: [],   // Object-to-object vertical alignment lines
+    horizontalLines: [], // Object-to-object horizontal alignment lines
+  });
   
   // Multi-select and marquee selection state
   const [selectedElements, setSelectedElements] = useState([]);
@@ -86,6 +91,94 @@ export default function CanvasWorkspace({
     setElements(newElements);
     if (saveToHistory) saveToHistory(newElements);
   }, [elements, width, height, setElements, saveToHistory]);
+
+  // Calculate object-to-object alignments
+  const calculateObjectAlignments = useCallback((draggedElement, otherElements, threshold = 0.1) => {
+    const verticalLines = [];
+    const horizontalLines = [];
+    
+    // Get edges and center of dragged element
+    const dragged = {
+      left: draggedElement.x,
+      right: draggedElement.x + draggedElement.width,
+      centerX: draggedElement.x + draggedElement.width / 2,
+      top: draggedElement.y,
+      bottom: draggedElement.y + draggedElement.height,
+      centerY: draggedElement.y + draggedElement.height / 2,
+    };
+    
+    let snapX = null;
+    let snapY = null;
+    
+    otherElements.forEach(other => {
+      if (other.id === draggedElement.id || other.locked) return;
+      
+      const target = {
+        left: other.x,
+        right: other.x + other.width,
+        centerX: other.x + other.width / 2,
+        top: other.y,
+        bottom: other.y + other.height,
+        centerY: other.y + other.height / 2,
+      };
+      
+      // Check VERTICAL alignments (X-axis matches)
+      // Left-to-left
+      if (Math.abs(dragged.left - target.left) < threshold) {
+        verticalLines.push({ x: target.left, type: 'left-left' });
+        if (snapX === null) snapX = target.left - dragged.left;
+      }
+      // Right-to-right
+      if (Math.abs(dragged.right - target.right) < threshold) {
+        verticalLines.push({ x: target.right, type: 'right-right' });
+        if (snapX === null) snapX = target.right - dragged.right;
+      }
+      // Left-to-right
+      if (Math.abs(dragged.left - target.right) < threshold) {
+        verticalLines.push({ x: target.right, type: 'left-right' });
+        if (snapX === null) snapX = target.right - dragged.left;
+      }
+      // Right-to-left
+      if (Math.abs(dragged.right - target.left) < threshold) {
+        verticalLines.push({ x: target.left, type: 'right-left' });
+        if (snapX === null) snapX = target.left - dragged.right;
+      }
+      // Center-to-center vertical
+      if (Math.abs(dragged.centerX - target.centerX) < threshold) {
+        verticalLines.push({ x: target.centerX, type: 'center-center' });
+        if (snapX === null) snapX = target.centerX - dragged.centerX;
+      }
+      
+      // Check HORIZONTAL alignments (Y-axis matches)
+      // Top-to-top
+      if (Math.abs(dragged.top - target.top) < threshold) {
+        horizontalLines.push({ y: target.top, type: 'top-top' });
+        if (snapY === null) snapY = target.top - dragged.top;
+      }
+      // Bottom-to-bottom
+      if (Math.abs(dragged.bottom - target.bottom) < threshold) {
+        horizontalLines.push({ y: target.bottom, type: 'bottom-bottom' });
+        if (snapY === null) snapY = target.bottom - dragged.bottom;
+      }
+      // Top-to-bottom
+      if (Math.abs(dragged.top - target.bottom) < threshold) {
+        horizontalLines.push({ y: target.bottom, type: 'top-bottom' });
+        if (snapY === null) snapY = target.bottom - dragged.top;
+      }
+      // Bottom-to-top
+      if (Math.abs(dragged.bottom - target.top) < threshold) {
+        horizontalLines.push({ y: target.top, type: 'bottom-top' });
+        if (snapY === null) snapY = target.top - dragged.bottom;
+      }
+      // Center-to-center horizontal
+      if (Math.abs(dragged.centerY - target.centerY) < threshold) {
+        horizontalLines.push({ y: target.centerY, type: 'center-center' });
+        if (snapY === null) snapY = target.centerY - dragged.centerY;
+      }
+    });
+    
+    return { verticalLines, horizontalLines, snapX, snapY };
+  }, []);
 
   // Handle wheel zoom
   useEffect(() => {
@@ -371,13 +464,29 @@ export default function CanvasWorkspace({
               });
             }
           });
-          setAlignmentGuides({ showVertical: false, showHorizontal: false });
+          setAlignmentGuides({ showVertical: false, showHorizontal: false, verticalLines: [], horizontalLines: [] });
         } else {
           // Single element drag with alignment guides
           let newX = elementStart.x + dx;
           let newY = elementStart.y + dy;
           
-          // Calculate element center
+          // Get other elements for object-to-object alignment
+          const otherElements = elements.filter(el => el.id !== selectedElement);
+          
+          // Check object-to-object alignments first
+          const elementBounds = { 
+            ...element, 
+            x: newX, 
+            y: newY 
+          };
+          const { verticalLines, horizontalLines, snapX, snapY } = 
+            calculateObjectAlignments(elementBounds, otherElements, 0.1);
+          
+          // Apply object snap
+          if (snapX !== null) newX += snapX;
+          if (snapY !== null) newY += snapY;
+          
+          // Calculate element center (after object snap)
           const elementCenterX = newX + element.width / 2;
           const elementCenterY = newY + element.height / 2;
           
@@ -385,14 +494,14 @@ export default function CanvasWorkspace({
           const canvasCenterX = width / 2;
           const canvasCenterY = height / 2;
           
-          // Snap threshold (in inches)
+          // Snap threshold for canvas center (in inches)
           const threshold = 0.15;
           
-          // Check alignment
-          const isHorizontallyCentered = Math.abs(elementCenterX - canvasCenterX) < threshold;
-          const isVerticallyCentered = Math.abs(elementCenterY - canvasCenterY) < threshold;
+          // Check canvas center alignment (only if no object snap happened)
+          const isHorizontallyCentered = snapX === null && Math.abs(elementCenterX - canvasCenterX) < threshold;
+          const isVerticallyCentered = snapY === null && Math.abs(elementCenterY - canvasCenterY) < threshold;
           
-          // Snap to center if within threshold
+          // Snap to canvas center if within threshold and no object snap
           if (isHorizontallyCentered) {
             newX = canvasCenterX - element.width / 2;
           }
@@ -403,6 +512,8 @@ export default function CanvasWorkspace({
           setAlignmentGuides({
             showVertical: isHorizontallyCentered,
             showHorizontal: isVerticallyCentered,
+            verticalLines,
+            horizontalLines,
           });
           
           updateElement(selectedElement, { x: newX, y: newY });
@@ -530,7 +641,7 @@ export default function CanvasWorkspace({
       setIsRotating(false);
       setResizeHandle(null);
       setIsPanning(false);
-      setAlignmentGuides({ showVertical: false, showHorizontal: false });
+      setAlignmentGuides({ showVertical: false, showHorizontal: false, verticalLines: [], horizontalLines: [] });
       setGroupDragStart({});
     };
 
@@ -540,7 +651,7 @@ export default function CanvasWorkspace({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, isResizing, isRotating, isPanning, isMarqueeSelecting, selectedElement, selectedElements, dragStart, elementStart, resizeHandle, panStart, elements, scale, width, height, updateElement, groupDragStart, marqueeStart, marqueeEnd, panOffset, saveToHistory]);
+  }, [isDragging, isResizing, isRotating, isPanning, isMarqueeSelecting, selectedElement, selectedElements, dragStart, elementStart, resizeHandle, panStart, elements, scale, width, height, updateElement, groupDragStart, marqueeStart, marqueeEnd, panOffset, saveToHistory, calculateObjectAlignments]);
 
   const handleCanvasClick = (e) => {
     // Don't clear selection if clicking on resize handles, rotate handle, or context menu
@@ -1165,6 +1276,30 @@ export default function CanvasWorkspace({
                 }}
               />
             )}
+
+            {/* Object-to-object vertical alignment guides */}
+            {alignmentGuides.verticalLines?.map((guide, idx) => (
+              <div
+                key={`v-guide-${idx}`}
+                className="absolute top-0 bottom-0 w-px pointer-events-none z-[50]"
+                style={{ 
+                  left: guide.x * scale, 
+                  backgroundColor: '#EC4899',
+                }}
+              />
+            ))}
+
+            {/* Object-to-object horizontal alignment guides */}
+            {alignmentGuides.horizontalLines?.map((guide, idx) => (
+              <div
+                key={`h-guide-${idx}`}
+                className="absolute left-0 right-0 h-px pointer-events-none z-[50]"
+                style={{ 
+                  top: guide.y * scale, 
+                  backgroundColor: '#EC4899',
+                }}
+              />
+            ))}
 
             {/* Elements */}
             {elements.filter(el => el.visible !== false).map(renderElement)}
