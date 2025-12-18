@@ -7,6 +7,10 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { 
   ChevronLeft, Save, ShoppingCart, Undo, Redo,
   Loader2, Download, Eye, Settings,
@@ -160,6 +164,69 @@ export default function DesignTool() {
   const [pendingTemplate, setPendingTemplate] = useState(null);
   const [showExitWarning, setShowExitWarning] = useState(false);
   const [showLayersPanel, setShowLayersPanel] = useState(false);
+  const [showTemplateSettingsDialog, setShowTemplateSettingsDialog] = useState(false);
+  const [templateFormData, setTemplateFormData] = useState({
+    name: '',
+    description: '',
+    category_id: '',
+    tags: [],
+    is_active: true,
+  });
+  const [tagInput, setTagInput] = useState('');
+
+  // Fetch categories for template settings
+  const { data: categories = [] } = useQuery({
+    queryKey: ['product-categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_categories')
+        .select('*')
+        .order('order', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: isTemplateEditMode,
+  });
+
+  // Build category tree for dropdown
+  const buildCategoryTree = (cats, parentId = null, level = 0) => {
+    return cats
+      .filter(c => c.parent_id === parentId)
+      .map(c => ({
+        ...c,
+        level,
+        children: buildCategoryTree(cats, c.id, level + 1)
+      }));
+  };
+
+  const flattenCategories = (tree) => {
+    let result = [];
+    for (const cat of tree) {
+      result.push(cat);
+      if (cat.children?.length) {
+        result = result.concat(flattenCategories(cat.children));
+      }
+    }
+    return result;
+  };
+
+  const flatCategories = useMemo(() => {
+    const tree = buildCategoryTree(categories);
+    return flattenCategories(tree);
+  }, [categories]);
+
+  // Update template form data when template is loaded
+  useEffect(() => {
+    if (templateEditData) {
+      setTemplateFormData({
+        name: templateEditData.name || '',
+        description: templateEditData.description || '',
+        category_id: templateEditData.category_id || '',
+        tags: templateEditData.tags || [],
+        is_active: templateEditData.is_active ?? true,
+      });
+    }
+  }, [templateEditData]);
 
   // Use dynamic pricing hook
   const pricingData = usePricing(productType, options.material, { 
@@ -779,10 +846,16 @@ export default function DesignTool() {
       // Generate new thumbnail
       const thumbnail = await createThumbnail();
 
-      // Update design_templates table - save ALL pages, not just current
+      // Update design_templates table - save ALL pages, not just current, plus metadata
       const { error } = await supabase
         .from('design_templates')
         .update({
+          name: templateFormData.name || templateEditData.name,
+          description: templateFormData.description,
+          category_id: templateFormData.category_id || null,
+          tags: templateFormData.tags,
+          is_active: templateFormData.is_active,
+          sizes: [{ width: canvasWidth, height: canvasHeight, unit: 'inches' }],
           design_data: { 
             pages, // Save all pages for multi-page support
             elements: pages[0]?.elements || [] // Keep backwards compatibility
@@ -993,7 +1066,7 @@ export default function DesignTool() {
             )}
 
             <button
-              onClick={() => setShowSizeDialog(true)}
+              onClick={() => isTemplateEditMode ? setShowTemplateSettingsDialog(true) : setShowSizeDialog(true)}
               className="flex items-center gap-2 text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors"
             >
               <span className="font-medium">{canvasWidth}" × {canvasHeight}"</span>
@@ -1345,6 +1418,153 @@ export default function DesignTool() {
             </div>
             <DialogFooter>
               <Button onClick={() => setShowSizeDialog(false)} className="bg-blue-600 hover:bg-blue-700">
+                Apply
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Template Settings Dialog (for template edit mode) */}
+        <Dialog open={showTemplateSettingsDialog} onOpenChange={setShowTemplateSettingsDialog}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit Template</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-5 py-2">
+              {/* Template Name */}
+              <div className="space-y-2">
+                <Label htmlFor="template-name">Template Name *</Label>
+                <Input
+                  id="template-name"
+                  value={templateFormData.name}
+                  onChange={(e) => setTemplateFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., Sale Banner Template"
+                />
+              </div>
+
+              {/* Category */}
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select 
+                  value={templateFormData.category_id || 'none'} 
+                  onValueChange={(v) => setTemplateFormData(prev => ({ ...prev, category_id: v === 'none' ? null : v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Category</SelectItem>
+                    {flatCategories.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {'—'.repeat(cat.level)} {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Canvas Size */}
+              <div className="space-y-2">
+                <Label>Canvas Size</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground">Width (inches)</span>
+                    <Input
+                      type="number"
+                      value={canvasWidth}
+                      onChange={(e) => setCanvasWidth(Math.max(1, Number(e.target.value)))}
+                      min={1}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted-foreground">Height (inches)</span>
+                    <Input
+                      type="number"
+                      value={canvasHeight}
+                      onChange={(e) => setCanvasHeight(Math.max(1, Number(e.target.value)))}
+                      min={1}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2">
+                <Label htmlFor="template-description">Description</Label>
+                <Textarea
+                  id="template-description"
+                  value={templateFormData.description || ''}
+                  onChange={(e) => setTemplateFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Brief description of this template..."
+                  rows={3}
+                />
+              </div>
+
+              {/* Tags */}
+              <div className="space-y-2">
+                <Label>Tags</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (tagInput.trim() && !templateFormData.tags.includes(tagInput.trim())) {
+                          setTemplateFormData(prev => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }));
+                          setTagInput('');
+                        }
+                      }
+                    }}
+                    placeholder="Add tag and press Enter"
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      if (tagInput.trim() && !templateFormData.tags.includes(tagInput.trim())) {
+                        setTemplateFormData(prev => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }));
+                        setTagInput('');
+                      }
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+                {templateFormData.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {templateFormData.tags.map(tag => (
+                      <Badge key={tag} variant="secondary" className="pr-1">
+                        {tag}
+                        <button 
+                          type="button" 
+                          onClick={() => setTemplateFormData(prev => ({ ...prev, tags: prev.tags.filter(t => t !== tag) }))} 
+                          className="ml-1 p-0.5 hover:bg-muted rounded"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Active Toggle */}
+              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                <div>
+                  <Label>Active</Label>
+                  <p className="text-sm text-muted-foreground">Make available in design tool</p>
+                </div>
+                <Switch
+                  checked={templateFormData.is_active}
+                  onCheckedChange={(checked) => setTemplateFormData(prev => ({ ...prev, is_active: checked }))}
+                />
+              </div>
+            </div>
+            <DialogFooter className="pt-2">
+              <Button variant="outline" onClick={() => setShowTemplateSettingsDialog(false)}>Cancel</Button>
+              <Button onClick={() => setShowTemplateSettingsDialog(false)} className="bg-primary hover:bg-primary/90">
                 Apply
               </Button>
             </DialogFooter>
