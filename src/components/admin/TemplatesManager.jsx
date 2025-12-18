@@ -667,11 +667,6 @@ export default function TemplatesManager() {
                     onClick={() => handleEditDesign(template)}
                   >
                     <TemplateThumbnail template={template} />
-                    
-                    {/* File Type Badge */}
-                    <div className="absolute top-2 right-2">
-                      {getFileTypeBadge(template.file_type)}
-                    </div>
 
                     {/* Size Badge */}
                     {template.sizes?.[0] && (
