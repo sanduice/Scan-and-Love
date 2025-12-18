@@ -15,7 +15,7 @@ import {
   BarChart3, Menu, X, ChevronRight, FileText, Database, LayoutTemplate
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { toast } from 'sonner';
+import { toast, Toaster } from 'sonner';
 import { format, formatDistanceToNow, isToday } from 'date-fns';
 import OrderDetailPanel from '@/components/admin/OrderDetailPanel';
 import ProductionQueue from '@/components/admin/ProductionQueue';
@@ -498,6 +498,7 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
+      <Toaster position="top-right" richColors />
       {/* Sidebar */}
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 bg-slate-900 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-20'} ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="flex flex-col h-full">
