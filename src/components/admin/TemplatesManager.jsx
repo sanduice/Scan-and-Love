@@ -12,10 +12,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
-  Plus, Search, Edit, Trash2, Loader2, 
+  Plus, Search, Trash2, Loader2, 
   ChevronDown, ChevronRight, X, 
-  Eye, EyeOff, Copy, LayoutTemplate, Paintbrush, ArrowRight
+  Eye, EyeOff, Copy, LayoutTemplate, Paintbrush, ArrowRight, MoreVertical
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { generateThumbnailWithImages } from '@/components/designer/CanvasExporter';
 
@@ -701,48 +707,32 @@ export default function TemplatesManager() {
                     )}
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleEditDesign(template)}
-                        className="text-primary"
-                      >
-                        <Paintbrush className="w-4 h-4 mr-1" /> Design
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => { setEditingTemplate(template); setShowDialog(true); }}
-                      >
-                        <Edit className="w-4 h-4 mr-1" /> Edit
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleDuplicate(template)}
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => toggleActive(template)}
-                      >
-                        {template.is_active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => {
-                          if (confirm('Delete this template?')) {
-                            deleteMutation.mutate(template.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                    <div className="flex items-center justify-end mt-3 pt-3 border-t">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-popover">
+                          <DropdownMenuItem onClick={() => handleEditDesign(template)}>
+                            <Paintbrush className="w-4 h-4 mr-2" /> Edit Design
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDuplicate(template)}>
+                            <Copy className="w-4 h-4 mr-2" /> Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => {
+                              if (confirm('Delete this template?')) {
+                                deleteMutation.mutate(template.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </div>
