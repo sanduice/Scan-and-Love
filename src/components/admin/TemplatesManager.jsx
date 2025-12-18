@@ -668,6 +668,12 @@ export default function TemplatesManager() {
                   >
                     <TemplateThumbnail template={template} />
 
+                    {/* Active/Inactive Status Dot */}
+                    <div 
+                      className={`absolute top-2 left-2 w-3 h-3 rounded-full ${template.is_active ? 'bg-green-500' : 'bg-gray-400'}`}
+                      title={template.is_active ? 'Active' : 'Inactive'}
+                    />
+
                     {/* Size Badge */}
                     {template.sizes?.[0] && (
                       <Badge className="absolute bottom-2 left-2 bg-black text-white border-0 hover:bg-black">
@@ -680,38 +686,9 @@ export default function TemplatesManager() {
                   <div className="p-4">
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="font-medium text-foreground truncate">{template.name}</h3>
-                      <Badge 
-                        variant={template.is_active ? "default" : "secondary"}
-                        className={template.is_active ? "bg-green-600 text-white shrink-0" : "bg-muted text-muted-foreground shrink-0"}
-                      >
-                        {template.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {getCategoryName(template.category_id)}
-                    </p>
-                    
-                    {/* Tags */}
-                    {template.tags?.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {template.tags.slice(0, 3).map(tag => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                        {template.tags.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{template.tags.length - 3}
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex items-center justify-end mt-3 pt-3 border-t">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0">
                             <MoreVertical className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -741,6 +718,25 @@ export default function TemplatesManager() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {getCategoryName(template.category_id)}
+                    </p>
+                    
+                    {/* Tags */}
+                    {template.tags?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {template.tags.slice(0, 3).map(tag => (
+                          <Badge key={tag} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                        {template.tags.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{template.tags.length - 3}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
