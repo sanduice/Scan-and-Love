@@ -668,11 +668,12 @@ export default function TemplatesManager() {
                   >
                     <TemplateThumbnail template={template} />
 
-                    {/* Active/Inactive Status Dot */}
-                    <div 
-                      className={`absolute top-2 left-2 w-3 h-3 rounded-full ${template.is_active ? 'bg-green-500' : 'bg-gray-400'}`}
-                      title={template.is_active ? 'Active' : 'Inactive'}
-                    />
+                    {/* Active/Inactive Badge */}
+                    <Badge 
+                      className={`absolute top-2 left-2 ${template.is_active ? "bg-green-600 text-white hover:bg-green-600" : "bg-muted text-muted-foreground hover:bg-muted"}`}
+                    >
+                      {template.is_active ? "Active" : "Inactive"}
+                    </Badge>
 
                     {/* Size Badge */}
                     {template.sizes?.[0] && (
