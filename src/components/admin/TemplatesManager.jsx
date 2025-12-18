@@ -14,7 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Plus, Search, Trash2, Loader2, 
   ChevronDown, ChevronRight, X, 
-  Eye, EyeOff, Copy, LayoutTemplate, Paintbrush, ArrowRight, MoreVertical
+  Eye, EyeOff, Copy, LayoutTemplate, Paintbrush, ArrowRight, MoreVertical, Settings
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -659,9 +659,7 @@ export default function TemplatesManager() {
               {filteredTemplates.map((template) => (
                 <div 
                   key={template.id}
-                  className={`bg-card rounded-xl border overflow-hidden relative group ${
-                    !template.is_active ? 'opacity-60' : ''
-                  }`}
+                  className="bg-card rounded-xl border overflow-hidden relative group"
                 >
                   {/* Template Image */}
                   <div 
@@ -685,7 +683,15 @@ export default function TemplatesManager() {
 
                   {/* Template Info */}
                   <div className="p-4">
-                    <h3 className="font-medium text-foreground truncate">{template.name}</h3>
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-medium text-foreground truncate">{template.name}</h3>
+                      <Badge 
+                        variant={template.is_active ? "default" : "secondary"}
+                        className={template.is_active ? "bg-green-600 text-white shrink-0" : "bg-muted text-muted-foreground shrink-0"}
+                      >
+                        {template.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
                     <p className="text-sm text-muted-foreground truncate">
                       {getCategoryName(template.category_id)}
                     </p>
@@ -715,6 +721,12 @@ export default function TemplatesManager() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-popover">
+                          <DropdownMenuItem onClick={() => {
+                            setEditingTemplate(template);
+                            setShowDialog(true);
+                          }}>
+                            <Settings className="w-4 h-4 mr-2" /> Edit Template
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleEditDesign(template)}>
                             <Paintbrush className="w-4 h-4 mr-2" /> Edit Design
                           </DropdownMenuItem>
