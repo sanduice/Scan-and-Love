@@ -668,19 +668,21 @@ export default function TemplatesManager() {
                   >
                     <TemplateThumbnail template={template} />
 
-                    {/* Active/Inactive Badge */}
-                    <Badge 
-                      className={`absolute top-2 left-2 ${template.is_active ? "bg-green-600 text-white hover:bg-green-600" : "bg-muted text-muted-foreground hover:bg-muted"}`}
-                    >
-                      {template.is_active ? "Active" : "Inactive"}
-                    </Badge>
-
-                    {/* Size Badge */}
-                    {template.sizes?.[0] && (
-                      <Badge className="absolute bottom-2 left-2 bg-black text-white border-0 hover:bg-black">
-                        {template.sizes[0].width} × {template.sizes[0].height} {template.sizes[0].unit === 'inches' ? 'in' : 'ft'}
+                    {/* Badges Container - Bottom Left */}
+                    <div className="absolute bottom-2 left-2 flex gap-1">
+                      {/* Size Badge */}
+                      {template.sizes?.[0] && (
+                        <Badge className="bg-black text-white border-0 hover:bg-black">
+                          {template.sizes[0].width} × {template.sizes[0].height} {template.sizes[0].unit === 'inches' ? 'in' : 'ft'}
+                        </Badge>
+                      )}
+                      {/* Active/Inactive Badge */}
+                      <Badge 
+                        className={template.is_active ? "bg-green-600 text-white hover:bg-green-600" : "bg-muted text-muted-foreground hover:bg-muted"}
+                      >
+                        {template.is_active ? "Active" : "Inactive"}
                       </Badge>
-                    )}
+                    </div>
                   </div>
 
                   {/* Template Info */}
