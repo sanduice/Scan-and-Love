@@ -670,7 +670,7 @@ export default function TemplatesManager() {
 
                     {/* Size Badge */}
                     {template.sizes?.[0] && (
-                      <Badge className="absolute bottom-2 left-2 bg-background/90">
+                      <Badge className="absolute bottom-2 left-2 bg-black text-white border-0 hover:bg-black">
                         {template.sizes[0].width} × {template.sizes[0].height} {template.sizes[0].unit === 'inches' ? 'in' : 'ft'}
                       </Badge>
                     )}
