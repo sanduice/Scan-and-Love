@@ -1564,7 +1564,34 @@ export default function DesignTool() {
             </div>
             <DialogFooter className="pt-2">
               <Button variant="outline" onClick={() => setShowTemplateSettingsDialog(false)}>Cancel</Button>
-              <Button onClick={() => setShowTemplateSettingsDialog(false)} className="bg-primary hover:bg-primary/90">
+              <Button 
+                onClick={async () => {
+                  if (!templateEditData?.id) {
+                    toast.error('No template loaded');
+                    return;
+                  }
+                  try {
+                    const { error } = await supabase
+                      .from('design_templates')
+                      .update({
+                        name: templateFormData.name || templateEditData.name,
+                        description: templateFormData.description,
+                        category_id: templateFormData.category_id || null,
+                        tags: templateFormData.tags,
+                        is_active: templateFormData.is_active,
+                        updated_at: new Date().toISOString()
+                      })
+                      .eq('id', templateEditData.id);
+                    if (error) throw error;
+                    toast.success('Template settings saved!');
+                    setShowTemplateSettingsDialog(false);
+                  } catch (err) {
+                    console.error('Failed to save template settings:', err);
+                    toast.error('Failed to save: ' + err.message);
+                  }
+                }} 
+                className="bg-primary hover:bg-primary/90"
+              >
                 Apply
               </Button>
             </DialogFooter>
