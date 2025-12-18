@@ -702,9 +702,6 @@ export default function TemplatesManager() {
                           }}>
                             <Settings className="w-4 h-4 mr-2" /> Edit Template
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEditDesign(template)}>
-                            <Paintbrush className="w-4 h-4 mr-2" /> Edit Design
-                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleDuplicate(template)}>
                             <Copy className="w-4 h-4 mr-2" /> Duplicate
                           </DropdownMenuItem>
