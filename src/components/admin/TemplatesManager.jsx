@@ -355,15 +355,6 @@ const TemplateEditor = ({ template, categories, open, onClose, onSave, isCreatin
             />
           </div>
 
-          {/* Show existing thumbnail if editing */}
-          {!isNewTemplate && template?.thumbnail_url && (
-            <div className="space-y-2">
-              <Label>Preview (auto-generated from design)</Label>
-              <div className="w-32 h-32 rounded-lg overflow-hidden bg-muted">
-                <img src={template.thumbnail_url} alt="Preview" className="w-full h-full object-cover" />
-              </div>
-            </div>
-          )}
 
           <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
