@@ -1198,18 +1198,6 @@ export default function CanvasWorkspace({
       >
         {/* Canvas container */}
         <div ref={canvasContainerRef} className="relative">
-          {/* Bleed area */}
-          {showBleed && (
-            <div
-              className="absolute border border-dashed border-gray-300"
-              style={{
-                top: -bleedSize,
-                left: -bleedSize,
-                width: canvasPixelWidth + bleedSize * 2,
-                height: canvasPixelHeight + bleedSize * 2,
-              }}
-            />
-          )}
 
           {/* Main canvas with overflow hidden to clip elements */}
           <div
@@ -1234,16 +1222,6 @@ export default function CanvasWorkspace({
               />
             )}
 
-            {/* Safe zone indicator */}
-            <div
-              className="absolute pointer-events-none border border-dashed border-blue-300 opacity-50"
-              style={{
-                top: 0.5 * scale,
-                left: 0.5 * scale,
-                right: 0.5 * scale,
-                bottom: 0.5 * scale,
-              }}
-            />
 
             {/* Center alignment guides */}
             {alignmentGuides.showVertical && (
@@ -1317,14 +1295,6 @@ export default function CanvasWorkspace({
               />
             )}
 
-            {/* Empty state */}
-            {elements.length === 0 && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 pointer-events-none">
-                <div className="text-6xl mb-4">🎨</div>
-                <div className="text-xl font-medium mb-2">Start your design</div>
-                <p className="text-sm">Add text, images, or shapes from the left panel</p>
-              </div>
-            )}
 
             {/* Edge direction indicators */}
             {offCanvasInfo.hasLeft && (
