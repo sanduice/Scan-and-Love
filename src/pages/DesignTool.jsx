@@ -656,6 +656,9 @@ export default function DesignTool() {
     const isWeather = ['cloud', 'sun', 'sun-rays', 'moon-crescent', 'lightning', 'snowflake', 'raindrop'].includes(shape);
     const isMiscDeco = ['location-pin', 'smiley', 'cross-plus', 'cross-x', 'checkmark', 'clover'].includes(shape);
     
+    // Use the smaller dimension for proportional shapes to prevent distortion
+    const minDimension = Math.min(canvasWidth, canvasHeight);
+    
     let width, height;
     if (isLine) {
       if (isVertical) {
@@ -666,55 +669,56 @@ export default function DesignTool() {
         height = 0.5;
       }
     } else if (isArrowShape || isChevron) {
-      width = canvasWidth * 0.15;
-      height = canvasWidth * 0.1;
+      width = minDimension * 0.15;
+      height = minDimension * 0.1;
     } else if (isSpeechBubble) {
-      width = canvasWidth * 0.35;
-      height = canvasHeight * 0.25;
+      width = minDimension * 0.5;
+      height = minDimension * 0.35;
     } else if (isCallout) {
-      width = canvasWidth * 0.25;
-      height = canvasHeight * 0.15;
+      width = minDimension * 0.35;
+      height = minDimension * 0.25;
     } else if (isRibbon) {
+      // Ribbons are intentionally wider
       width = canvasWidth * 0.5;
-      height = canvasHeight * 0.12;
+      height = minDimension * 0.15;
     } else if (isBracket) {
-      width = canvasWidth * 0.08;
+      // Brackets are intentionally taller
+      width = minDimension * 0.1;
       height = canvasHeight * 0.3;
     } else if (isStarburst || isStar || isHeart || isFlower || isWeather || isMiscDeco) {
-      width = canvasWidth * 0.2;
-      height = canvasWidth * 0.2;
+      width = minDimension * 0.25;
+      height = minDimension * 0.25;
     } else if (isFlowchart) {
-      width = canvasWidth * 0.2;
-      height = canvasHeight * 0.15;
+      width = minDimension * 0.25;
+      height = minDimension * 0.2;
     } else if (isBlob) {
       // Use viewBox to determine aspect ratio if available
       if (svgViewBox) {
         const [, , vbWidth, vbHeight] = svgViewBox.split(' ').map(Number);
         const aspectRatio = vbWidth / vbHeight;
+        const baseSize = minDimension * 0.35;
         if (aspectRatio > 1) {
-          // Horizontal shape
-          width = canvasWidth * 0.4;
-          height = width / aspectRatio;
+          width = baseSize;
+          height = baseSize / aspectRatio;
         } else if (aspectRatio < 1) {
-          // Vertical shape
-          height = canvasHeight * 0.4;
-          width = height * aspectRatio;
+          height = baseSize;
+          width = baseSize * aspectRatio;
         } else {
-          // Square
-          width = canvasWidth * 0.25;
-          height = canvasWidth * 0.25;
+          width = baseSize;
+          height = baseSize;
         }
       } else {
-        width = canvasWidth * 0.25;
-        height = canvasWidth * 0.25;
+        width = minDimension * 0.3;
+        height = minDimension * 0.3;
       }
     } else if (shape === 'circle' || shape === 'hexagon' ||
                shape === 'pentagon' || shape === 'octagon' || shape === 'diamond') {
-      width = canvasWidth * 0.2;
-      height = canvasWidth * 0.2;
+      width = minDimension * 0.25;
+      height = minDimension * 0.25;
     } else {
-      width = canvasWidth * 0.25;
-      height = canvasHeight * 0.25;
+      // Default rectangle - proportional square
+      width = minDimension * 0.3;
+      height = minDimension * 0.3;
     }
     
     addElement({
