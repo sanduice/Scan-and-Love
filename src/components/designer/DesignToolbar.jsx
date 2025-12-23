@@ -5,7 +5,10 @@ import { Separator } from '@/components/ui/separator';
 import {
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
   Type, Minus, Plus, Copy, Trash2, Lock, Unlock, Layers,
-  FlipHorizontal, FlipVertical, MoveUp, MoveDown, Palette
+  FlipHorizontal, FlipVertical, MoveUp, MoveDown, Palette,
+  AlignStartVertical, AlignCenterVertical, AlignEndVertical,
+  AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
+  ArrowUpToLine, ArrowDownToLine
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
@@ -33,6 +36,7 @@ export default function DesignToolbar({
   moveLayerDown,
   bringToFront,
   sendToBack,
+  alignToCanvas,
 }) {
   if (!element) return null;
 
@@ -44,7 +48,7 @@ export default function DesignToolbar({
   };
 
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-white rounded-xl shadow-2xl border border-gray-200 p-2 flex items-center gap-1">
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-white rounded-xl shadow-2xl border border-gray-200 p-2 flex items-center gap-1 flex-wrap max-w-[95vw]">
       {/* Text specific controls */}
       {isText && (
         <>
@@ -268,24 +272,111 @@ export default function DesignToolbar({
 
       <Separator orientation="vertical" className="h-6 mx-1" />
 
-      {/* Layer controls */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => moveLayerUp(element.id)}>
-            <MoveUp className="w-4 h-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Move Forward</TooltipContent>
-      </Tooltip>
+      {/* Object Alignment */}
+      <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg p-0.5">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" 
+              onClick={() => alignToCanvas?.(element.id, 'left')}>
+              <AlignStartVertical className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Align Left</TooltipContent>
+        </Tooltip>
+        
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8"
+              onClick={() => alignToCanvas?.(element.id, 'center-h')}>
+              <AlignCenterVertical className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Align Center Horizontally</TooltipContent>
+        </Tooltip>
+        
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8"
+              onClick={() => alignToCanvas?.(element.id, 'right')}>
+              <AlignEndVertical className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Align Right</TooltipContent>
+        </Tooltip>
+        
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8"
+              onClick={() => alignToCanvas?.(element.id, 'top')}>
+              <AlignStartHorizontal className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Align Top</TooltipContent>
+        </Tooltip>
+        
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8"
+              onClick={() => alignToCanvas?.(element.id, 'center-v')}>
+              <AlignCenterHorizontal className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Align Center Vertically</TooltipContent>
+        </Tooltip>
+        
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8"
+              onClick={() => alignToCanvas?.(element.id, 'bottom')}>
+              <AlignEndHorizontal className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Align Bottom</TooltipContent>
+        </Tooltip>
+      </div>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => moveLayerDown(element.id)}>
-            <MoveDown className="w-4 h-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Move Backward</TooltipContent>
-      </Tooltip>
+      <Separator orientation="vertical" className="h-6 mx-1" />
+
+      {/* Layer controls */}
+      <div className="flex items-center gap-0.5">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => moveLayerUp(element.id)}>
+              <MoveUp className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Move Forward</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => moveLayerDown(element.id)}>
+              <MoveDown className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Move Backward</TooltipContent>
+        </Tooltip>
+        
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9" 
+              onClick={() => bringToFront?.(element.id)}>
+              <ArrowUpToLine className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Bring to Front</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9"
+              onClick={() => sendToBack?.(element.id)}>
+              <ArrowDownToLine className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Send to Back</TooltipContent>
+        </Tooltip>
+      </div>
 
       <Separator orientation="vertical" className="h-6 mx-1" />
 

@@ -616,6 +616,54 @@ export default function DesignTool() {
     }
   };
 
+  const bringToFront = (id) => {
+    const index = elements.findIndex(el => el.id === id);
+    if (index === -1 || index === elements.length - 1) return;
+    const newElements = [...elements];
+    const [element] = newElements.splice(index, 1);
+    newElements.push(element);
+    setElements(newElements);
+    saveToHistory(newElements);
+  };
+
+  const sendToBack = (id) => {
+    const index = elements.findIndex(el => el.id === id);
+    if (index === -1 || index === 0) return;
+    const newElements = [...elements];
+    const [element] = newElements.splice(index, 1);
+    newElements.unshift(element);
+    setElements(newElements);
+    saveToHistory(newElements);
+  };
+
+  const alignToCanvas = (id, alignment) => {
+    const element = elements.find(el => el.id === id);
+    if (!element) return;
+    
+    let updates = {};
+    switch (alignment) {
+      case 'left':
+        updates = { x: 0 };
+        break;
+      case 'center-h':
+        updates = { x: (canvasWidth - element.width) / 2 };
+        break;
+      case 'right':
+        updates = { x: canvasWidth - element.width };
+        break;
+      case 'top':
+        updates = { y: 0 };
+        break;
+      case 'center-v':
+        updates = { y: (canvasHeight - element.height) / 2 };
+        break;
+      case 'bottom':
+        updates = { y: canvasHeight - element.height };
+        break;
+    }
+    updateElementWithHistory(id, updates);
+  };
+
   // Add handlers
   const handleAddText = (preset) => {
     addElement({
@@ -1251,6 +1299,9 @@ export default function DesignTool() {
                 duplicateElement={duplicateElement}
                 moveLayerUp={moveLayerUp}
                 moveLayerDown={moveLayerDown}
+                bringToFront={bringToFront}
+                sendToBack={sendToBack}
+                alignToCanvas={alignToCanvas}
               />
             )}
 
