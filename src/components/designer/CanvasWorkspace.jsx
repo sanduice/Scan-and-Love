@@ -813,6 +813,7 @@ export default function CanvasWorkspace({
               textShadow: element.textShadow || 'none',
               WebkitTextStroke: element.textStroke || 'none',
               pointerEvents: 'none',
+              opacity: element.opacity ?? 1,
             }}
           >
             {element.text}
@@ -1017,7 +1018,7 @@ export default function CanvasWorkspace({
           <svg 
             viewBox={element.svgViewBox || "0 0 40 40"} 
             className="w-full h-full"
-            style={{ pointerEvents: 'none' }}
+            style={{ pointerEvents: 'none', opacity: element.opacity ?? 1 }}
             preserveAspectRatio="none"
           >
             <path 
