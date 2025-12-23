@@ -1030,10 +1030,15 @@ export default function DesignTool() {
   };
 
   const handleDownload = async (format) => {
+    const loadingToast = toast.loading(`Generating ${format.toUpperCase()}...`, {
+      description: pages.length > 1 ? `Processing ${pages.length} pages` : undefined
+    });
+    
     try {
       // PDF: export all pages into a single multi-page PDF
       if (format === 'pdf') {
         await downloadMultiPagePDF(pages, canvasWidth, canvasHeight, 150, `${designName}.pdf`);
+        toast.dismiss(loadingToast);
         toast.success(`Downloaded PDF with ${pages.length} page(s)`);
         return;
       }
@@ -1050,9 +1055,11 @@ export default function DesignTool() {
           await downloadPNG(page.elements, canvasWidth, canvasHeight, 150, `${filename}.png`);
         }
       }
+      toast.dismiss(loadingToast);
       toast.success(`Downloaded ${pages.length} page(s) as ${format.toUpperCase()}`);
     } catch (err) {
       console.error('Download failed:', err);
+      toast.dismiss(loadingToast);
       toast.error('Failed to download. Please try again.');
     }
   };
