@@ -341,24 +341,6 @@ export default function DesignToolbar({
       <div className="flex items-center gap-0.5">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => moveLayerUp(element.id)}>
-              <MoveUp className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Move Forward</TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => moveLayerDown(element.id)}>
-              <MoveDown className="w-4 h-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Move Backward</TooltipContent>
-        </Tooltip>
-        
-        <Tooltip>
-          <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" className="h-9 w-9" 
               onClick={() => bringToFront?.(element.id)}>
               <ArrowUpToLine className="w-4 h-4" />
