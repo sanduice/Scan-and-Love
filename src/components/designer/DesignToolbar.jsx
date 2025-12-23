@@ -359,46 +359,6 @@ export default function DesignToolbar({
           <TooltipContent>Send to Back</TooltipContent>
         </Tooltip>
       </div>
-
-      <Separator orientation="vertical" className="h-6 mx-1" />
-
-      {/* Common actions */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => duplicateElement(element.id)}>
-            <Copy className="w-4 h-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Duplicate</TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9"
-            onClick={() => updateElement(element.id, { locked: !element.locked })}
-          >
-            {element.locked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{element.locked ? 'Unlock' : 'Lock'}</TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50"
-            onClick={() => deleteElement(element.id)}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Delete</TooltipContent>
-      </Tooltip>
     </div>
   );
 }
