@@ -1,4 +1,14 @@
 // Canvas exporter utility - generates print-ready files from design elements
+import { jsPDF } from 'jspdf';
+
+// Helper to convert blob to base64
+async function blobToBase64(blob) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.readAsDataURL(blob);
+  });
+}
 
 // Shape clip-path definitions (matching CanvasWorkspace.jsx)
 const SHAPE_CLIP_PATHS = {
@@ -424,60 +434,55 @@ export async function generateArtworkDataURL(elements, width, height, dpi = 150)
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
-// Download as PDF (generates PNG and wraps it)
+// Download as PDF using jsPDF
 export async function downloadPDF(elements, width, height, dpi = 150, filename = 'design.pdf') {
-  const blob = await generatePNG(elements, width, height, dpi);
-  const url = URL.createObjectURL(blob);
-  
-  // Create a printable HTML document with the image
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
-    // Fallback: download as PNG if popup blocked
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename.replace('.pdf', '.png');
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    return true;
-  }
+  try {
+    const blob = await generatePNG(elements, width, height, dpi);
+    const base64 = await blobToBase64(blob);
 
-  // Create print-ready document
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>${filename}</title>
-      <style>
-        @page {
-          size: ${width}in ${height}in;
-          margin: 0;
-        }
-        body {
-          margin: 0;
-          padding: 0;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-        img {
-          width: ${width}in;
-          height: ${height}in;
-          object-fit: contain;
-        }
-        @media print {
-          body { margin: 0; }
-          img { max-width: 100%; height: auto; }
-        }
-      </style>
-    </head>
-    <body>
-      <img src="${url}" alt="Design" onload="window.print(); setTimeout(() => window.close(), 1000);" />
-    </body>
-    </html>
-  `);
-  printWindow.document.close();
-  
-  return true;
+    // Create PDF with custom dimensions (in inches)
+    const pdf = new jsPDF({
+      orientation: width > height ? 'landscape' : 'portrait',
+      unit: 'in',
+      format: [width, height]
+    });
+
+    // Add image to PDF (0, 0 position, full width/height)
+    pdf.addImage(base64, 'PNG', 0, 0, width, height);
+    
+    // Save the PDF
+    pdf.save(filename);
+    return true;
+  } catch (err) {
+    console.error('PDF generation failed:', err);
+    throw err;
+  }
+}
+
+// Download multi-page PDF (combines all pages into single PDF)
+export async function downloadMultiPagePDF(pages, width, height, dpi = 150, filename = 'design.pdf') {
+  try {
+    const pdf = new jsPDF({
+      orientation: width > height ? 'landscape' : 'portrait',
+      unit: 'in',
+      format: [width, height]
+    });
+
+    for (let i = 0; i < pages.length; i++) {
+      // Add new page for pages after the first
+      if (i > 0) {
+        pdf.addPage([width, height], width > height ? 'landscape' : 'portrait');
+      }
+      
+      const blob = await generatePNG(pages[i].elements, width, height, dpi);
+      const base64 = await blobToBase64(blob);
+      pdf.addImage(base64, 'PNG', 0, 0, width, height);
+    }
+
+    pdf.save(filename);
+    return true;
+  } catch (err) {
+    console.error('Multi-page PDF generation failed:', err);
+    throw err;
+  }
 }
