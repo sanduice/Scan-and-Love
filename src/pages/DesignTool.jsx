@@ -28,7 +28,7 @@ import { toast } from 'sonner';
 import CanvasWorkspace from '@/components/designer/CanvasWorkspace';
 import CanvaSidebar from '@/components/designer/CanvaSidebar';
 import DesignToolbar from '@/components/designer/DesignToolbar';
-import { generateThumbnail, generateThumbnailWithImages, generateSVG, downloadSVG, downloadPNG, downloadPDF, generateArtworkDataURL } from '@/components/designer/CanvasExporter';
+import { generateThumbnail, generateThumbnailWithImages, generateSVG, downloadSVG, downloadPNG, downloadPDF, downloadMultiPagePDF, generateArtworkDataURL } from '@/components/designer/CanvasExporter';
 import { parseSvgToElements } from '@/components/designer/SvgParser';
 import { AlertTriangle } from 'lucide-react';
 
@@ -1030,21 +1030,31 @@ export default function DesignTool() {
   };
 
   const handleDownload = async (format) => {
-    // Export all pages
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i];
-      const pageSuffix = pages.length > 1 ? `_${page.label.replace(/\s/g, '_')}` : '';
-      const filename = `${designName}${pageSuffix}`;
-      
-      if (format === 'svg') {
-        await downloadSVG(page.elements, canvasWidth, canvasHeight, 150, `${filename}.svg`);
-      } else if (format === 'png') {
-        await downloadPNG(page.elements, canvasWidth, canvasHeight, 150, `${filename}.png`);
-      } else if (format === 'pdf') {
-        await downloadPDF(page.elements, canvasWidth, canvasHeight, 150, `${filename}.pdf`);
+    try {
+      // PDF: export all pages into a single multi-page PDF
+      if (format === 'pdf') {
+        await downloadMultiPagePDF(pages, canvasWidth, canvasHeight, 150, `${designName}.pdf`);
+        toast.success(`Downloaded PDF with ${pages.length} page(s)`);
+        return;
       }
+      
+      // SVG/PNG: export each page separately
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i];
+        const pageSuffix = pages.length > 1 ? `_${page.label.replace(/\s/g, '_')}` : '';
+        const filename = `${designName}${pageSuffix}`;
+        
+        if (format === 'svg') {
+          await downloadSVG(page.elements, canvasWidth, canvasHeight, 150, `${filename}.svg`);
+        } else if (format === 'png') {
+          await downloadPNG(page.elements, canvasWidth, canvasHeight, 150, `${filename}.png`);
+        }
+      }
+      toast.success(`Downloaded ${pages.length} page(s) as ${format.toUpperCase()}`);
+    } catch (err) {
+      console.error('Download failed:', err);
+      toast.error('Failed to download. Please try again.');
     }
-    toast.success(`Downloaded ${pages.length} page(s) as ${format.toUpperCase()}`);
   };
 
   // Multi-page management
