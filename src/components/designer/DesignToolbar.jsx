@@ -189,6 +189,12 @@ export default function DesignToolbar({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-3">
+              <Input
+                type="color"
+                value={element.color || '#000000'}
+                onChange={(e) => updateElement(element.id, { color: e.target.value })}
+                className="mb-2 w-full h-8"
+              />
               <div className="grid grid-cols-8 gap-1">
                 {COLORS.map(color => (
                   <button
@@ -202,12 +208,6 @@ export default function DesignToolbar({
                   />
                 ))}
               </div>
-              <Input
-                type="color"
-                value={element.color || '#000000'}
-                onChange={(e) => updateElement(element.id, { color: e.target.value })}
-                className="mt-2 w-full h-8"
-              />
             </PopoverContent>
           </Popover>
         </>
@@ -226,6 +226,12 @@ export default function DesignToolbar({
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-3">
+            <Input
+              type="color"
+              value={element.fill || '#3B82F6'}
+              onChange={(e) => updateElement(element.id, { fill: e.target.value })}
+              className="mb-2 w-full h-8"
+            />
             <div className="grid grid-cols-8 gap-1">
               {COLORS.map(color => (
                 <button
@@ -239,12 +245,6 @@ export default function DesignToolbar({
                 />
               ))}
             </div>
-            <Input
-              type="color"
-              value={element.fill || '#3B82F6'}
-              onChange={(e) => updateElement(element.id, { fill: e.target.value })}
-              className="mt-2 w-full h-8"
-            />
           </PopoverContent>
         </Popover>
       )}
