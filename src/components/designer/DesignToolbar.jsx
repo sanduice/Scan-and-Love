@@ -8,7 +8,7 @@ import {
   FlipHorizontal, FlipVertical, MoveUp, MoveDown, Palette,
   AlignStartVertical, AlignCenterVertical, AlignEndVertical,
   AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
-  ArrowUpToLine, ArrowDownToLine
+  ArrowUpToLine, ArrowDownToLine, Pipette
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
@@ -189,12 +189,6 @@ export default function DesignToolbar({
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-3">
-              <Input
-                type="color"
-                value={element.color || '#000000'}
-                onChange={(e) => updateElement(element.id, { color: e.target.value })}
-                className="mb-2 w-full h-8"
-              />
               <div className="grid grid-cols-8 gap-1">
                 {COLORS.map(color => (
                   <button
@@ -207,6 +201,37 @@ export default function DesignToolbar({
                     onClick={() => updateElement(element.id, { color })}
                   />
                 ))}
+              </div>
+              <div className="flex gap-2 mt-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={async () => {
+                        if ('EyeDropper' in window) {
+                          try {
+                            const eyeDropper = new window.EyeDropper();
+                            const result = await eyeDropper.open();
+                            updateElement(element.id, { color: result.sRGBHex });
+                          } catch (e) {
+                            // User cancelled
+                          }
+                        }
+                      }}
+                    >
+                      <Pipette className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Pick Color</TooltipContent>
+                </Tooltip>
+                <Input
+                  type="color"
+                  value={element.color || '#000000'}
+                  onChange={(e) => updateElement(element.id, { color: e.target.value })}
+                  className="flex-1 h-8"
+                />
               </div>
             </PopoverContent>
           </Popover>
@@ -226,12 +251,6 @@ export default function DesignToolbar({
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-3">
-            <Input
-              type="color"
-              value={element.fill || '#3B82F6'}
-              onChange={(e) => updateElement(element.id, { fill: e.target.value })}
-              className="mb-2 w-full h-8"
-            />
             <div className="grid grid-cols-8 gap-1">
               {COLORS.map(color => (
                 <button
@@ -244,6 +263,37 @@ export default function DesignToolbar({
                   onClick={() => updateElement(element.id, { fill: color })}
                 />
               ))}
+            </div>
+            <div className="flex gap-2 mt-2">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={async () => {
+                      if ('EyeDropper' in window) {
+                        try {
+                          const eyeDropper = new window.EyeDropper();
+                          const result = await eyeDropper.open();
+                          updateElement(element.id, { fill: result.sRGBHex });
+                        } catch (e) {
+                          // User cancelled
+                        }
+                      }
+                    }}
+                  >
+                    <Pipette className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Pick Color</TooltipContent>
+              </Tooltip>
+              <Input
+                type="color"
+                value={element.fill || '#3B82F6'}
+                onChange={(e) => updateElement(element.id, { fill: e.target.value })}
+                className="flex-1 h-8"
+              />
             </div>
           </PopoverContent>
         </Popover>
