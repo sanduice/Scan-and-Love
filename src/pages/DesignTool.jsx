@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
@@ -65,6 +65,7 @@ const PRODUCT_DEFAULTS = {
 
 export default function DesignTool() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
   const productType = urlParams.get('product') || 'vinyl-banner';
   const initialWidth = Number(urlParams.get('width')) || 72;
@@ -460,26 +461,40 @@ export default function DesignTool() {
     const designs = await base44.entities.SavedDesign.filter({ id });
     if (designs.length > 0) {
       const design = designs[0];
-      setCanvasWidth(design.width);
-      setCanvasHeight(design.height);
+      setCanvasWidth(design.width || canvasWidth);
+      setCanvasHeight(design.height || canvasHeight);
       try {
-        // Support both new pages_json and legacy elements_json formats
+        // Load from design_data (jsonb column)
         let loadedPages;
-        if (design.pages_json) {
-          loadedPages = JSON.parse(design.pages_json);
-        } else if (design.elements_json) {
-          // Backwards compatibility - convert old single-page format
-          const loadedElements = JSON.parse(design.elements_json);
-          loadedPages = [{ id: 'front', label: 'Front Side', elements: loadedElements }];
+        const designData = design.design_data;
+        
+        if (designData?.pages && Array.isArray(designData.pages) && designData.pages.length > 0) {
+          // New multi-page format
+          loadedPages = designData.pages;
+        } else if (designData?.elements && Array.isArray(designData.elements)) {
+          // Single-page elements format (backwards compatibility)
+          loadedPages = [{ id: 'front', label: 'Front Side', elements: designData.elements }];
         } else {
           loadedPages = [{ id: 'front', label: 'Front Side', elements: [] }];
         }
+        
         setPages(loadedPages);
         setActivePageIndex(0);
         setHistory([loadedPages]);
         setHistoryIndex(0);
         setLastSavedPages(JSON.stringify(loadedPages)); // Mark as saved state
+        
+        // Restore options from options_json if available
+        if (design.options_json && typeof design.options_json === 'object') {
+          setOptions(prev => ({ ...prev, ...design.options_json }));
+        }
+        
+        // Restore passed product options if available
+        if (design.options_json?.productOptions) {
+          setPassedProductOptions(design.options_json.productOptions);
+        }
       } catch (e) {
+        console.error('Error loading design:', e);
         setPages([{ id: 'front', label: 'Front Side', elements: [] }]);
       }
       setDesignName(design.name || 'My Design');
@@ -1000,14 +1015,20 @@ export default function DesignTool() {
       const thumbnail = await createThumbnail();
       const artworkDataUrl = await generateArtworkDataURL(elements, canvasWidth, canvasHeight, 150);
 
-      const designData = {
+      const designPayload = {
         name: designName,
         product_type: productType,
         width: canvasWidth,
         height: canvasHeight,
-        elements_json: JSON.stringify(elements), // Backwards compatibility
-        pages_json: JSON.stringify(pages), // New multi-page format
-        options_json: JSON.stringify(options),
+        design_data: {
+          pages,
+          elements: pages[0]?.elements || [], // backwards compatibility
+        },
+        options_json: {
+          ...options,
+          productOptions: passedProductOptions,
+          sizeKey,
+        },
         quantity,
         unit_price: parseFloat(pricing.unitPrice),
         thumbnail_url: thumbnail,
@@ -1017,17 +1038,23 @@ export default function DesignTool() {
       };
 
       if (savedDesignId) {
-        await base44.entities.SavedDesign.update(savedDesignId, designData);
+        await base44.entities.SavedDesign.update(savedDesignId, designPayload);
       } else {
-        const result = await base44.entities.SavedDesign.create(designData);
+        const result = await base44.entities.SavedDesign.create(designPayload);
         setSavedDesignId(result.id);
         window.history.replaceState({}, '', `${window.location.pathname}?product=${productType}&width=${canvasWidth}&height=${canvasHeight}&designId=${result.id}`);
       }
       setLastSavedPages(JSON.stringify(pages)); // Mark as saved
+      
+      // Invalidate saved designs cache so Account page shows updated list
+      queryClient.invalidateQueries({ queryKey: ['user-designs'] });
+      queryClient.invalidateQueries({ queryKey: ['saved-designs'] });
+      
       toast.success('Design saved!');
       setShowSaveDialog(false);
     } catch (err) {
-      toast.error('Failed to save design');
+      console.error('Failed to save design:', err);
+      toast.error(err.message || 'Failed to save design');
     } finally {
       setIsSaving(false);
     }
@@ -1053,14 +1080,20 @@ export default function DesignTool() {
       // Use async versions that embed images as base64
       const thumbnail = await createThumbnail();
       const artworkDataUrl = await generateArtworkDataURL(elements, canvasWidth, canvasHeight, 150);
-      const designData = {
+      const designPayload = {
         name: designName || 'My Design',
         product_type: productType,
         width: canvasWidth,
         height: canvasHeight,
-        elements_json: JSON.stringify(elements), // Backwards compatibility
-        pages_json: JSON.stringify(pages), // New multi-page format
-        options_json: JSON.stringify(options),
+        design_data: {
+          pages,
+          elements: pages[0]?.elements || [], // backwards compatibility
+        },
+        options_json: {
+          ...options,
+          productOptions: passedProductOptions,
+          sizeKey,
+        },
         quantity,
         unit_price: parseFloat(pricing.unitPrice),
         is_in_cart: true,
@@ -1071,15 +1104,21 @@ export default function DesignTool() {
       };
 
       if (savedDesignId) {
-        await base44.entities.SavedDesign.update(savedDesignId, designData);
+        await base44.entities.SavedDesign.update(savedDesignId, designPayload);
       } else {
-        const result = await base44.entities.SavedDesign.create(designData);
+        const result = await base44.entities.SavedDesign.create(designPayload);
         setSavedDesignId(result.id);
       }
+      
+      // Invalidate saved designs cache
+      queryClient.invalidateQueries({ queryKey: ['user-designs'] });
+      queryClient.invalidateQueries({ queryKey: ['saved-designs'] });
+      
       toast.success('Added to cart!');
       navigate(createPageUrl('Cart'));
     } catch (err) {
-      toast.error('Failed to add to cart');
+      console.error('Failed to add to cart:', err);
+      toast.error(err.message || 'Failed to add to cart');
     } finally {
       setIsAddingToCart(false);
     }
