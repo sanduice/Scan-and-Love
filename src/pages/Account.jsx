@@ -51,7 +51,7 @@ export default function Account() {
       const query = user
         ? supabase.from('saved_designs').select('*').eq('user_id', user.id)
         : supabase.from('saved_designs').select('*').eq('session_id', sessionId);
-      const { data, error } = await query;
+      const { data, error } = await query.order('created_at', { ascending: false });
       if (error) throw error;
       return data || [];
     },
