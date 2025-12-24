@@ -71,6 +71,10 @@ export default function DesignTool() {
   const initialHeight = Number(urlParams.get('height')) || 36;
   const initialSizeKey = urlParams.get('sizeKey') || null;
   const initialMaterial = urlParams.get('material') ? decodeURIComponent(urlParams.get('material')) : null;
+  const initialQuantity = Number(urlParams.get('quantity')) || 1;
+  const initialProductOptions = urlParams.get('productOptions') 
+    ? JSON.parse(decodeURIComponent(urlParams.get('productOptions'))) 
+    : null;
   const designId = urlParams.get('designId');
   const templateId = urlParams.get('templateId');
   const editTemplateId = urlParams.get('editTemplateId');
@@ -108,8 +112,9 @@ export default function DesignTool() {
   const [canvasWidth, setCanvasWidth] = useState(initialWidth);
   const [canvasHeight, setCanvasHeight] = useState(initialHeight);
   const [sizeKey, setSizeKey] = useState(initialSizeKey);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(initialQuantity);
   const [selectedPresetPrice, setSelectedPresetPrice] = useState(null);
+  const [passedProductOptions, setPassedProductOptions] = useState(initialProductOptions);
   const [zoom, setZoom] = useState(100);
   const [showGrid, setShowGrid] = useState(false);
   const [showBleed, setShowBleed] = useState(true);
@@ -913,12 +918,26 @@ export default function DesignTool() {
       unitPrice *= 1.5;
     }
 
+    // Apply product options prices from passed options (e.g., pole pockets, grommets)
+    if (passedProductOptions && typeof passedProductOptions === 'object') {
+      Object.values(passedProductOptions).forEach(option => {
+        if (option && typeof option === 'object' && option.price) {
+          const optionPrice = parseFloat(option.price) || 0;
+          if (optionPrice > 0) {
+            // Option price is per unit
+            total += optionPrice * quantity;
+            unitPrice += optionPrice;
+          }
+        }
+      });
+    }
+
     return {
       total: total.toFixed(2),
       unitPrice: unitPrice.toFixed(2),
       sqft: pricingData.sqft?.toFixed(2) || ((canvasWidth * canvasHeight) / 144).toFixed(2),
     };
-  }, [pricingData, options.printSides, quantity, canvasWidth, canvasHeight, selectedPresetPrice, product]);
+  }, [pricingData, options.printSides, quantity, canvasWidth, canvasHeight, selectedPresetPrice, product, passedProductOptions]);
 
   // Always use front page (pages[0]) for thumbnail to ensure consistency
   const createThumbnail = () => generateThumbnailWithImages(pages[0]?.elements || [], canvasWidth, canvasHeight);

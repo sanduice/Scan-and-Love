@@ -19,7 +19,8 @@ const TemplateSelectionDialog = ({
   onOpenChange,
   product,
   selectedSize,
-  selectedOptions = {}
+  selectedOptions = {},
+  quantity = 1
 }) => {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
@@ -80,8 +81,11 @@ const TemplateSelectionDialog = ({
       product: product.slug,
       width: selectedSize.width,
       height: selectedSize.height,
+      quantity: quantity.toString(),
       ...(selectedOptions.material && { material: selectedOptions.material }),
       ...(selectedOptions.finish && { finish: selectedOptions.finish }),
+      ...(selectedOptions.sizeKey && { sizeKey: selectedOptions.sizeKey }),
+      ...(selectedOptions.productOptions && { productOptions: JSON.stringify(selectedOptions.productOptions) }),
     });
     navigate(`/designtool?${params.toString()}`);
     onOpenChange(false);
@@ -96,8 +100,11 @@ const TemplateSelectionDialog = ({
       templateId: template.id,
       width: templateSize?.width || selectedSize.width,
       height: templateSize?.height || selectedSize.height,
+      quantity: quantity.toString(),
       ...(selectedOptions.material && { material: selectedOptions.material }),
       ...(selectedOptions.finish && { finish: selectedOptions.finish }),
+      ...(selectedOptions.sizeKey && { sizeKey: selectedOptions.sizeKey }),
+      ...(selectedOptions.productOptions && { productOptions: JSON.stringify(selectedOptions.productOptions) }),
     });
     navigate(`/designtool?${params.toString()}`);
     onOpenChange(false);
