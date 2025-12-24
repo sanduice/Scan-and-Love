@@ -109,6 +109,7 @@ export default function DesignTool() {
   const [canvasHeight, setCanvasHeight] = useState(initialHeight);
   const [sizeKey, setSizeKey] = useState(initialSizeKey);
   const [quantity, setQuantity] = useState(1);
+  const [selectedPresetPrice, setSelectedPresetPrice] = useState(null);
   const [zoom, setZoom] = useState(100);
   const [showGrid, setShowGrid] = useState(false);
   const [showBleed, setShowBleed] = useState(true);
@@ -235,6 +236,20 @@ export default function DesignTool() {
     quantity,
     sizeKey
   });
+
+  // Detect preset price when product or dimensions change
+  useEffect(() => {
+    if (product?.preset_sizes && Array.isArray(product.preset_sizes)) {
+      const matchingPreset = product.preset_sizes.find(
+        p => p.is_active !== false && 
+             parseFloat(p.width) === canvasWidth && 
+             parseFloat(p.height) === canvasHeight
+      );
+      setSelectedPresetPrice(matchingPreset?.price ?? null);
+    } else {
+      setSelectedPresetPrice(null);
+    }
+  }, [product, canvasWidth, canvasHeight]);
 
   // Load existing design
   useEffect(() => {
@@ -865,23 +880,45 @@ export default function DesignTool() {
 
   // Price calculation wrapper using hook
   const pricing = useMemo(() => {
-    let total = parseFloat(pricingData.total) || 0;
-    
-    // Apply modifiers locally since hook handles base price
-    if (options.printSides === 'Double Sided') total *= 1.5;
-    
-    // Fallback min price if DB returns 0 (safety net)
-    if (total === 0) {
-       const sqft = (canvasWidth * canvasHeight) / 144;
-       total = Math.max(25, sqft * 3 * quantity);
+    let unitPrice = 0;
+    let total = 0;
+
+    // PRIORITY 1: Use preset size price if available
+    if (selectedPresetPrice !== null && selectedPresetPrice !== undefined) {
+      unitPrice = parseFloat(selectedPresetPrice);
+      total = unitPrice * quantity;
+    }
+    // PRIORITY 2: Use per_sqft pricing if product uses that mode
+    else if (product?.pricing_type === 'per_sqft' && product?.price_per_sqft > 0) {
+      const sqft = (canvasWidth * canvasHeight) / 144;
+      unitPrice = sqft * product.price_per_sqft;
+      total = unitPrice * quantity;
+    }
+    // PRIORITY 3: Fall back to usePricing hook data
+    else {
+      total = parseFloat(pricingData.total) || 0;
+      unitPrice = parseFloat(pricingData.unitPrice) || (total / quantity);
+      
+      // Fallback min price if DB returns 0 (safety net)
+      if (total === 0) {
+        const sqft = (canvasWidth * canvasHeight) / 144;
+        total = Math.max(25, sqft * 3 * quantity);
+        unitPrice = total / quantity;
+      }
+    }
+
+    // Apply modifiers (Double Sided, etc.)
+    if (options.printSides === 'Double Sided') {
+      total *= 1.5;
+      unitPrice *= 1.5;
     }
 
     return {
       total: total.toFixed(2),
-      unitPrice: (total / quantity).toFixed(2),
+      unitPrice: unitPrice.toFixed(2),
       sqft: pricingData.sqft?.toFixed(2) || ((canvasWidth * canvasHeight) / 144).toFixed(2),
     };
-  }, [pricingData, options.printSides, quantity, canvasWidth, canvasHeight]);
+  }, [pricingData, options.printSides, quantity, canvasWidth, canvasHeight, selectedPresetPrice, product]);
 
   // Always use front page (pages[0]) for thumbnail to ensure consistency
   const createThumbnail = () => generateThumbnailWithImages(pages[0]?.elements || [], canvasWidth, canvasHeight);
