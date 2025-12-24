@@ -1329,10 +1329,12 @@ export default function ProductConfigurator({
         onOpenChange={setShowTemplateDialog}
         product={product}
         selectedSize={{ width, height }}
+        quantity={quantity}
         selectedOptions={{ 
           material: selectedOptions.thickness, 
           finish: selectedOptions.finish,
-          sizeKey 
+          sizeKey,
+          productOptions: selectedOptions
         }}
       />
     </div>;
