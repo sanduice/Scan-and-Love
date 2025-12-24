@@ -23,7 +23,11 @@ const createMockEntity = (tableName) => ({
     return data;
   },
   create: async (record) => {
-    const { data, error } = await supabase.from(tableName).insert(record).select().single();
+    // Get current user and add user_id if authenticated
+    const { data: { user } } = await supabase.auth.getUser();
+    const recordWithUser = user ? { ...record, user_id: user.id } : record;
+    
+    const { data, error } = await supabase.from(tableName).insert(recordWithUser).select().single();
     if (error) throw error;
     return data;
   },
