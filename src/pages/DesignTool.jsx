@@ -24,6 +24,7 @@ import SocialShare from '@/components/SocialShare';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import CanvasWorkspace from '@/components/designer/CanvasWorkspace';
 import CanvaSidebar from '@/components/designer/CanvaSidebar';
@@ -178,6 +179,7 @@ export default function DesignTool() {
   const [showExitWarning, setShowExitWarning] = useState(false);
   const [showLayersPanel, setShowLayersPanel] = useState(false);
   const [showTemplateSettingsDialog, setShowTemplateSettingsDialog] = useState(false);
+  const [showPricingDrawer, setShowPricingDrawer] = useState(false);
   const [templateFormData, setTemplateFormData] = useState({
     name: '',
     description: '',
@@ -1305,9 +1307,13 @@ export default function DesignTool() {
                     </Button>
                   </div>
 
-                  <div className="text-right">
-                    <div className="text-xs text-gray-500">Total</div>
-                    <div className="text-xl font-bold text-green-600">${pricing.total}</div>
+                  <div 
+                    className="text-right cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => setShowPricingDrawer(true)}
+                  >
+                    <div className="text-xs text-muted-foreground">Total</div>
+                    <div className="text-xl font-bold text-green-600 underline decoration-dashed underline-offset-2">${pricing.total}</div>
+                    <div className="text-[10px] text-muted-foreground">Click for details</div>
                   </div>
                 </div>
 
@@ -1884,6 +1890,109 @@ export default function DesignTool() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Pricing Summary Drawer */}
+        <Sheet open={showPricingDrawer} onOpenChange={setShowPricingDrawer}>
+          <SheetContent side="right" className="w-[400px] sm:w-[450px] overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Pricing Summary</SheetTitle>
+              <SheetDescription>
+                Breakdown of your order pricing
+              </SheetDescription>
+            </SheetHeader>
+            
+            <div className="mt-6 space-y-6">
+              {/* Product Info */}
+              <div className="border-b pb-4">
+                <h3 className="font-semibold text-sm text-muted-foreground uppercase mb-2">Product</h3>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="font-medium">{product?.name || productType}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {canvasWidth}" × {canvasHeight}" ({pricing.sqft} sq ft)
+                    </p>
+                    {sizeKey && (
+                      <Badge variant="outline" className="mt-1">{sizeKey}</Badge>
+                    )}
+                  </div>
+                  <span className="font-medium">${pricing.unitPrice}</span>
+                </div>
+              </div>
+
+              {/* Product Options */}
+              {passedProductOptions && Object.keys(passedProductOptions).length > 0 && (
+                <div className="border-b pb-4">
+                  <h3 className="font-semibold text-sm text-muted-foreground uppercase mb-2">
+                    Product Options
+                  </h3>
+                  <div className="space-y-2">
+                    {Object.entries(passedProductOptions).map(([key, option]) => (
+                      option && (
+                        <div key={key} className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">
+                            {option.label || option.name || key}
+                          </span>
+                          <span className="font-medium">
+                            {option.price ? `+$${parseFloat(option.price).toFixed(2)}` : 'Included'}
+                          </span>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Print Options */}
+              <div className="border-b pb-4">
+                <h3 className="font-semibold text-sm text-muted-foreground uppercase mb-2">
+                  Print Options
+                </h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Material</span>
+                    <span>{options.material}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Print Sides</span>
+                    <span>{options.printSides}</span>
+                  </div>
+                  {options.finish && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Finish</span>
+                      <span>{options.finish}</span>
+                    </div>
+                  )}
+                  {options.grommets && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Grommets</span>
+                      <span>{options.grommets}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quantity & Total */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Quantity</span>
+                  <span className="font-medium">× {quantity}</span>
+                </div>
+                
+                <div className="border-t pt-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold">Total</span>
+                    <span className="text-2xl font-bold text-green-600">
+                      ${pricing.total}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ${pricing.unitPrice} per unit × {quantity}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </TooltipProvider>
   );
