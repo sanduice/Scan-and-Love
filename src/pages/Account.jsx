@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   User, Package, Heart, MapPin, Settings, LogOut,
   ShoppingBag, Repeat, FileText,
-  Plus, Edit, Loader2, Eye
+  Plus, Edit, Loader2, Eye, Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -104,6 +104,42 @@ export default function Account() {
       toast.error('Failed to reorder items');
     }
   };
+
+  const deleteDesignMutation = useMutation({
+    mutationFn: async (designId) => {
+      const { error } = await supabase
+        .from('saved_designs')
+        .delete()
+        .eq('id', designId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-designs', user?.id] });
+      toast.success('Design deleted');
+    },
+    onError: (error) => {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete design');
+    }
+  });
+
+  const deleteBadgeDesignMutation = useMutation({
+    mutationFn: async (designId) => {
+      const { error } = await supabase
+        .from('name_badge_designs')
+        .delete()
+        .eq('id', designId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-badge-designs', user?.id] });
+      toast.success('Badge design deleted');
+    },
+    onError: (error) => {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete badge design');
+    }
+  });
 
   if (authLoading) {
     return (
@@ -299,6 +335,15 @@ export default function Account() {
                               <Button variant="outline" size="sm" className="flex-1">
                                 <ShoppingBag className="w-3 h-3 mr-1" /> Order
                               </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => deleteDesignMutation.mutate(design.id)}
+                                disabled={deleteDesignMutation.isPending}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -324,6 +369,15 @@ export default function Account() {
                               </Link>
                               <Button variant="outline" size="sm" className="flex-1">
                                 <ShoppingBag className="w-3 h-3 mr-1" /> Order
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => deleteBadgeDesignMutation.mutate(design.id)}
+                                disabled={deleteBadgeDesignMutation.isPending}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="w-3 h-3" />
                               </Button>
                             </div>
                           </div>
