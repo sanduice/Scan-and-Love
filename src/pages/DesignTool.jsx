@@ -67,7 +67,7 @@ export default function DesignTool() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
-  const productType = urlParams.get('product') || 'vinyl-banner';
+  const initialProductType = urlParams.get('product') || 'vinyl-banner';
   const initialWidth = Number(urlParams.get('width')) || 72;
   const initialHeight = Number(urlParams.get('height')) || 36;
   const initialSizeKey = urlParams.get('sizeKey') || null;
@@ -83,13 +83,19 @@ export default function DesignTool() {
   // Template editing mode
   const isTemplateEditMode = !!editTemplateId;
   const [templateEditData, setTemplateEditData] = useState(null);
+  
+  // Dynamic product type - can be updated from saved design
+  const [productType, setProductType] = useState(initialProductType);
+  
+  // Saved unit price - used to restore exact pricing from saved design
+  const [savedUnitPrice, setSavedUnitPrice] = useState(null);
 
   // Fetch product configuration dynamically
   const { data: productData = [] } = useQuery({
     queryKey: ['product-config', productType],
     queryFn: () => base44.entities.Product.filter({ slug: productType }),
     staleTime: 1000 * 60 * 60, // 1 hour
-    enabled: !isTemplateEditMode, // Skip product fetch in template edit mode
+    enabled: !isTemplateEditMode && !!productType, // Skip product fetch in template edit mode
   });
 
   const product = productData[0];
@@ -463,6 +469,17 @@ export default function DesignTool() {
       const design = designs[0];
       setCanvasWidth(design.width || canvasWidth);
       setCanvasHeight(design.height || canvasHeight);
+      
+      // Restore product type from saved design
+      if (design.product_type) {
+        setProductType(design.product_type);
+      }
+      
+      // Restore saved unit price (for exact price restoration)
+      if (design.unit_price) {
+        setSavedUnitPrice(parseFloat(design.unit_price));
+      }
+      
       try {
         // Load from design_data (jsonb column)
         let loadedPages;
@@ -903,8 +920,13 @@ export default function DesignTool() {
     let unitPrice = 0;
     let total = 0;
 
+    // PRIORITY 0: Use saved unit price when loading existing design (for exact restoration)
+    if (savedUnitPrice !== null && savedDesignId) {
+      unitPrice = savedUnitPrice;
+      total = unitPrice * quantity;
+    }
     // PRIORITY 1: Use preset size price if available
-    if (selectedPresetPrice !== null && selectedPresetPrice !== undefined) {
+    else if (selectedPresetPrice !== null && selectedPresetPrice !== undefined) {
       unitPrice = parseFloat(selectedPresetPrice);
       total = unitPrice * quantity;
     }
@@ -927,24 +949,27 @@ export default function DesignTool() {
       }
     }
 
-    // Apply modifiers (Double Sided, etc.)
-    if (options.printSides === 'Double Sided') {
-      total *= 1.5;
-      unitPrice *= 1.5;
-    }
+    // Apply modifiers (Double Sided, etc.) - only if not using savedUnitPrice
+    // (savedUnitPrice already includes modifiers from when design was saved)
+    if (!savedUnitPrice || !savedDesignId) {
+      if (options.printSides === 'Double Sided') {
+        total *= 1.5;
+        unitPrice *= 1.5;
+      }
 
-    // Apply product options prices from passed options (e.g., pole pockets, grommets)
-    if (passedProductOptions && typeof passedProductOptions === 'object') {
-      Object.values(passedProductOptions).forEach(option => {
-        if (option && typeof option === 'object' && option.price) {
-          const optionPrice = parseFloat(option.price) || 0;
-          if (optionPrice > 0) {
-            // Option price is per unit
-            total += optionPrice * quantity;
-            unitPrice += optionPrice;
+      // Apply product options prices from passed options (e.g., pole pockets, grommets)
+      if (passedProductOptions && typeof passedProductOptions === 'object') {
+        Object.values(passedProductOptions).forEach(option => {
+          if (option && typeof option === 'object' && option.price) {
+            const optionPrice = parseFloat(option.price) || 0;
+            if (optionPrice > 0) {
+              // Option price is per unit
+              total += optionPrice * quantity;
+              unitPrice += optionPrice;
+            }
           }
-        }
-      });
+        });
+      }
     }
 
     return {
@@ -952,7 +977,7 @@ export default function DesignTool() {
       unitPrice: unitPrice.toFixed(2),
       sqft: pricingData.sqft?.toFixed(2) || ((canvasWidth * canvasHeight) / 144).toFixed(2),
     };
-  }, [pricingData, options.printSides, quantity, canvasWidth, canvasHeight, selectedPresetPrice, product, passedProductOptions]);
+  }, [pricingData, options.printSides, quantity, canvasWidth, canvasHeight, selectedPresetPrice, product, passedProductOptions, savedUnitPrice, savedDesignId]);
 
   // Always use front page (pages[0]) for thumbnail to ensure consistency
   const createThumbnail = () => generateThumbnailWithImages(pages[0]?.elements || [], canvasWidth, canvasHeight);
