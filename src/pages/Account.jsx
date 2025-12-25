@@ -327,7 +327,7 @@ export default function Account() {
                           <div className="p-3">
                             <h4 className="font-medium text-foreground truncate">{design.name || 'Untitled'}</h4>
                             <div className="flex gap-2 mt-3">
-                              <Link to={`${createPageUrl('DesignTool')}?designId=${design.id}`} className="flex-1">
+                              <Link to={`${createPageUrl('DesignTool')}?product=${design.product_type || 'vinyl-banner'}&designId=${design.id}`} className="flex-1">
                                 <Button variant="outline" size="sm" className="w-full">
                                   <Edit className="w-3 h-3 mr-1" /> Edit
                                 </Button>
