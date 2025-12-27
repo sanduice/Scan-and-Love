@@ -2048,57 +2048,68 @@ export default function DesignTool() {
                 </div>
               </div>
 
-              {/* Product Options */}
-              {passedProductOptions && Object.keys(passedProductOptions).length > 0 && (
+              {/* Product Options - Only show proper option objects with id and title */}
+              {passedProductOptions && (() => {
+                // Filter to only valid option objects (have id and title properties)
+                const validOptions = Object.entries(passedProductOptions).filter(([key, option]) => 
+                  option && 
+                  typeof option === 'object' && 
+                  option.id && 
+                  option.title
+                );
+                
+                if (validOptions.length === 0) return null;
+                
+                // Helper to get option group name from product options
+                const getOptionGroupName = (optionId) => {
+                  if (!product?.product_options) return null;
+                  const optionGroup = product.product_options.find(opt => opt.id === optionId);
+                  return optionGroup?.name || null;
+                };
+                
+                return (
+                  <div className="border-b pb-4">
+                    <h3 className="font-semibold text-sm text-muted-foreground uppercase mb-2">
+                      Product Options
+                    </h3>
+                    <div className="space-y-2">
+                      {validOptions.map(([key, option]) => {
+                        const optionName = getOptionGroupName(key) || key;
+                        const hasPrice = option.price && parseFloat(option.price) > 0;
+                        
+                        return (
+                          <div key={key} className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              {optionName}
+                            </span>
+                            <span className="font-medium flex items-center gap-2">
+                              <span>{option.title}</span>
+                              {hasPrice && (
+                                <span className="text-green-600">+${parseFloat(option.price).toFixed(2)}</span>
+                              )}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Print Options */}
+              {options.material && (
                 <div className="border-b pb-4">
                   <h3 className="font-semibold text-sm text-muted-foreground uppercase mb-2">
-                    Product Options
+                    Print Options
                   </h3>
-                  <div className="space-y-2">
-                    {Object.entries(passedProductOptions).map(([key, option]) => (
-                      option && (
-                        <div key={key} className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            {option.label || option.name || key}
-                          </span>
-                          <span className="font-medium">
-                            {option.price ? `+$${parseFloat(option.price).toFixed(2)}` : 'Included'}
-                          </span>
-                        </div>
-                      )
-                    ))}
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Material</span>
+                      <span>{options.material}</span>
+                    </div>
                   </div>
                 </div>
               )}
-
-              {/* Print Options */}
-              <div className="border-b pb-4">
-                <h3 className="font-semibold text-sm text-muted-foreground uppercase mb-2">
-                  Print Options
-                </h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Material</span>
-                    <span>{options.material}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Print Sides</span>
-                    <span>{options.printSides}</span>
-                  </div>
-                  {options.finish && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Finish</span>
-                      <span>{options.finish}</span>
-                    </div>
-                  )}
-                  {options.grommets && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Grommets</span>
-                      <span>{options.grommets}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
 
               {/* Quantity & Total */}
               <div className="space-y-3">
