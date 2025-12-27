@@ -2036,7 +2036,7 @@ export default function DesignTool() {
               </SheetDescription>
             </SheetHeader>
             
-            <div className="mt-6 space-y-6">
+            <div className="mt-6 space-y-4">
               {/* Product Info */}
               <div className="border-b pb-4">
                 <h3 className="font-semibold text-sm text-muted-foreground uppercase mb-2">Product</h3>
@@ -2055,16 +2055,18 @@ export default function DesignTool() {
               </div>
 
               {/* Product Options - Only show proper option objects with id and title */}
-              {passedProductOptions && (() => {
+              {(() => {
                 // Filter to only valid option objects (have id and title properties)
-                const validOptions = Object.entries(passedProductOptions).filter(([key, option]) => 
+                const validOptions = passedProductOptions ? Object.entries(passedProductOptions).filter(([key, option]) => 
                   option && 
                   typeof option === 'object' && 
                   option.id && 
                   option.title
-                );
+                ) : [];
                 
-                if (validOptions.length === 0) return null;
+                const totalOptionsPrice = validOptions.reduce((sum, [key, option]) => {
+                  return sum + (option.price ? parseFloat(option.price) : 0);
+                }, 0);
                 
                 // Helper to get option group name from product options
                 const getOptionGroupName = (optionId) => {
@@ -2074,31 +2076,48 @@ export default function DesignTool() {
                 };
                 
                 return (
-                  <div className="border-b pb-4">
-                    <h3 className="font-semibold text-sm text-muted-foreground uppercase mb-2">
-                      Product Options
-                    </h3>
-                    <div className="space-y-2">
-                      {validOptions.map(([key, option]) => {
-                        const optionName = getOptionGroupName(key) || key;
-                        const hasPrice = option.price && parseFloat(option.price) > 0;
-                        
-                        return (
-                          <div key={key} className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              {optionName}
-                            </span>
-                            <span className="font-medium flex items-center gap-2">
-                              <span>{option.title}</span>
-                              {hasPrice && (
-                                <span className="text-green-600">+${parseFloat(option.price).toFixed(2)}</span>
-                              )}
-                            </span>
-                          </div>
-                        );
-                      })}
+                  <>
+                    {validOptions.length > 0 && (
+                      <div className="border-b pb-4">
+                        <h3 className="font-semibold text-sm text-muted-foreground uppercase mb-2">
+                          Product Options
+                        </h3>
+                        <div className="space-y-2">
+                          {validOptions.map(([key, option]) => {
+                            const optionName = getOptionGroupName(key) || key;
+                            const hasPrice = option.price && parseFloat(option.price) > 0;
+                            
+                            return (
+                              <div key={key} className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                  {optionName}
+                                </span>
+                                <span className="font-medium flex items-center gap-2">
+                                  <span>{option.title}</span>
+                                  {hasPrice && (
+                                    <span className="text-green-600">+${parseFloat(option.price).toFixed(2)}</span>
+                                  )}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Unit Price Subtotal */}
+                    <div className="border-b pb-4 bg-muted/30 -mx-6 px-6 py-3">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">Unit Price</span>
+                        <span className="font-semibold text-lg">${pricing.unitPrice}</span>
+                      </div>
+                      {totalOptionsPrice > 0 && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Base ${pricing.baseUnitPrice} + Options ${totalOptionsPrice.toFixed(2)}
+                        </p>
+                      )}
                     </div>
-                  </div>
+                  </>
                 );
               })()}
 
@@ -2117,23 +2136,19 @@ export default function DesignTool() {
                 </div>
               )}
 
-              {/* Quantity & Total */}
-              <div className="space-y-3">
+              {/* Quantity */}
+              <div className="flex justify-between items-center py-2">
+                <span className="text-muted-foreground">Quantity</span>
+                <span className="font-medium text-lg">× {quantity}</span>
+              </div>
+
+              {/* Total */}
+              <div className="border-t pt-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Quantity</span>
-                  <span className="font-medium">× {quantity}</span>
-                </div>
-                
-                <div className="border-t pt-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-semibold">Total</span>
-                    <span className="text-2xl font-bold text-green-600">
-                      ${pricing.total}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    ${pricing.unitPrice} per unit × {quantity}
-                  </p>
+                  <span className="text-lg font-semibold">Total</span>
+                  <span className="text-2xl font-bold text-green-600">
+                    ${pricing.total}
+                  </span>
                 </div>
               </div>
             </div>
