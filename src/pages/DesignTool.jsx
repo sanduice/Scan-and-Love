@@ -927,9 +927,15 @@ export default function DesignTool() {
       unitPrice = savedUnitPrice;
       total = unitPrice * quantity;
     }
-    // PRIORITY 1: Use preset size price if available
-    else if (selectedPresetPrice !== null && selectedPresetPrice !== undefined) {
+    // PRIORITY 1: Use preset size price if available (non-custom sizes)
+    else if (selectedPresetPrice !== null && selectedPresetPrice !== undefined && sizeKey !== 'custom') {
       unitPrice = parseFloat(selectedPresetPrice);
+      total = unitPrice * quantity;
+    }
+    // PRIORITY 1.5: Custom size - always use price_per_sqft if available
+    else if (sizeKey === 'custom' && product?.price_per_sqft > 0) {
+      const sqft = (canvasWidth * canvasHeight) / 144;
+      unitPrice = sqft * product.price_per_sqft;
       total = unitPrice * quantity;
     }
     // PRIORITY 2: Use per_sqft pricing if product uses that mode
