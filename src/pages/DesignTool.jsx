@@ -126,6 +126,11 @@ export default function DesignTool() {
   const [zoom, setZoom] = useState(100);
   const [showGrid, setShowGrid] = useState(false);
   const [showBleed, setShowBleed] = useState(true);
+  
+  // Temp state for Canvas Settings dialog (deferred apply)
+  const [tempCanvasWidth, setTempCanvasWidth] = useState(initialWidth);
+  const [tempCanvasHeight, setTempCanvasHeight] = useState(initialHeight);
+  const [tempQuantity, setTempQuantity] = useState(initialQuantity);
 
   // Multi-page state
   const [pages, setPages] = useState([
@@ -173,6 +178,15 @@ export default function DesignTool() {
       setOptions(prev => ({ ...prev, material: productConfig.material }));
     }
   }, [productConfig.material, initialMaterial]);
+
+  // Sync temp state when Canvas Settings dialog opens
+  useEffect(() => {
+    if (showSizeDialog) {
+      setTempCanvasWidth(canvasWidth);
+      setTempCanvasHeight(canvasHeight);
+      setTempQuantity(quantity);
+    }
+  }, [showSizeDialog, canvasWidth, canvasHeight, quantity]);
 
   const [showTemplateWarning, setShowTemplateWarning] = useState(false);
   const [pendingTemplate, setPendingTemplate] = useState(null);
@@ -980,12 +994,75 @@ export default function DesignTool() {
       }
     }
 
+    // Determine pricing source
+    let pricingSource = 'calculated';
+    if (savedUnitPrice !== null && savedDesignId) {
+      pricingSource = 'saved';
+    } else if (selectedPresetPrice !== null && selectedPresetPrice !== undefined && sizeKey !== 'custom') {
+      pricingSource = 'preset';
+    } else if ((sizeKey === 'custom' && product?.price_per_sqft > 0) || (product?.pricing_type === 'per_sqft' && product?.price_per_sqft > 0)) {
+      pricingSource = 'sqft';
+    }
+
     return {
       total: total.toFixed(2),
       unitPrice: unitPrice.toFixed(2),
       sqft: pricingData.sqft?.toFixed(2) || ((canvasWidth * canvasHeight) / 144).toFixed(2),
+      source: pricingSource,
     };
-  }, [pricingData, options.printSides, quantity, canvasWidth, canvasHeight, selectedPresetPrice, product, passedProductOptions, savedUnitPrice, savedDesignId]);
+  }, [pricingData, options.printSides, quantity, canvasWidth, canvasHeight, selectedPresetPrice, product, passedProductOptions, savedUnitPrice, savedDesignId, sizeKey]);
+
+  // Temp pricing for Canvas Settings dialog preview (uses temp values)
+  const tempPricing = useMemo(() => {
+    if (!showSizeDialog) return null;
+    
+    const sqft = (tempCanvasWidth * tempCanvasHeight) / 144;
+    const presetSizes = product?.preset_sizes || [];
+    
+    // Check if temp dimensions match a preset
+    const matchingPreset = presetSizes.find(ps => 
+      ps.width === tempCanvasWidth && ps.height === tempCanvasHeight
+    );
+    
+    let unitPrice = 0;
+    let source = 'calculated';
+    
+    // If dimensions match current preset and it has custom price
+    if (matchingPreset?.price && product?.pricing_type === 'custom') {
+      unitPrice = parseFloat(matchingPreset.price);
+      source = 'preset';
+    } 
+    // Otherwise use per sqft calculation
+    else if (product?.price_per_sqft > 0) {
+      unitPrice = sqft * product.price_per_sqft;
+      source = 'sqft';
+    }
+    // Fallback
+    else {
+      unitPrice = sqft * 3; // Fallback rate
+    }
+    
+    // Apply modifiers
+    if (options.printSides === 'Double Sided') {
+      unitPrice *= 1.5;
+    }
+    
+    // Apply option prices
+    if (passedProductOptions && typeof passedProductOptions === 'object') {
+      Object.values(passedProductOptions).forEach(option => {
+        if (option && typeof option === 'object' && option.price) {
+          unitPrice += parseFloat(option.price) || 0;
+        }
+      });
+    }
+    
+    return {
+      sqft: sqft.toFixed(2),
+      unitPrice: unitPrice.toFixed(2),
+      total: (unitPrice * tempQuantity).toFixed(2),
+      source
+    };
+  }, [showSizeDialog, tempCanvasWidth, tempCanvasHeight, tempQuantity, product, options.printSides, passedProductOptions]);
 
   // Always use front page (pages[0]) for thumbnail to ensure consistency
   const createThumbnail = () => generateThumbnailWithImages(pages[0]?.elements || [], canvasWidth, canvasHeight);
@@ -1581,8 +1658,8 @@ export default function DesignTool() {
                   <Label>Width (inches)</Label>
                   <Input
                     type="number"
-                    value={canvasWidth}
-                    onChange={(e) => setCanvasWidth(Math.max(productConfig.minWidth, Math.min(productConfig.maxWidth, Number(e.target.value))))}
+                    value={tempCanvasWidth}
+                    onChange={(e) => setTempCanvasWidth(Math.max(productConfig.minWidth, Math.min(productConfig.maxWidth, Number(e.target.value))))}
                     className="mt-1"
                   />
                 </div>
@@ -1590,8 +1667,8 @@ export default function DesignTool() {
                   <Label>Height (inches)</Label>
                   <Input
                     type="number"
-                    value={canvasHeight}
-                    onChange={(e) => setCanvasHeight(Math.max(productConfig.minHeight, Math.min(productConfig.maxHeight, Number(e.target.value))))}
+                    value={tempCanvasHeight}
+                    onChange={(e) => setTempCanvasHeight(Math.max(productConfig.minHeight, Math.min(productConfig.maxHeight, Number(e.target.value))))}
                     className="mt-1"
                   />
                 </div>
@@ -1600,28 +1677,74 @@ export default function DesignTool() {
                 <Label>Quantity</Label>
                 <Input
                   type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+                  value={tempQuantity}
+                  onChange={(e) => setTempQuantity(Math.max(1, Number(e.target.value)))}
                   className="mt-1"
                 />
               </div>
               <div className="pt-4 border-t space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Size:</span>
-                  <span>{pricing.sqft} sq ft</span>
+                  <span className="text-muted-foreground">Size:</span>
+                  <span>{tempPricing?.sqft || pricing.sqft} sq ft</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Unit Price:</span>
-                  <span>${pricing.unitPrice}</span>
+                  <span className="text-muted-foreground">
+                    Unit Price {tempPricing?.source === 'preset' ? '(custom)' : tempPricing?.source === 'sqft' ? '(per sq ft)' : ''}:
+                  </span>
+                  <span>${tempPricing?.unitPrice || pricing.unitPrice}</span>
                 </div>
                 <div className="flex justify-between font-bold text-lg pt-2">
                   <span>Total:</span>
-                  <span className="text-green-600">${pricing.total}</span>
+                  <span className="text-green-600">${tempPricing?.total || pricing.total}</span>
                 </div>
               </div>
             </div>
-            <DialogFooter>
-              <Button onClick={() => setShowSizeDialog(false)} className="bg-blue-600 hover:bg-blue-700">
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setShowSizeDialog(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => {
+                  // Check if dimensions changed from a preset size
+                  const presetSizes = product?.preset_sizes || [];
+                  const originalPreset = presetSizes.find(ps => ps.key === sizeKey);
+                  
+                  // Detect if user modified preset dimensions
+                  const dimensionsChanged = originalPreset && 
+                    (tempCanvasWidth !== originalPreset.width || tempCanvasHeight !== originalPreset.height);
+                  
+                  // Check if new dimensions match any preset
+                  const matchingPreset = presetSizes.find(ps => 
+                    ps.width === tempCanvasWidth && ps.height === tempCanvasHeight
+                  );
+                  
+                  // Apply changes
+                  setCanvasWidth(tempCanvasWidth);
+                  setCanvasHeight(tempCanvasHeight);
+                  setQuantity(tempQuantity);
+                  
+                  // If dimensions changed from preset and don't match another preset, switch to custom pricing
+                  if (dimensionsChanged && !matchingPreset) {
+                    setSizeKey('custom');
+                    setSelectedPresetPrice(null);
+                    toast.info('Switched to custom size pricing');
+                  } else if (matchingPreset) {
+                    // If dimensions match a preset, use that preset's pricing
+                    setSizeKey(matchingPreset.key);
+                    if (matchingPreset.price && product?.pricing_type === 'custom') {
+                      setSelectedPresetPrice(parseFloat(matchingPreset.price));
+                    }
+                  }
+                  
+                  // Clear saved unit price if size changed (force recalculation)
+                  if (tempCanvasWidth !== canvasWidth || tempCanvasHeight !== canvasHeight) {
+                    setSavedUnitPrice(null);
+                  }
+                  
+                  setShowSizeDialog(false);
+                }} 
+                className="bg-blue-600 hover:bg-blue-700"
+              >
                 Apply
               </Button>
             </DialogFooter>
