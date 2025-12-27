@@ -2121,20 +2121,6 @@ export default function DesignTool() {
                 );
               })()}
 
-              {/* Print Options */}
-              {options.material && (
-                <div className="border-b pb-4">
-                  <h3 className="font-semibold text-sm text-muted-foreground uppercase mb-2">
-                    Print Options
-                  </h3>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Material</span>
-                      <span>{options.material}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Quantity */}
               <div className="flex justify-between items-center py-2">
