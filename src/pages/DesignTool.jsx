@@ -978,8 +978,13 @@ export default function DesignTool() {
         total *= 1.5;
         unitPrice *= 1.5;
       }
+    }
 
-      // Apply product options prices from passed options (e.g., pole pockets, grommets)
+    // Store base unit price BEFORE adding product options
+    const baseUnitPrice = unitPrice;
+
+    // Apply product options prices from passed options (e.g., pole pockets, grommets)
+    if (!savedUnitPrice || !savedDesignId) {
       if (passedProductOptions && typeof passedProductOptions === 'object') {
         Object.values(passedProductOptions).forEach(option => {
           if (option && typeof option === 'object' && option.price) {
@@ -1007,6 +1012,7 @@ export default function DesignTool() {
     return {
       total: total.toFixed(2),
       unitPrice: unitPrice.toFixed(2),
+      baseUnitPrice: baseUnitPrice.toFixed(2),
       sqft: pricingData.sqft?.toFixed(2) || ((canvasWidth * canvasHeight) / 144).toFixed(2),
       source: pricingSource,
     };
@@ -2044,7 +2050,7 @@ export default function DesignTool() {
                       <Badge variant="outline" className="mt-1">{sizeKey}</Badge>
                     )}
                   </div>
-                  <span className="font-medium">${pricing.unitPrice}</span>
+                  <span className="font-medium">${pricing.baseUnitPrice}</span>
                 </div>
               </div>
 
