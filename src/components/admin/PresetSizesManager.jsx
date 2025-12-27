@@ -143,12 +143,38 @@ export default function PresetSizesManager({
         </div>
       </div>
 
+      {/* Price per Square Foot - Always visible, independent of Pricing Mode */}
+      <div className="p-4 bg-green-50 rounded-xl border border-green-200">
+        <div className="flex items-center gap-3 mb-3">
+          <DollarSign className="w-5 h-5 text-green-600" />
+          <div>
+            <Label className="text-sm font-semibold text-green-900">Price per Square Foot</Label>
+            <p className="text-xs text-green-700">Used for custom size pricing calculations</p>
+          </div>
+        </div>
+        <div className="relative max-w-xs">
+          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={pricePerSqft}
+            onChange={(e) => onPricePerSqftChange(parseFloat(e.target.value) || 0)}
+            className="h-10 pl-8 bg-white"
+            placeholder="0.00"
+          />
+        </div>
+        <p className="text-xs text-green-600 mt-2">
+          💡 This rate is used when customers select "Custom Size" or change dimensions in the design tool.
+        </p>
+      </div>
+
       {/* Pricing Mode - Simple Radio Selection */}
       <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
         <div className="flex items-center justify-between">
           <div>
-            <Label className="text-sm font-medium text-slate-700">Pricing Mode</Label>
-            <p className="text-xs text-slate-500">Choose how prices are calculated</p>
+            <Label className="text-sm font-medium text-slate-700">Pricing Mode for Preset Sizes</Label>
+            <p className="text-xs text-slate-500">Custom: Set individual prices. Per Sq Ft: Auto-calculate using rate above.</p>
           </div>
           <div className="flex items-center gap-6">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -175,30 +201,6 @@ export default function PresetSizesManager({
             </label>
           </div>
         </div>
-
-        {/* Per Square Foot Price Input - Conditional */}
-        {pricingType === 'per_sqft' && (
-          <div className="mt-4 pt-4 border-t border-slate-200">
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">
-              Price per Square Foot
-            </Label>
-            <div className="relative max-w-xs">
-              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={pricePerSqft}
-                onChange={(e) => onPricePerSqftChange(parseFloat(e.target.value) || 0)}
-                className="h-10 pl-8 bg-white"
-                placeholder="0.00"
-              />
-            </div>
-            <p className="text-xs text-slate-500 mt-2">
-              All preset size prices will be calculated automatically.
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Preset Sizes List */}
