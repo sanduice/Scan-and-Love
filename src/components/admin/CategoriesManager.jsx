@@ -334,9 +334,6 @@ function CategoryTreeItem({ category, allCategories, level, expandedCategories, 
         <div className="flex-1 min-w-0">
           <div className={`font-medium text-foreground ${textSize} flex items-center gap-2`}>
             {category.name}
-            {!isActive && (
-              <Badge variant="secondary" className="text-xs">Disabled</Badge>
-            )}
           </div>
           <div className={`text-muted-foreground ${level === 0 ? 'text-sm' : 'text-xs'}`}>
             {category.slug}
