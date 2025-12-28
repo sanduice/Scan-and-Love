@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { supabase } from '@/lib/supabase';
@@ -12,7 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Plus, Edit, Trash2, Image, Loader2, Folder, FolderOpen, ChevronRight, ChevronDown, GripVertical
+  Plus, Edit, Trash2, Image, Loader2, Folder, FolderOpen, ChevronRight, ChevronDown, GripVertical, AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -572,6 +572,27 @@ function CategoryForm({ category, allCategories, onSave, onCancel, isLoading }) 
     parent_id: category?.parent_id || null,
     is_active: category?.is_active !== false, // Default to true
   });
+  const [slugWarning, setSlugWarning] = useState('');
+
+  // Generate slug from name
+  const generateSlug = (name) => {
+    return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  };
+
+  // Check if slug exists (excluding current category when editing)
+  const checkSlugExists = (slug) => {
+    return allCategories.find(c => c.slug === slug && c.id !== category?.id);
+  };
+
+  // Real-time slug validation
+  useEffect(() => {
+    const currentSlug = formData.slug || generateSlug(formData.name);
+    if (currentSlug && checkSlugExists(currentSlug)) {
+      setSlugWarning(`Slug "${currentSlug}" already exists. A unique suffix will be added.`);
+    } else {
+      setSlugWarning('');
+    }
+  }, [formData.slug, formData.name, allCategories, category?.id]);
 
   // Build hierarchical options for parent selector
   const buildHierarchicalOptions = () => {
@@ -630,9 +651,19 @@ function CategoryForm({ category, allCategories, onSave, onCancel, isLoading }) 
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Generate slug
+    let slug = formData.slug || generateSlug(formData.name);
+    
+    // Check if slug exists and auto-append unique suffix if needed
+    if (checkSlugExists(slug)) {
+      const timestamp = Date.now().toString().slice(-4);
+      slug = `${slug}-${timestamp}`;
+    }
+    
     onSave({
       ...formData,
-      slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+      slug,
       parent_id: formData.parent_id || null,
       is_active: formData.is_active,
     });
@@ -697,9 +728,16 @@ function CategoryForm({ category, allCategories, onSave, onCancel, isLoading }) 
           onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
           placeholder="auto-generated-from-name"
         />
-        <p className="text-xs text-muted-foreground mt-1">
-          Used in URLs like /products/category/{formData.slug || 'slug'}
-        </p>
+        {slugWarning ? (
+          <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+            <AlertCircle className="w-3 h-3" />
+            {slugWarning}
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground mt-1">
+            Used in URLs like /products/category/{formData.slug || generateSlug(formData.name) || 'slug'}
+          </p>
+        )}
       </div>
 
       <div>
