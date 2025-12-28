@@ -68,6 +68,33 @@ export default function ProductEditor({ product, categories, onSave, onCancel })
     price_per_sqft: product?.price_per_sqft || 0,
   });
 
+  // Build hierarchical category list for dropdown
+  const flatCategories = useMemo(() => {
+    if (!categories || categories.length === 0) {
+      return [];
+    }
+    
+    const result = [];
+    
+    // Get root categories first (no parent_id)
+    const rootCategories = categories
+      .filter(c => !c.parent_id)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    
+    // Recursive function to add category and its children
+    const addCategoryWithChildren = (category, level) => {
+      result.push({ ...category, level });
+      const children = categories
+        .filter(c => c.parent_id === category.id)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      children.forEach(child => addCategoryWithChildren(child, level + 1));
+    };
+    
+    rootCategories.forEach(cat => addCategoryWithChildren(cat, 0));
+    
+    return result;
+  }, [categories]);
+
   // Check if selected category is "Banners" related
   const selectedCategory = useMemo(() => {
     return categories.find(c => c.id === formData.category_id);
@@ -205,10 +232,25 @@ export default function ProductEditor({ product, categories, onSave, onCancel })
                 <SelectTrigger className="h-11 border-slate-200 bg-white">
                   <SelectValue placeholder="Select Category" />
                 </SelectTrigger>
-                <SelectContent>
-                  {categories.map(c => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
+                <SelectContent className="max-h-[300px] bg-popover">
+                  {flatCategories.length === 0 ? (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      No categories found
+                    </div>
+                  ) : (
+                    flatCategories.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <span className="flex items-center">
+                          {cat.level > 0 && (
+                            <span className="text-muted-foreground mr-1">
+                              {'└─'.padStart(cat.level * 3, '  ')}
+                            </span>
+                          )}
+                          {cat.name}
+                        </span>
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
               <Button 
