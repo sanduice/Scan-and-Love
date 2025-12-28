@@ -11,7 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Plus, Edit, Trash2, Image, Loader2, Folder, FolderOpen, ChevronRight, ChevronDown, Eye, EyeOff
+  Plus, Edit, Trash2, Image, Loader2, Folder, FolderOpen, ChevronRight, ChevronDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -345,19 +345,12 @@ function CategoryTreeItem({ category, allCategories, level, expandedCategories, 
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onToggleActive(category)}
-            title={isActive ? 'Disable category (hide from customers)' : 'Enable category (show to customers)'}
-          >
-            {isActive ? (
-              <EyeOff className="w-4 h-4 text-muted-foreground" />
-            ) : (
-              <Eye className="w-4 h-4 text-primary" />
-            )}
-          </Button>
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={isActive}
+            onCheckedChange={() => onToggleActive(category)}
+            className="data-[state=checked]:bg-green-500"
+          />
           {canAddSubcategory && (
             <Button
               variant="ghost"
