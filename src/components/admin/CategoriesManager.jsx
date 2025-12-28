@@ -21,6 +21,7 @@ export default function CategoriesManager() {
   const [editingCategory, setEditingCategory] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState({});
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: categories = [], isLoading } = useQuery({
     queryKey: ['admin-categories'],
@@ -287,19 +288,58 @@ export default function CategoriesManager() {
     }));
   };
 
-  const handleDelete = (category) => {
+  const handleDelete = async (category) => {
     const descendants = getAllDescendants(category.id);
-    if (descendants.length > 0) {
-      if (confirm(`Delete "${category.name}" and its ${descendants.length} nested categories?`)) {
-        // Delete descendants first (deepest first), then parent
-        const sortedDescendants = [...descendants].sort((a, b) => getCategoryLevel(b) - getCategoryLevel(a));
-        sortedDescendants.forEach(desc => deleteMutation.mutate(desc.id));
-        deleteMutation.mutate(category.id);
+    const allToDelete = [...descendants, category];
+    
+    const message = descendants.length > 0 
+      ? `Delete "${category.name}" and its ${descendants.length} nested categories? Products will be unlinked.`
+      : `Delete "${category.name}"? Products will be unlinked.`;
+    
+    if (!confirm(message)) return;
+    
+    setIsDeleting(true);
+    
+    try {
+      // Step 1: Unlink all products from these categories
+      const categoryIds = allToDelete.map(c => c.id);
+      const { error: unlinkError } = await supabase
+        .from('products')
+        .update({ category_id: null })
+        .in('category_id', categoryIds);
+      
+      if (unlinkError) throw unlinkError;
+      
+      // Step 2: Delete descendants first (deepest level first)
+      const sortedForDelete = [...descendants]
+        .sort((a, b) => getCategoryLevel(b) - getCategoryLevel(a));
+      
+      for (const desc of sortedForDelete) {
+        const { error } = await supabase
+          .from('product_categories')
+          .delete()
+          .eq('id', desc.id);
+        if (error) throw error;
       }
-    } else {
-      if (confirm(`Delete "${category.name}"? Products in it will lose their category association.`)) {
-        deleteMutation.mutate(category.id);
-      }
+      
+      // Step 3: Delete the parent category
+      const { error } = await supabase
+        .from('product_categories')
+        .delete()
+        .eq('id', category.id);
+      if (error) throw error;
+      
+      // Refresh data
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      
+      const deletedCount = descendants.length + 1;
+      toast.success(`Deleted ${deletedCount} ${deletedCount === 1 ? 'category' : 'categories'}`);
+      
+    } catch (error) {
+      toast.error('Failed to delete category: ' + error.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -322,9 +362,10 @@ export default function CategoriesManager() {
         </Button>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-8">
+      {isLoading || isDeleting ? (
+        <div className="flex flex-col justify-center items-center py-8 gap-2">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          {isDeleting && <span className="text-sm text-muted-foreground">Deleting categories...</span>}
         </div>
       ) : (
         <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
