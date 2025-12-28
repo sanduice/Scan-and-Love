@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Plus, Edit, Trash2, Image, Loader2, Folder, FolderOpen, ChevronRight, ChevronDown
+  Plus, Edit, Trash2, Image, Loader2, Folder, FolderOpen, ChevronRight, ChevronDown, GripVertical
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -149,6 +150,110 @@ export default function CategoriesManager() {
     },
   });
 
+  // Reorder mutation for drag-and-drop
+  const reorderMutation = useMutation({
+    mutationFn: async (updates) => {
+      const promises = updates.map(({ id, order, parent_id }) =>
+        supabase
+          .from('product_categories')
+          .update({ order, parent_id })
+          .eq('id', id)
+      );
+      const results = await Promise.all(promises);
+      const error = results.find(r => r.error)?.error;
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      toast.success('Categories reordered');
+    },
+    onError: (error) => {
+      toast.error('Failed to reorder: ' + error.message);
+    },
+  });
+
+  // Handle drag end
+  const handleDragEnd = (result) => {
+    const { source, destination, draggableId } = result;
+
+    // Dropped outside or no movement
+    if (!destination) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+
+    // Parse droppable IDs to get parent info
+    const sourceParentId = source.droppableId === 'root' ? null : source.droppableId.replace('children-', '');
+    const destParentId = destination.droppableId === 'root' ? null : destination.droppableId.replace('children-', '');
+
+    // Check nesting level constraint (max level 2)
+    if (destParentId) {
+      const destParent = categories.find(c => c.id === destParentId);
+      const destLevel = getCategoryLevel(destParent);
+      const draggedCategory = categories.find(c => c.id === draggableId);
+      const draggedDescendantDepth = getMaxDescendantDepth(draggableId);
+      
+      // If moving to a parent at level 1, and dragged item has children, it would exceed level 2
+      if (destLevel + 1 + draggedDescendantDepth > 2) {
+        toast.error('Cannot move: would exceed maximum nesting depth');
+        return;
+      }
+    }
+
+    // Get siblings at destination
+    const destSiblings = categories
+      .filter(c => c.parent_id === destParentId)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    // If same parent, reorder within
+    if (sourceParentId === destParentId) {
+      const newOrder = [...destSiblings];
+      const [removed] = newOrder.splice(source.index, 1);
+      newOrder.splice(destination.index, 0, removed);
+
+      const updates = newOrder.map((cat, index) => ({
+        id: cat.id,
+        order: index + 1,
+        parent_id: destParentId,
+      }));
+
+      reorderMutation.mutate(updates);
+    } else {
+      // Moving to different parent
+      // Remove from source siblings and reorder them
+      const sourceSiblings = categories
+        .filter(c => c.parent_id === sourceParentId)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      const draggedItem = categories.find(c => c.id === draggableId);
+      const newSourceSiblings = sourceSiblings.filter(c => c.id !== draggableId);
+      
+      // Insert into destination siblings
+      const newDestSiblings = [...destSiblings];
+      newDestSiblings.splice(destination.index, 0, draggedItem);
+
+      const updates = [
+        ...newSourceSiblings.map((cat, index) => ({
+          id: cat.id,
+          order: index + 1,
+          parent_id: sourceParentId,
+        })),
+        ...newDestSiblings.map((cat, index) => ({
+          id: cat.id,
+          order: index + 1,
+          parent_id: destParentId,
+        })),
+      ];
+
+      reorderMutation.mutate(updates);
+    }
+  };
+
+  // Get maximum descendant depth for nesting check
+  const getMaxDescendantDepth = (categoryId) => {
+    const children = getChildren(categoryId);
+    if (children.length === 0) return 0;
+    return 1 + Math.max(...children.map(c => getMaxDescendantDepth(c.id)));
+  };
+
   const handleSave = (formData) => {
     if (editingCategory?.id) {
       updateMutation.mutate({ id: editingCategory.id, data: formData });
@@ -229,30 +334,46 @@ export default function CategoriesManager() {
             </span>
           </div>
           
-          <div className="divide-y divide-border">
-            {rootCategories.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">
-                <Folder className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No categories yet</p>
-                <p className="text-sm">Create your first parent category to get started</p>
-              </div>
-            ) : (
-              rootCategories.map((category) => (
-                <CategoryTreeItem
-                  key={category.id}
-                  category={category}
-                  allCategories={categories}
-                  level={0}
-                  expandedCategories={expandedCategories}
-                  onToggle={toggleExpand}
-                  onEdit={(cat) => { setEditingCategory(cat); setShowDialog(true); }}
-                  onDelete={handleDelete}
-                  onAddSubcategory={handleAddSubcategory}
-                  onToggleActive={handleToggleActive}
-                />
-              ))
-            )}
-          </div>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="divide-y divide-border">
+              {rootCategories.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground">
+                  <Folder className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No categories yet</p>
+                  <p className="text-sm">Create your first parent category to get started</p>
+                </div>
+              ) : (
+                <Droppable droppableId="root">
+                  {(provided, snapshot) => (
+                    <div 
+                      ref={provided.innerRef} 
+                      {...provided.droppableProps}
+                      className={snapshot.isDraggingOver ? 'bg-primary/5' : ''}
+                    >
+                      {rootCategories
+                        .sort((a, b) => (a.order || 0) - (b.order || 0))
+                        .map((category, index) => (
+                          <CategoryTreeItem
+                            key={category.id}
+                            category={category}
+                            allCategories={categories}
+                            level={0}
+                            index={index}
+                            expandedCategories={expandedCategories}
+                            onToggle={toggleExpand}
+                            onEdit={(cat) => { setEditingCategory(cat); setShowDialog(true); }}
+                            onDelete={handleDelete}
+                            onAddSubcategory={handleAddSubcategory}
+                            onToggleActive={handleToggleActive}
+                          />
+                        ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              )}
+            </div>
+          </DragDropContext>
         </div>
       )}
 
@@ -281,135 +402,164 @@ export default function CategoriesManager() {
   );
 }
 
-function CategoryTreeItem({ category, allCategories, level, expandedCategories, onToggle, onEdit, onDelete, onAddSubcategory, onToggleActive }) {
-  const children = allCategories.filter(c => c.parent_id === category.id);
+function CategoryTreeItem({ category, allCategories, level, index, expandedCategories, onToggle, onEdit, onDelete, onAddSubcategory, onToggleActive }) {
+  const children = allCategories
+    .filter(c => c.parent_id === category.id)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
   const hasChildren = children.length > 0;
   const isExpanded = expandedCategories[category.id] ?? true;
-  const isActive = category.is_active !== false; // Default to true if undefined
+  const isActive = category.is_active !== false;
   
   // Allow adding subcategories up to level 1 (so we get 3 levels total: 0, 1, 2)
   const canAddSubcategory = level <= 1;
 
   // Visual styling based on level
-  const indentStyle = level > 0 ? { marginLeft: `${level * 32}px` } : {};
   const iconSize = level === 0 ? 'h-10 w-10' : level === 1 ? 'h-8 w-8' : 'h-7 w-7';
   const textSize = level === 0 ? '' : level === 1 ? 'text-sm' : 'text-xs';
   const folderIconSize = level === 0 ? 'h-5 w-5' : 'h-4 w-4';
 
   return (
-    <Collapsible open={isExpanded} onOpenChange={() => onToggle(category.id)}>
-      {/* Category Row */}
-      <div 
-        className="flex items-center px-4 py-3 hover:bg-muted/50 group"
-        style={indentStyle}
-      >
-        {/* Expand/Collapse Button */}
-        <CollapsibleTrigger asChild>
-          <button className={`p-1 hover:bg-muted rounded mr-2 ${!hasChildren ? 'invisible' : ''}`}>
-            {isExpanded ? (
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-            )}
-          </button>
-        </CollapsibleTrigger>
-
-        {/* Tree connector line for nested items */}
-        {level > 0 && (
-          <div className="w-6 border-t border-primary/20 mr-2" />
-        )}
-
-        {/* Category Icon */}
-        <div className={`${iconSize} flex-shrink-0 rounded bg-muted flex items-center justify-center border mr-3`}>
-          {category.image_url ? (
-            <img src={category.image_url} alt="" className={`${iconSize} object-cover rounded`} />
-          ) : isExpanded && hasChildren ? (
-            <FolderOpen className={`${folderIconSize} text-primary`} />
-          ) : (
-            <Folder className={`${folderIconSize} text-muted-foreground`} />
-          )}
-        </div>
-
-        {/* Category Info */}
-        <div className="flex-1 min-w-0">
-          <div className={`font-medium text-foreground ${textSize} flex items-center gap-2`}>
-            {category.name}
-          </div>
-          <div className={`text-muted-foreground ${level === 0 ? 'text-sm' : 'text-xs'}`}>
-            {category.slug}
-            {hasChildren && ` • ${children.length} ${children.length === 1 ? 'subcategory' : 'subcategories'}`}
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2">
-          <Switch
-            checked={isActive}
-            onCheckedChange={() => onToggleActive(category)}
-            className="data-[state=checked]:bg-green-500"
-          />
-          {canAddSubcategory && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onAddSubcategory(category)}
-              className="text-primary hover:text-primary hover:bg-primary/10"
+    <Draggable draggableId={category.id} index={index}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          className={snapshot.isDragging ? 'bg-primary/10 shadow-lg rounded-lg' : ''}
+        >
+          <Collapsible open={isExpanded} onOpenChange={() => onToggle(category.id)}>
+            {/* Category Row */}
+            <div 
+              className={`flex items-center px-4 py-3 hover:bg-muted/50 group ${level > 0 ? 'ml-8' : ''}`}
             >
-              <Plus className="w-4 h-4 mr-1" />
-              Subcategory
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onEdit(category)}
-          >
-            <Edit className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onDelete(category)}
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
+              {/* Drag Handle */}
+              <div
+                {...provided.dragHandleProps}
+                className="p-1 hover:bg-muted rounded mr-1 cursor-grab active:cursor-grabbing"
+              >
+                <GripVertical className="w-4 h-4 text-muted-foreground" />
+              </div>
 
-      {/* Children (Recursive) */}
-      <CollapsibleContent>
-        <div className={level === 0 ? "border-l-2 border-primary/20 ml-8" : ""}>
-          {children.map((child) => (
-            <CategoryTreeItem
-              key={child.id}
-              category={child}
-              allCategories={allCategories}
-              level={level + 1}
-              expandedCategories={expandedCategories}
-              onToggle={onToggle}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onAddSubcategory={onAddSubcategory}
-              onToggleActive={onToggleActive}
-            />
-          ))}
-          
-          {/* Add Subcategory Button at bottom - only for levels 0 and 1 */}
-          {canAddSubcategory && (
-            <button 
-              onClick={() => onAddSubcategory(category)}
-              className="w-full flex items-center px-4 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors"
-              style={{ marginLeft: `${(level + 1) * 32}px` }}
-            >
-              <div className="w-6 border-t border-primary/20 mr-2" />
-              <Plus className="w-4 h-4 mr-2" />
-              Add Subcategory
-            </button>
-          )}
+              {/* Expand/Collapse Button */}
+              <CollapsibleTrigger asChild>
+                <button className={`p-1 hover:bg-muted rounded mr-2 ${!hasChildren ? 'invisible' : ''}`}>
+                  {isExpanded ? (
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </button>
+              </CollapsibleTrigger>
+
+              {/* Tree connector line for nested items */}
+              {level > 0 && (
+                <div className="w-6 border-t border-primary/20 mr-2" />
+              )}
+
+              {/* Category Icon */}
+              <div className={`${iconSize} flex-shrink-0 rounded bg-muted flex items-center justify-center border mr-3`}>
+                {category.image_url ? (
+                  <img src={category.image_url} alt="" className={`${iconSize} object-cover rounded`} />
+                ) : isExpanded && hasChildren ? (
+                  <FolderOpen className={`${folderIconSize} text-primary`} />
+                ) : (
+                  <Folder className={`${folderIconSize} text-muted-foreground`} />
+                )}
+              </div>
+
+              {/* Category Info */}
+              <div className="flex-1 min-w-0">
+                <div className={`font-medium text-foreground ${textSize} flex items-center gap-2`}>
+                  {category.name}
+                </div>
+                <div className={`text-muted-foreground ${level === 0 ? 'text-sm' : 'text-xs'}`}>
+                  {category.slug}
+                  {hasChildren && ` • ${children.length} ${children.length === 1 ? 'subcategory' : 'subcategories'}`}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={isActive}
+                  onCheckedChange={() => onToggleActive(category)}
+                  className="data-[state=checked]:bg-green-500"
+                />
+                {canAddSubcategory && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onAddSubcategory(category)}
+                    className="text-primary hover:text-primary hover:bg-primary/10"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Subcategory
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onEdit(category)}
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onDelete(category)}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Children (Recursive) - as Droppable */}
+            <CollapsibleContent>
+              <div className={level === 0 ? "border-l-2 border-primary/20 ml-8" : ""}>
+                <Droppable droppableId={`children-${category.id}`}>
+                  {(droppableProvided, droppableSnapshot) => (
+                    <div
+                      ref={droppableProvided.innerRef}
+                      {...droppableProvided.droppableProps}
+                      className={`min-h-[8px] ${droppableSnapshot.isDraggingOver ? 'bg-primary/5 rounded' : ''}`}
+                    >
+                      {children.map((child, childIndex) => (
+                        <CategoryTreeItem
+                          key={child.id}
+                          category={child}
+                          allCategories={allCategories}
+                          level={level + 1}
+                          index={childIndex}
+                          expandedCategories={expandedCategories}
+                          onToggle={onToggle}
+                          onEdit={onEdit}
+                          onDelete={onDelete}
+                          onAddSubcategory={onAddSubcategory}
+                          onToggleActive={onToggleActive}
+                        />
+                      ))}
+                      {droppableProvided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+                
+                {/* Add Subcategory Button at bottom - only for levels 0 and 1 */}
+                {canAddSubcategory && (
+                  <button 
+                    onClick={() => onAddSubcategory(category)}
+                    className="w-full flex items-center px-4 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors ml-8"
+                  >
+                    <div className="w-6 border-t border-primary/20 mr-2" />
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Subcategory
+                  </button>
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
-      </CollapsibleContent>
-    </Collapsible>
+      )}
+    </Draggable>
   );
 }
 
