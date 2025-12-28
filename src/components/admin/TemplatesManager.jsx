@@ -218,14 +218,20 @@ const TemplateEditor = ({ template, categories, open, onClose, onSave, isCreatin
 
   // Flatten categories for dropdown - directly from database categories
   const flatCategories = useMemo(() => {
+    if (!categories || categories.length === 0) {
+      return [];
+    }
+    
     const result = [];
     
     // Add root categories first
-    const rootCategories = categories.filter(c => !c.parent_id).sort((a, b) => (a.order || 0) - (b.order || 0));
+    const rootCategories = categories
+      .filter(c => !c.parent_id)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
     
     const addCategoryWithChildren = (category, level) => {
       result.push({ ...category, level });
-      // Find and add children
+      // Find and add children recursively
       const children = categories
         .filter(c => c.parent_id === category.id)
         .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -267,13 +273,26 @@ const TemplateEditor = ({ template, categories, open, onClose, onSave, isCreatin
               <SelectTrigger>
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-[300px] bg-popover">
                 <SelectItem value="none">No Category</SelectItem>
-                {flatCategories.map(cat => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {'—'.repeat(cat.level)} {cat.name}
-                  </SelectItem>
-                ))}
+                {flatCategories.length === 0 ? (
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                    No categories found
+                  </div>
+                ) : (
+                  flatCategories.map(cat => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      <span className="flex items-center">
+                        {cat.level > 0 && (
+                          <span className="text-muted-foreground mr-1">
+                            {'└─'.padStart(cat.level * 3, '  ')}
+                          </span>
+                        )}
+                        {cat.name}
+                      </span>
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
