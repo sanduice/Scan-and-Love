@@ -300,7 +300,7 @@ function CategoryTreeItem({ category, allCategories, level, expandedCategories, 
     <Collapsible open={isExpanded} onOpenChange={() => onToggle(category.id)}>
       {/* Category Row */}
       <div 
-        className={`flex items-center px-4 py-3 hover:bg-muted/50 group ${!isActive ? 'opacity-50' : ''}`}
+        className="flex items-center px-4 py-3 hover:bg-muted/50 group"
         style={indentStyle}
       >
         {/* Expand/Collapse Button */}
