@@ -407,7 +407,7 @@ function CategoryTreeItem({ category, allCategories, level, index, expandedCateg
     .filter(c => c.parent_id === category.id)
     .sort((a, b) => (a.order || 0) - (b.order || 0));
   const hasChildren = children.length > 0;
-  const isExpanded = expandedCategories[category.id] ?? true;
+  const isExpanded = expandedCategories[category.id] ?? false;
   const isActive = category.is_active !== false;
   
   // Allow adding subcategories up to level 1 (so we get 3 levels total: 0, 1, 2)
