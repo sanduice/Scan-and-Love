@@ -8,8 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { 
-  Plus, Edit, Trash2, Image, Loader2, Folder, FolderOpen, ChevronRight, ChevronDown
+  Plus, Edit, Trash2, Image, Loader2, Folder, FolderOpen, ChevronRight, ChevronDown, Eye, EyeOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -60,11 +62,32 @@ export default function CategoriesManager() {
 
   // Stats
   const stats = useMemo(() => {
-    const parents = categories.filter(c => !c.parent_id).length;
-    const level1 = categories.filter(c => c.parent_id && getCategoryLevel(categories.find(cat => cat.id === c.id)) === 1).length;
-    const level2Plus = categories.filter(c => getCategoryLevel(c) >= 2).length;
-    return { parents, level1, level2Plus, total: categories.length };
+    const active = categories.filter(c => c.is_active).length;
+    const disabled = categories.filter(c => !c.is_active).length;
+    return { active, disabled, total: categories.length };
   }, [categories]);
+
+  // Toggle active mutation
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ id, is_active }) => {
+      const { error } = await supabase
+        .from('product_categories')
+        .update({ is_active })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_, { is_active }) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      toast.success(is_active ? 'Category enabled' : 'Category disabled');
+    },
+    onError: (error) => {
+      toast.error('Failed to toggle category: ' + error.message);
+    },
+  });
+
+  const handleToggleActive = (category) => {
+    toggleActiveMutation.mutate({ id: category.id, is_active: !category.is_active });
+  };
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
@@ -202,7 +225,7 @@ export default function CategoriesManager() {
         <div className="bg-card rounded-xl border overflow-hidden shadow-sm">
           <div className="p-4 border-b bg-muted/50 flex justify-between items-center">
             <span className="text-sm text-muted-foreground">
-              {stats.parents} parent • {stats.level1} subcategories • {stats.level2Plus} nested
+              {stats.active} active • {stats.disabled} disabled • {stats.total} total
             </span>
           </div>
           
@@ -225,6 +248,7 @@ export default function CategoriesManager() {
                   onEdit={(cat) => { setEditingCategory(cat); setShowDialog(true); }}
                   onDelete={handleDelete}
                   onAddSubcategory={handleAddSubcategory}
+                  onToggleActive={handleToggleActive}
                 />
               ))
             )}
@@ -257,10 +281,11 @@ export default function CategoriesManager() {
   );
 }
 
-function CategoryTreeItem({ category, allCategories, level, expandedCategories, onToggle, onEdit, onDelete, onAddSubcategory }) {
+function CategoryTreeItem({ category, allCategories, level, expandedCategories, onToggle, onEdit, onDelete, onAddSubcategory, onToggleActive }) {
   const children = allCategories.filter(c => c.parent_id === category.id);
   const hasChildren = children.length > 0;
   const isExpanded = expandedCategories[category.id] ?? true;
+  const isActive = category.is_active !== false; // Default to true if undefined
   
   // Allow adding subcategories up to level 1 (so we get 3 levels total: 0, 1, 2)
   const canAddSubcategory = level <= 1;
@@ -275,7 +300,7 @@ function CategoryTreeItem({ category, allCategories, level, expandedCategories, 
     <Collapsible open={isExpanded} onOpenChange={() => onToggle(category.id)}>
       {/* Category Row */}
       <div 
-        className="flex items-center px-4 py-3 hover:bg-muted/50 group"
+        className={`flex items-center px-4 py-3 hover:bg-muted/50 group ${!isActive ? 'opacity-50' : ''}`}
         style={indentStyle}
       >
         {/* Expand/Collapse Button */}
@@ -307,7 +332,12 @@ function CategoryTreeItem({ category, allCategories, level, expandedCategories, 
 
         {/* Category Info */}
         <div className="flex-1 min-w-0">
-          <div className={`font-medium text-foreground ${textSize}`}>{category.name}</div>
+          <div className={`font-medium text-foreground ${textSize} flex items-center gap-2`}>
+            {category.name}
+            {!isActive && (
+              <Badge variant="secondary" className="text-xs">Disabled</Badge>
+            )}
+          </div>
           <div className={`text-muted-foreground ${level === 0 ? 'text-sm' : 'text-xs'}`}>
             {category.slug}
             {hasChildren && ` • ${children.length} ${children.length === 1 ? 'subcategory' : 'subcategories'}`}
@@ -316,6 +346,18 @@ function CategoryTreeItem({ category, allCategories, level, expandedCategories, 
 
         {/* Action Buttons */}
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onToggleActive(category)}
+            title={isActive ? 'Disable category (hide from customers)' : 'Enable category (show to customers)'}
+          >
+            {isActive ? (
+              <EyeOff className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <Eye className="w-4 h-4 text-primary" />
+            )}
+          </Button>
           {canAddSubcategory && (
             <Button
               variant="ghost"
@@ -359,6 +401,7 @@ function CategoryTreeItem({ category, allCategories, level, expandedCategories, 
               onEdit={onEdit}
               onDelete={onDelete}
               onAddSubcategory={onAddSubcategory}
+              onToggleActive={onToggleActive}
             />
           ))}
           
@@ -387,6 +430,7 @@ function CategoryForm({ category, allCategories, onSave, onCancel, isLoading }) 
     description: category?.description || '',
     image_url: category?.image_url || '',
     parent_id: category?.parent_id || null,
+    is_active: category?.is_active !== false, // Default to true
   });
 
   // Build hierarchical options for parent selector
@@ -450,6 +494,7 @@ function CategoryForm({ category, allCategories, onSave, onCancel, isLoading }) 
       ...formData,
       slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
       parent_id: formData.parent_id || null,
+      is_active: formData.is_active,
     });
   };
 
@@ -550,6 +595,22 @@ function CategoryForm({ category, allCategories, onSave, onCancel, isLoading }) 
           </div>
         )}
       </div>
+
+      {/* Active Status Toggle */}
+      {category?.id && (
+        <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+          <div className="space-y-0.5">
+            <Label>Active Status</Label>
+            <p className="text-xs text-muted-foreground">
+              Disabled categories are hidden from customers
+            </p>
+          </div>
+          <Switch
+            checked={formData.is_active}
+            onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+          />
+        </div>
+      )}
 
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
