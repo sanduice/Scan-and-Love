@@ -216,21 +216,26 @@ const TemplateEditor = ({ template, categories, open, onClose, onSave, isCreatin
     onSave(formData);
   };
 
-  // Flatten categories for dropdown
-  const flattenCategories = (cats, level = 0) => {
-    let result = [];
-    for (const cat of cats) {
-      if (cat.id) {
-        result.push({ ...cat, level });
-      }
-      if (cat.subcategories?.length) {
-        result = result.concat(flattenCategories(cat.subcategories, level + 1));
-      }
-    }
+  // Flatten categories for dropdown - directly from database categories
+  const flatCategories = useMemo(() => {
+    const result = [];
+    
+    // Add root categories first
+    const rootCategories = categories.filter(c => !c.parent_id).sort((a, b) => (a.order || 0) - (b.order || 0));
+    
+    const addCategoryWithChildren = (category, level) => {
+      result.push({ ...category, level });
+      // Find and add children
+      const children = categories
+        .filter(c => c.parent_id === category.id)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      children.forEach(child => addCategoryWithChildren(child, level + 1));
+    };
+    
+    rootCategories.forEach(cat => addCategoryWithChildren(cat, 0));
+    
     return result;
-  };
-
-  const flatCategories = useMemo(() => flattenCategories(buildCategoryTree(categories)), [categories]);
+  }, [categories]);
 
   const isNewTemplate = !template?.id;
 
