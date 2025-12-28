@@ -66,9 +66,10 @@ export default function ProductGallery({ product }) {
 
       {/* Product Description */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-        <p className="text-gray-600 leading-relaxed">
-          {product.long_description || product.short_description}
-        </p>
+        <div 
+          className="text-gray-600 leading-relaxed prose prose-sm max-w-none prose-headings:text-foreground prose-strong:text-foreground prose-li:my-1"
+          dangerouslySetInnerHTML={{ __html: product.long_description || product.short_description || '' }}
+        />
         
         {product.features && product.features.length > 0 && (
           <ul className="mt-6 space-y-3">
