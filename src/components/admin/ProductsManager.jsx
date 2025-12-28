@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { 
   Plus, Search, Edit, Trash2, Image, DollarSign,
   Star, Eye, EyeOff, Loader2, MoreVertical, CheckSquare, Square, GripVertical,
-  ChevronDown, ChevronRight
+  ChevronDown, ChevronRight, Copy
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
@@ -279,6 +279,20 @@ export default function ProductsManager() {
     });
   };
 
+  const handleDuplicate = (product) => {
+    // Create a copy of the product without the id (so it creates new)
+    const duplicatedProduct = {
+      ...product,
+      id: undefined,
+      name: `${product.name} (Copy)`,
+      slug: `${product.slug}-copy-${Date.now()}`,
+      created_at: undefined,
+      updated_at: undefined,
+    };
+    setEditingProduct(duplicatedProduct);
+    setShowDialog(true);
+  };
+
   // Build dynamic category tree from database
   const categoryTree = useMemo(() => buildCategoryTree(categories), [categories]);
 
@@ -498,6 +512,10 @@ export default function ProductsManager() {
                                     <DropdownMenuItem onClick={() => { setEditingProduct(product); setShowDialog(true); }}>
                                       <Edit className="w-4 h-4 mr-2" />
                                       Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleDuplicate(product)}>
+                                      <Copy className="w-4 h-4 mr-2" />
+                                      Duplicate
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => toggleActive(product)}>
                                       {product.is_active ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
