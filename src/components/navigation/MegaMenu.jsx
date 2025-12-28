@@ -1,143 +1,82 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { ChevronDown, ChevronRight } from 'lucide-react';
-
-const MENU_DATA = [
-  {
-    key: 'name-badges',
-    title: 'Name Badges',
-    defaultImage: 'https://www.namebadge.com/images/products/34/34-400.png?v=109',
-    columns: [
-      {
-        title: 'Most Popular',
-        items: [
-          { name: 'Standard Name Badges', link: 'Products?category=standard-name-badges', price: 'From $7.99', image: 'https://www.namebadge.com/images/products/34/34-400.png?v=109' },
-          { name: 'Premium Name Badges', link: 'Products?category=premium-name-badges', price: 'From $11.99', image: 'https://www.namebadge.com/images/products/43/43-400.png?v=109' },
-          { name: 'Executive Name Badges', link: 'Products?category=executive-name-badges', price: 'From $14.99', image: 'https://www.namebadge.com/images/products/405/405-400.png?v=109' },
-          { name: 'View All Styles', link: 'Products?category=name-badges', label: 'View All' },
-        ]
-      },
-      {
-        title: 'Specialty Badges',
-        items: [
-          { name: 'Bling Name Badges', link: 'Products?category=bling-name-badges', price: 'From $12.99', image: 'https://www.namebadge.com/images/products/49/49-400.png?v=109' },
-          { name: 'Real Wood Badges', link: 'Products?category=real-wood-badges', price: 'From $12.99', image: 'https://www.namebadge.com/images/products/121/121-400.png?v=109' },
-          { name: 'Chalkboard Badges', link: 'Products?category=chalkboard-name-tags', price: 'From $9.99', image: 'https://www.namebadge.com/images/products/118/118-400.png?v=109' },
-          { name: 'Custom Color Badges', link: 'Products?category=custom-color-badges', price: 'From $8.99', image: 'https://www.namebadge.com/images/products/52/52-400.png?v=109' },
-          { name: 'Glossy Name Plates', link: 'Products?category=glossy-name-plates', price: 'From $10.99', image: 'https://www.namebadge.com/images/products/51/51-400.png?v=109' },
-        ]
-      },
-      {
-        title: 'Metal & Service',
-        items: [
-          { name: 'Executive Metal Tags', link: 'Products?category=executive-metal-name-tags', price: 'From $15.99', image: 'https://www.namebadge.com/images/products/403/403-400.png?v=109' },
-          { name: 'Engraved Metal Tags', link: 'Products?category=engraved-metal-name-tags', price: 'From $10.99', image: 'https://www.namebadge.com/images/products/112/112-400.png?v=109' },
-          { name: 'Service Name Bars', link: 'Products?category=metal-service-name-bars', price: 'From $5.99', image: 'https://www.namebadge.com/images/products/55/55-400.png?v=109' },
-          { name: 'Metal Name Tags', link: 'Products?category=metal-name-tags', price: 'From $9.99', image: 'https://www.namebadge.com/images/products/112/112-400.png?v=109' },
-        ]
-      },
-      {
-        title: 'Accessories',
-        items: [
-          { name: 'Badge Fasteners', link: 'Products?category=badge-accessories', price: 'From $0.50', image: 'https://www.namebadge.com/images/products/20/20-400.png?v=109' },
-          { name: 'Lanyards', link: 'Products?category=lanyards', price: 'From $1.99', image: 'https://www.namebadge.com/images/products/21/21-400.png?v=109' },
-          { name: 'ID Cards', link: 'Products?category=id-cards', price: 'From $5.00', image: 'https://www.namebadge.com/images/products/22/22-400.png?v=109' },
-        ]
-      }
-    ]
-  },
-  {
-    key: 'signs',
-    title: 'Signs',
-    defaultImage: 'https://content.signs.com/Ecom/Product_Images/YardSigns_Main.png',
-    columns: [
-      {
-        title: 'Outdoor Signs',
-        items: [
-          { name: 'Yard Signs', link: 'ProductDetail?slug=yard-sign', price: 'From $14', image: 'https://content.signs.com/Ecom/Product_Images/YardSigns_Main.png' },
-          { name: 'Aluminum Signs', link: 'ProductDetail?slug=aluminum-sign', price: 'From $15', image: 'https://content.signs.com/Ecom/Product_Images/Aluminum_Main.png' },
-          { name: 'A-Frame Signs', link: 'ProductDetail?slug=a-frame-sign', price: 'From $89', image: 'https://content.signs.com/Ecom/Product_Images/SidewalkSigns_Main.png' },
-          { name: 'Real Estate Signs', link: 'Products?category=real-estate', price: 'From $45', image: 'https://content.signs.com/Ecom/Product_Images/RealEstateSigns_Main.png' },
-        ]
-      },
-      {
-        title: 'Indoor & Office',
-        items: [
-          { name: 'Office Signs', link: 'Products?category=office-signs', price: 'From $25', image: 'https://content.signs.com/Ecom/Product_Images/AcrylicPhotoPrints_Main.png' },
-          { name: 'Desk Plates', link: 'Products?category=desk-and-wall-plates', price: 'From $15.99', image: 'https://www.namebadge.com/images/products/51/51-400.png?v=109' },
-          { name: 'Foam Board', link: 'ProductDetail?slug=foam-board', price: 'From $18', image: 'https://content.signs.com/Ecom/Product_Images/FoamBoard_Main.png' },
-          { name: 'Acrylic Signs', link: 'ProductDetail?slug=acrylic-sign', price: 'From $95', image: 'https://content.signs.com/Ecom/Product_Images/Acrylic_Main.png' },
-        ]
-      },
-      {
-        title: 'Vehicle & Magnetic',
-        items: [
-          { name: 'Car Magnets', link: 'ProductDetail?slug=car-magnet', price: 'From $35', image: 'https://content.signs.com/Ecom/Product_Images/CarMagnet_Main.png' },
-          { name: 'Vehicle Lettering', link: 'ProductDetail?slug=vehicle-lettering', price: 'From $25', image: 'https://content.signs.com/Ecom/Product_Images/VinylLettering_Main.png' },
-          { name: 'Window Graphics', link: 'Products?category=window-graphics', price: 'From $45', image: 'https://content.signs.com/Ecom/Product_Images/WindowDecal_Main.png' },
-        ]
-      }
-    ]
-  },
-  {
-    key: 'banners',
-    title: 'Banners',
-    defaultImage: 'https://content.signs.com/Ecom/Product_Images/VinylBanner_Main.png',
-    columns: [
-      {
-        title: 'Banners',
-        items: [
-          { name: 'Vinyl Banners', link: 'ProductDetail?slug=vinyl-banner', price: 'From $29', image: 'https://content.signs.com/Ecom/Product_Images/VinylBanner_Main.png' },
-          { name: 'Mesh Banners', link: 'ProductDetail?slug=mesh-banner', price: 'From $35', image: 'https://content.signs.com/Ecom/Product_Images/MeshBanner_Main.png' },
-          { name: 'Fabric Banners', link: 'ProductDetail?slug=fabric-banner', price: 'From $45', image: 'https://content.signs.com/Ecom/Product_Images/FabricBanner_Main.png' },
-          { name: 'Step & Repeat', link: 'ProductDetail?slug=step-and-repeat', price: 'From $180', image: 'https://content.signs.com/Ecom/Product_Images/StepandRepeat_Main.png' },
-        ]
-      },
-      {
-        title: 'Stands & Displays',
-        items: [
-          { name: 'Retractable Banners', link: 'ProductDetail?slug=retractable-banner', price: 'From $89', image: 'https://content.signs.com/Ecom/Product_Images/RetractableBanner_Main.png' },
-          { name: 'X-Banner Stands', link: 'ProductDetail?slug=x-banner', price: 'From $45', image: 'https://content.signs.com/Ecom/Product_Images/XBanner_Main.png' },
-          { name: 'Feather Flags', link: 'ProductDetail?slug=feather-flag', price: 'From $129', image: 'https://content.signs.com/Ecom/Product_Images/FeatherFlag_Main.png' },
-          { name: 'Table Throws', link: 'ProductDetail?slug=table-throw', price: 'From $159', image: 'https://content.signs.com/Ecom/Product_Images/TableThrow_Main.png' },
-        ]
-      }
-    ]
-  },
-  {
-    key: 'stickers',
-    title: 'Stickers',
-    defaultImage: 'https://content.signs.com/Ecom/Product_Images/DieCutStickers_Main.png',
-    columns: [
-      {
-        title: 'Stickers & Labels',
-        items: [
-          { name: 'Die-Cut Stickers', link: 'ProductDetail?slug=die-cut-stickers', price: 'From $55', image: 'https://content.signs.com/Ecom/Product_Images/DieCutStickers_Main.png' },
-          { name: 'Kiss-Cut Stickers', link: 'ProductDetail?slug=kiss-cut-stickers', price: 'From $45', image: 'https://content.signs.com/Ecom/Product_Images/KissCutStickers_Main.png' },
-          { name: 'Roll Labels', link: 'ProductDetail?slug=roll-labels', price: 'From $95', image: 'https://content.signs.com/Ecom/Product_Images/RollLabels_Main.png' },
-          { name: 'Transfer Stickers', link: 'ProductDetail?slug=transfer-stickers', price: 'From $65', image: 'https://content.signs.com/Ecom/Product_Images/VinylLettering_Main.png' },
-        ]
-      },
-      {
-        title: 'Specialty',
-        items: [
-          { name: 'Clear Stickers', link: 'ProductDetail?slug=clear-stickers', price: 'From $65', image: 'https://content.signs.com/Ecom/Product_Images/ClearStickers_Main.png' },
-          { name: 'Holographic', link: 'ProductDetail?slug=holographic-stickers', price: 'From $85', image: 'https://content.signs.com/Ecom/Product_Images/DieCutStickers_Main.png' },
-          { name: 'Static Clings', link: 'ProductDetail?slug=static-cling', price: 'From $8', image: 'https://content.signs.com/Ecom/Product_Images/StaticCling_Main.png' },
-        ]
-      }
-    ]
-  }
-];
+import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import { useProductCategories } from '@/hooks/useSupabaseData';
 
 export default function MegaMenu() {
   const [activeMenu, setActiveMenu] = useState(null);
   const [hoveredItem, setHoveredItem] = useState(null);
+  
+  const { data: categories = [], isLoading } = useProductCategories('order');
+
+  // Build hierarchical menu structure from database
+  const menuData = useMemo(() => {
+    if (!categories.length) return [];
+    
+    // Get parent categories (no parent_id), sorted by order
+    const parentCategories = categories
+      .filter(c => !c.parent_id)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    
+    return parentCategories.map(parent => {
+      // Get children of this parent
+      const children = categories
+        .filter(c => c.parent_id === parent.id)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+      
+      // Group children into columns (max 4 columns, distribute evenly)
+      const columns = [];
+      if (children.length > 0) {
+        // For now, create a single column with all children
+        // You can enhance this to group by sub-subcategories if needed
+        const itemsPerColumn = Math.ceil(children.length / Math.min(4, Math.ceil(children.length / 4)));
+        
+        for (let i = 0; i < children.length; i += itemsPerColumn) {
+          const columnChildren = children.slice(i, i + itemsPerColumn);
+          columns.push({
+            title: columnChildren[0]?.name || 'Products',
+            items: columnChildren.map(child => ({
+              name: child.name,
+              link: `Products?category=${child.slug}`,
+              image: child.image_url,
+              price: null // Price can be added if stored in category
+            }))
+          });
+        }
+        
+        // Add "View All" to first column
+        if (columns.length > 0) {
+          columns[0].items.push({
+            name: `View All ${parent.name}`,
+            link: `Products?category=${parent.slug}`,
+            label: 'View All'
+          });
+        }
+      } else {
+        // No children, just show a link to the category
+        columns.push({
+          title: parent.name,
+          items: [{
+            name: `Browse ${parent.name}`,
+            link: `Products?category=${parent.slug}`,
+            label: 'View All'
+          }]
+        });
+      }
+      
+      return {
+        key: parent.slug,
+        title: parent.name,
+        defaultImage: parent.image_url,
+        columns
+      };
+    });
+  }, [categories]);
 
   const getActiveImage = (menuKey) => {
     if (!menuKey) return null;
-    const menu = MENU_DATA.find(m => m.key === menuKey);
+    const menu = menuData.find(m => m.key === menuKey);
     if (!menu) return null;
 
     if (hoveredItem && hoveredItem.image) {
@@ -147,7 +86,15 @@ export default function MegaMenu() {
     return menu.defaultImage;
   };
 
-  const activeMenuData = MENU_DATA.find(m => m.key === activeMenu);
+  const activeMenuData = menuData.find(m => m.key === activeMenu);
+
+  if (isLoading) {
+    return (
+      <div className="relative hidden lg:flex items-center h-full px-4">
+        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -158,7 +105,7 @@ export default function MegaMenu() {
       }}
     >
       <nav className="flex items-center justify-start h-full w-full">
-        {MENU_DATA.map((menu) => (
+        {menuData.map((menu) => (
           <div
             key={menu.key}
             className="h-full flex items-center"
@@ -216,7 +163,12 @@ export default function MegaMenu() {
             <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex py-8">
                 {/* Left Side: Navigation Columns */}
-                <div className="flex-1 grid grid-cols-4 gap-8">
+                <div className={`flex-1 grid gap-8 ${
+                  activeMenuData.columns.length === 1 ? 'grid-cols-1' :
+                  activeMenuData.columns.length === 2 ? 'grid-cols-2' :
+                  activeMenuData.columns.length === 3 ? 'grid-cols-3' :
+                  'grid-cols-4'
+                }`}>
                   {activeMenuData.columns.map((col, idx) => (
                     <div key={idx}>
                       <h3 className="font-bold text-foreground mb-4 text-sm uppercase tracking-wide pb-2 border-b border-border">

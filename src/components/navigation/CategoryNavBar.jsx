@@ -4,10 +4,13 @@ import { createPageUrl } from '@/utils';
 import { useProductCategories } from '@/hooks/useSupabaseData';
 
 export default function CategoryNavBar() {
-  const { data: categories = [], isLoading } = useProductCategories();
+  // Explicitly order by the 'order' column from database
+  const { data: categories = [], isLoading } = useProductCategories('order');
 
-  // Build hierarchical structure - only get parent categories (no parent_id)
-  const parentCategories = categories.filter(cat => !cat.parent_id);
+  // Build hierarchical structure - only get parent categories (no parent_id), sorted by order
+  const parentCategories = categories
+    .filter(cat => !cat.parent_id)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
 
   if (isLoading) {
     return (
