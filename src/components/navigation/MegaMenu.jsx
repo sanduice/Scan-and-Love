@@ -192,7 +192,7 @@ export default function MegaMenu() {
                                     {groupProducts.map(product => (
                                       <li key={product.id}>
                                         <Link 
-                                          to={createPageUrl('ProductDetail').replace(':slug', product.slug)}
+                                          to={`${createPageUrl('ProductDetail')}?slug=${product.slug}`}
                                           className="block text-sm text-muted-foreground hover:text-primary py-1 transition-colors"
                                         >
                                           {product.name}
@@ -229,7 +229,7 @@ export default function MegaMenu() {
                               {getProductsForCategory(selectedSubCategory.id).map(product => (
                                 <Link 
                                   key={product.id}
-                                  to={createPageUrl('ProductDetail').replace(':slug', product.slug)}
+                                  to={`${createPageUrl('ProductDetail')}?slug=${product.slug}`}
                                   className="block text-sm text-muted-foreground hover:text-primary py-1 transition-colors"
                                 >
                                   {product.name}
