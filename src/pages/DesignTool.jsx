@@ -1551,6 +1551,7 @@ export default function DesignTool() {
                 onDeletePage={handleDeletePage}
                 canvasWidth={canvasWidth}
                 canvasHeight={canvasHeight}
+                canAddPage={isTemplateEditMode || (product?.is_double_sided ?? false)}
               />
             </div>
             {/* Bottom Right - Zoom Slider + Layers Toggle */}

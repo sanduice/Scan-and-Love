@@ -580,6 +580,7 @@ export type Database = {
           image_url: string | null
           images: Json | null
           is_active: boolean | null
+          is_double_sided: boolean | null
           is_featured: boolean | null
           is_fixed_size: boolean | null
           is_on_sale: boolean | null
@@ -628,6 +629,7 @@ export type Database = {
           image_url?: string | null
           images?: Json | null
           is_active?: boolean | null
+          is_double_sided?: boolean | null
           is_featured?: boolean | null
           is_fixed_size?: boolean | null
           is_on_sale?: boolean | null
@@ -676,6 +678,7 @@ export type Database = {
           image_url?: string | null
           images?: Json | null
           is_active?: boolean | null
+          is_double_sided?: boolean | null
           is_featured?: boolean | null
           is_fixed_size?: boolean | null
           is_on_sale?: boolean | null

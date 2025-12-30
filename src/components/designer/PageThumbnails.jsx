@@ -16,8 +16,9 @@ const PageThumbnails = ({
   onDeletePage,
   canvasWidth,
   canvasHeight,
+  canAddPage = true, // Accept from parent, default true for backwards compatibility
 }) => {
-  const canAddPage = pages.length < 2;
+  const showAddButton = canAddPage && pages.length < 2;
   const canDeletePage = pages.length > 1;
 
   // Calculate thumbnail dimensions maintaining aspect ratio
@@ -78,7 +79,7 @@ const PageThumbnails = ({
       ))}
 
       {/* Add Page Button */}
-      {canAddPage && (
+      {showAddButton && (
         <Popover>
           <PopoverTrigger asChild>
             <div className="flex flex-col items-center gap-1.5">
