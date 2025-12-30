@@ -129,6 +129,7 @@ export default function ProductsManager() {
       const { data, error } = await supabase
         .from('products')
         .select('*')
+        .order('order', { ascending: true })
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
@@ -208,6 +209,28 @@ export default function ProductsManager() {
     }
   });
 
+  // Batch reorder mutation for efficient drag & drop saving
+  const reorderMutation = useMutation({
+    mutationFn: async (updates) => {
+      const promises = updates.map(({ id, order }) =>
+        supabase
+          .from('products')
+          .update({ order })
+          .eq('id', id)
+      );
+      const results = await Promise.all(promises);
+      const errors = results.filter(r => r.error);
+      if (errors.length > 0) throw errors[0].error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      toast.success('Product order saved');
+    },
+    onError: (error) => {
+      toast.error('Failed to save order: ' + error.message);
+    }
+  });
+
   // Filter products based on selected category and search
   useEffect(() => {
     let filtered = [...products];
@@ -237,10 +260,12 @@ export default function ProductsManager() {
 
     setLocalProducts(items);
 
-    // Update orders in database
-    items.forEach((item, index) => {
-      updateMutation.mutate({ id: item.id, data: { order: index + 1 } });
-    });
+    // Batch update orders in database
+    const updates = items.map((item, index) => ({
+      id: item.id,
+      order: index + 1
+    }));
+    reorderMutation.mutate(updates);
   };
 
   const handleSave = (formData) => {
