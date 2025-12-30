@@ -41,6 +41,7 @@ export default function ProductEditor({ product, categories, onSave, onCancel })
     is_active: product?.is_active !== false,
     is_popular: product?.is_popular || false,
     has_design_tool: product?.has_design_tool !== false,
+    is_double_sided: product?.is_double_sided || false,
     image_url: product?.image_url || '',
     video_url: product?.video_url || '',
     gallery_images: product?.gallery_images || [],
@@ -364,6 +365,18 @@ export default function ProductEditor({ product, categories, onSave, onCancel })
                     onCheckedChange={(v) => handleInputChange('has_design_tool', v)}
                   />
                 </div>
+                {formData.has_design_tool && (
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                    <div>
+                      <Label className="text-sm font-medium text-slate-700">Double Sided</Label>
+                      <p className="text-xs text-slate-500">Front/Back design</p>
+                    </div>
+                    <Switch 
+                      checked={formData.is_double_sided}
+                      onCheckedChange={(v) => handleInputChange('is_double_sided', v)}
+                    />
+                  </div>
+                )}
               </div>
             </TabsContent>
 
