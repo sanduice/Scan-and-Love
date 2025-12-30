@@ -1537,23 +1537,25 @@ export default function DesignTool() {
               />
             )}
 
-            {/* Bottom Left - Page Thumbnails */}
-            <div className="absolute bottom-4 left-4 z-10">
-              <PageThumbnails 
-                pages={pages}
-                activePageIndex={activePageIndex}
-                onPageSelect={(index) => {
-                  setActivePageIndex(index);
-                  setSelectedElement(null);
-                  setEditingTextId(null);
-                }}
-                onAddPage={handleAddPage}
-                onDeletePage={handleDeletePage}
-                canvasWidth={canvasWidth}
-                canvasHeight={canvasHeight}
-                canAddPage={isTemplateEditMode || (product?.is_double_sided ?? false)}
-              />
-            </div>
+            {/* Bottom Left - Page Thumbnails (only show for double-sided products or template edit mode) */}
+            {(isTemplateEditMode || product?.is_double_sided) && (
+              <div className="absolute bottom-4 left-4 z-10">
+                <PageThumbnails 
+                  pages={pages}
+                  activePageIndex={activePageIndex}
+                  onPageSelect={(index) => {
+                    setActivePageIndex(index);
+                    setSelectedElement(null);
+                    setEditingTextId(null);
+                  }}
+                  onAddPage={handleAddPage}
+                  onDeletePage={handleDeletePage}
+                  canvasWidth={canvasWidth}
+                  canvasHeight={canvasHeight}
+                  canAddPage={isTemplateEditMode || (product?.is_double_sided ?? false)}
+                />
+              </div>
+            )}
             {/* Bottom Right - Zoom Slider + Layers Toggle */}
             <div className="absolute bottom-4 right-4 flex items-center gap-3 bg-white rounded-lg px-3 py-2 shadow-lg border">
               {/* Zoom Slider */}
