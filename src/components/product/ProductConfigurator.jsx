@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import { base44 } from '@/api/base44Client';
 import { usePricing } from '@/components/pricing/PricingCalculator';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import TemplateSelectionDialog from './TemplateSelectionDialog';
 
 // Helper to get or create session ID for anonymous users (matches SessionManager)
