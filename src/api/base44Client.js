@@ -1,5 +1,5 @@
 // Base44 SDK replacement - uses Supabase for auth
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 
 // Helper to create a mock entity with standard CRUD operations
 const createMockEntity = (tableName) => ({
