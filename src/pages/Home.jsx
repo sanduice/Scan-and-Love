@@ -69,7 +69,7 @@ export default function Home() {
                 </Button>
               </Link>
               <Link to={createPageUrl('Products')}>
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8 h-14">
+                <Button size="lg" variant="outline" className="border-white/70 text-white text-lg px-8 h-14">
                   Browse Products
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
