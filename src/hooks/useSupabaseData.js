@@ -60,7 +60,7 @@ export function useProducts(filters = {}) {
         query = query.eq('is_featured', true);
       }
       
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data, error } = await query.order('order', { ascending: true }).order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     },
