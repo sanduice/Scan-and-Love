@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Toaster, toast } from 'sonner';
+import { toast } from 'sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,7 +54,7 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <Toaster position="top-right" richColors />
+      
       
       {/* Network Bar */}
       <NetworkBar />
