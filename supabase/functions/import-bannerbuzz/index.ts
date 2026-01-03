@@ -554,8 +554,9 @@ Deno.serve(async (req) => {
     if (action === 'discover') {
       console.log('[discover] Starting discovery for:', categoryUrl);
       
-      // First, try to map all URLs on the site
-      const mapResponse = await fetch('https://api.firecrawl.dev/v1/map', {
+      // Scrape the category page directly to extract product URLs from content
+      // Map API doesn't work well for JS-rendered category pages with product grids
+      const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${firecrawlKey}`,
@@ -563,72 +564,137 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           url: categoryUrl,
-          limit: 200,
-          includeSubdomains: false,
+          formats: ['markdown', 'html', 'links'],
+          onlyMainContent: false,
+          waitFor: 5000, // Wait for JS to render product grid
         }),
       });
 
-      const mapData = await mapResponse.json();
-      console.log('[discover] Map response status:', mapResponse.status);
-      console.log('[discover] Total URLs from map:', mapData.links?.length || 0);
+      const scrapeData = await scrapeResponse.json();
+      console.log('[discover] Scrape response status:', scrapeResponse.status);
 
-      if (!mapResponse.ok) {
-        console.error('[discover] Map failed:', mapData.error);
+      if (!scrapeResponse.ok || !scrapeData.success) {
+        console.error('[discover] Scrape failed:', scrapeData.error);
         return new Response(
-          JSON.stringify({ success: false, error: mapData.error || 'Failed to map URLs' }),
-          { status: mapResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ success: false, error: scrapeData.error || 'Failed to scrape category page' }),
+          { status: scrapeResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      // Filter to only product URLs
-      const allLinks = mapData.links || [];
-      const productUrlList = allLinks.filter((url: string) => isProductUrl(url, categoryUrl));
+      const markdown = scrapeData.data?.markdown || '';
+      const html = scrapeData.data?.html || '';
+      const directLinks = scrapeData.data?.links || [];
+      
+      console.log('[discover] Markdown length:', markdown.length);
+      console.log('[discover] HTML length:', html.length);
+      console.log('[discover] Direct links:', directLinks.length);
 
-      console.log('[discover] Filtered to', productUrlList.length, 'product URLs');
+      const productUrls = new Set<string>();
+      
+      // Extract product URLs from markdown - BannerBuzz uses pattern: [Name](https://www.bannerbuzz.com/slug/p)
+      // Pattern 1: Markdown links ending in /p
+      const markdownLinkPattern = /\]\((https:\/\/www\.bannerbuzz\.com\/[a-z0-9-]+\/p)\)/gi;
+      let match;
+      while ((match = markdownLinkPattern.exec(markdown)) !== null) {
+        productUrls.add(match[1]);
+      }
+      console.log('[discover] Found from markdown links:', productUrls.size);
 
-      // If no products found via map, try scraping the category page directly
-      if (productUrlList.length === 0) {
-        console.log('[discover] No products from map, trying direct scrape of category page');
-        
-        const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${firecrawlKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            url: categoryUrl,
-            formats: ['links', 'html'],
-            waitFor: 3000,
-          }),
-        });
+      // Pattern 2: Look for product links in href attributes
+      const hrefPattern = /href="(https:\/\/www\.bannerbuzz\.com\/[a-z0-9-]+\/p)"/gi;
+      while ((match = hrefPattern.exec(html)) !== null) {
+        productUrls.add(match[1]);
+      }
+      console.log('[discover] After HTML hrefs:', productUrls.size);
 
-        const scrapeData = await scrapeResponse.json();
-        
-        if (scrapeResponse.ok && scrapeData.success) {
-          const pageLinks = scrapeData.data?.links || [];
-          console.log('[discover] Links from category page scrape:', pageLinks.length);
-          
-          for (const link of pageLinks) {
-            if (isProductUrl(link, categoryUrl) && !productUrlList.includes(link)) {
-              productUrlList.push(link);
-            }
+      // Pattern 3: Check directLinks array for /p ending URLs
+      for (const link of directLinks) {
+        if (typeof link === 'string' && link.includes('bannerbuzz.com') && link.endsWith('/p')) {
+          productUrls.add(link);
+        }
+      }
+      console.log('[discover] After direct links:', productUrls.size);
+
+      // Pattern 4: Also look for subcategory links to find more products
+      const subcategoryUrls: string[] = [];
+      const subcategoryPattern = /\]\((https:\/\/www\.bannerbuzz\.com\/[a-z0-9-/]+)\)/gi;
+      while ((match = subcategoryPattern.exec(markdown)) !== null) {
+        const url = match[1];
+        // Skip if it's already a product URL or if it's a main category
+        if (!url.endsWith('/p') && 
+            url.split('/').filter(Boolean).length >= 2 &&
+            !url.match(/\/(banners|signs|flags|stickers|decals)$/)) {
+          // Check if it looks like a subcategory (e.g., /banners/vinyl-banners)
+          const pathParts = new URL(url).pathname.split('/').filter(Boolean);
+          if (pathParts.length >= 2 && pathParts[pathParts.length - 1].includes('-')) {
+            subcategoryUrls.push(url);
           }
-          
-          console.log('[discover] After adding from scrape:', productUrlList.length, 'products');
+        }
+      }
+      
+      // If we found very few products, try scraping subcategories
+      if (productUrls.size < 5 && subcategoryUrls.length > 0) {
+        console.log('[discover] Found', subcategoryUrls.length, 'subcategories, scraping them...');
+        
+        // Scrape up to 5 subcategories to find products
+        for (const subUrl of subcategoryUrls.slice(0, 5)) {
+          try {
+            console.log('[discover] Scraping subcategory:', subUrl);
+            
+            const subScrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${firecrawlKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                url: subUrl,
+                formats: ['markdown', 'links'],
+                onlyMainContent: false,
+                waitFor: 3000,
+              }),
+            });
+
+            const subData = await subScrapeResponse.json();
+            
+            if (subScrapeResponse.ok && subData.success) {
+              const subMarkdown = subData.data?.markdown || '';
+              const subLinks = subData.data?.links || [];
+              
+              // Extract product URLs from subcategory markdown
+              while ((match = markdownLinkPattern.exec(subMarkdown)) !== null) {
+                productUrls.add(match[1]);
+              }
+              
+              // Check direct links
+              for (const link of subLinks) {
+                if (typeof link === 'string' && link.includes('bannerbuzz.com') && link.endsWith('/p')) {
+                  productUrls.add(link);
+                }
+              }
+              
+              console.log('[discover] Products after subcategory:', productUrls.size);
+            }
+            
+            // Rate limit between subcategory scrapes
+            await new Promise(resolve => setTimeout(resolve, 500));
+          } catch (subErr) {
+            console.error('[discover] Subcategory scrape error:', subErr);
+          }
         }
       }
 
-      // Remove duplicates
-      const uniqueUrls = [...new Set(productUrlList)];
+      const uniqueUrls = [...productUrls];
+      console.log('[discover] Total unique product URLs:', uniqueUrls.length);
 
       return new Response(
         JSON.stringify({ 
           success: true, 
           urls: uniqueUrls,
           total: uniqueUrls.length,
+          subcategoriesScraped: productUrls.size < 5 ? subcategoryUrls.slice(0, 5).length : 0,
           message: uniqueUrls.length === 0 
-            ? 'No product URLs found. Try a more specific category URL (e.g., /banners/vinyl-banners instead of /banners).'
+            ? 'No product URLs found. This category may not have products or uses a different URL structure.'
             : `Found ${uniqueUrls.length} product URLs`,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
