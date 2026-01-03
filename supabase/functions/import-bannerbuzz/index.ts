@@ -100,58 +100,93 @@ function extractImages(html: string, markdown: string): { mainImage: string; gal
   const images: string[] = [];
   const seen = new Set<string>();
 
-  // Get og:image for main product image (most reliable)
-  const ogImageMatch = html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i) ||
-                       html.match(/<meta[^>]*content="([^"]+)"[^>]*property="og:image"/i);
-  
+  // Helper to convert resize URLs to full-size
+  const getFullSizeUrl = (url: string): string => {
+    // Remove /resize/XX/ from URL to get full-size image
+    return url.replace(/\/resize\/\d+\//, '/').split('?')[0];
+  };
+
   let mainImage = '';
-  if (ogImageMatch) {
-    mainImage = ogImageMatch[1].split('?')[0];
-    seen.add(mainImage);
-    images.push(mainImage);
-  }
 
-  // IMPROVED: Only extract gallery carousel images using data-full attribute
-  // BannerBuzz uses Fotorama gallery with data-full for full-size images
-  const dataFullPattern = /data-full="(https:\/\/cdn\.bannerbuzz\.com\/media\/catalog\/product[^"]+)"/gi;
-  let match;
-  while ((match = dataFullPattern.exec(html)) !== null) {
-    let imgUrl = match[1].split('?')[0];
-    // Filter out unwanted images
-    if (!isUnwantedImage(imgUrl) && !seen.has(imgUrl)) {
-      seen.add(imgUrl);
-      images.push(imgUrl);
+  // 1. Try to get main image from galleryLargeBox (BannerBuzz main product image container)
+  const galleryLargeMatch = html.match(/<div[^>]*class="[^"]*galleryLargeBox[^"]*"[^>]*>\s*<img[^>]*src="([^"]+)"/i);
+  if (galleryLargeMatch) {
+    mainImage = getFullSizeUrl(galleryLargeMatch[1]);
+    if (!isUnwantedImage(mainImage)) {
+      seen.add(mainImage);
+      images.push(mainImage);
     }
   }
 
-  // Also try data-img attribute (alternative gallery format)
-  const dataImgPattern = /data-img="(https:\/\/cdn\.bannerbuzz\.com\/media\/catalog\/product[^"]+)"/gi;
-  while ((match = dataImgPattern.exec(html)) !== null) {
-    let imgUrl = match[1].split('?')[0];
-    if (!isUnwantedImage(imgUrl) && !seen.has(imgUrl)) {
-      seen.add(imgUrl);
-      images.push(imgUrl);
-    }
-  }
-
-  // Look for fotorama gallery container and extract its images
-  const fotoramaMatch = html.match(/<div[^>]*class="[^"]*fotorama[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/i);
-  if (fotoramaMatch) {
-    const galleryHtml = fotoramaMatch[0];
-    const galleryImgPattern = /(?:href|src)="(https:\/\/cdn\.bannerbuzz\.com\/media\/catalog\/product[^"]+)"/gi;
-    while ((match = galleryImgPattern.exec(galleryHtml)) !== null) {
-      let imgUrl = match[1].split('?')[0];
-      if (!isUnwantedImage(imgUrl) && !seen.has(imgUrl)) {
-        seen.add(imgUrl);
-        images.push(imgUrl);
+  // 2. Fallback: Get og:image for main product image
+  if (!mainImage) {
+    const ogImageMatch = html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i) ||
+                         html.match(/<meta[^>]*content="([^"]+)"[^>]*property="og:image"/i);
+    if (ogImageMatch) {
+      mainImage = getFullSizeUrl(ogImageMatch[1]);
+      if (!isUnwantedImage(mainImage)) {
+        seen.add(mainImage);
+        images.push(mainImage);
       }
     }
   }
 
-  // If no main image from og:image, use first gallery image
+  // 3. Extract gallery thumbnails from imagethumb container
+  // Pattern: <ul id="imagethumb">...<li><img src="...">...</li>...</ul>
+  const thumbContainerMatch = html.match(/<ul[^>]*id="imagethumb"[^>]*>([\s\S]*?)<\/ul>/i);
+  
+  if (thumbContainerMatch) {
+    const thumbHtml = thumbContainerMatch[1] || thumbContainerMatch[0];
+    // Extract all img src from thumbnails
+    const thumbImgPattern = /<img[^>]*src="(https:\/\/cdn\.bannerbuzz\.com\/media\/catalog\/product[^"]+)"/gi;
+    let match;
+    while ((match = thumbImgPattern.exec(thumbHtml)) !== null) {
+      const fullUrl = getFullSizeUrl(match[1]);
+      if (!isUnwantedImage(fullUrl) && !seen.has(fullUrl)) {
+        seen.add(fullUrl);
+        images.push(fullUrl);
+      }
+    }
+  }
+
+  // 4. Also try galleryThumbBox container (alternative structure)
+  const galleryThumbMatch = html.match(/<div[^>]*class="[^"]*galleryThumbBox[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/i);
+  if (galleryThumbMatch) {
+    const thumbHtml = galleryThumbMatch[0];
+    const thumbImgPattern = /<img[^>]*src="(https:\/\/cdn\.bannerbuzz\.com\/media\/catalog\/product[^"]+)"/gi;
+    let match;
+    while ((match = thumbImgPattern.exec(thumbHtml)) !== null) {
+      const fullUrl = getFullSizeUrl(match[1]);
+      if (!isUnwantedImage(fullUrl) && !seen.has(fullUrl)) {
+        seen.add(fullUrl);
+        images.push(fullUrl);
+      }
+    }
+  }
+
+  // 5. Fallback: Look for any catalog product images in productGallery section
+  if (images.length === 0) {
+    const galleryPattern = /<div[^>]*class="[^"]*productGallery[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/i;
+    const galleryMatch = html.match(galleryPattern);
+    if (galleryMatch) {
+      const imgPattern = /src="(https:\/\/cdn\.bannerbuzz\.com\/media\/catalog\/product[^"]+)"/gi;
+      let match;
+      while ((match = imgPattern.exec(galleryMatch[0])) !== null) {
+        const fullUrl = getFullSizeUrl(match[1]);
+        if (!isUnwantedImage(fullUrl) && !seen.has(fullUrl)) {
+          seen.add(fullUrl);
+          images.push(fullUrl);
+        }
+      }
+    }
+  }
+
+  // Update mainImage if needed
   if (!mainImage && images.length > 0) {
     mainImage = images[0];
   }
+
+  console.log(`[extractImages] Found ${images.length} images, mainImage: ${mainImage ? 'yes' : 'no'}`);
 
   return {
     mainImage,
@@ -167,9 +202,6 @@ function isUnwantedImage(url: string): boolean {
     '/icon',              // Icon images
     '/badge',             // Badge/certification images
     '/wysiwyg/',          // CMS content images
-    '/resize/78/',        // Small thumbnails
-    '/resize/50/',        // Tiny thumbnails
-    '/resize/100/',       // Small thumbnails
     '_thumb',             // Thumbnail suffix
     '-thumb',             // Thumbnail suffix
     '/thumbnail/',        // Thumbnail folder
@@ -177,6 +209,7 @@ function isUnwantedImage(url: string): boolean {
     'premium-quality',    // Quality badges
     'single-sided',       // Option icons
     'double-sided',       // Option icons
+    '/static/images/',    // Static UI images
   ];
 
   const lowerUrl = url.toLowerCase();
