@@ -15,7 +15,7 @@ import {
   BarChart3, Menu, X, ChevronRight, FileText, Database, LayoutTemplate
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 import { format, formatDistanceToNow, isToday } from 'date-fns';
 import OrderDetailPanel from '@/components/admin/OrderDetailPanel';
 import ProductionQueue from '@/components/admin/ProductionQueue';
