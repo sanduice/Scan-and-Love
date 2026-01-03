@@ -561,6 +561,50 @@ export type Database = {
           },
         ]
       }
+      product_imports: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          import_status: string | null
+          product_id: string | null
+          scraped_data: Json | null
+          source_name: string | null
+          source_url: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          import_status?: string | null
+          product_id?: string | null
+          scraped_data?: Json | null
+          source_name?: string | null
+          source_url: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          import_status?: string | null
+          product_id?: string | null
+          scraped_data?: Json | null
+          source_name?: string | null
+          source_url?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_imports_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           additional_category_ids: string[] | null

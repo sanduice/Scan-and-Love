@@ -32,7 +32,7 @@ import ReportsDashboard from '@/components/admin/ReportsDashboard';
 import TaxSettings from '@/components/admin/TaxSettings';
 import ExemptionRequests from '@/components/admin/ExemptionRequests';
 import TemplatesManager from '@/components/admin/TemplatesManager';
-
+import ProductImporter from '@/components/admin/ProductImporter';
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800',
   paid: 'bg-blue-100 text-blue-800',
@@ -59,6 +59,7 @@ const NAV_ITEMS = [
   { id: 'categories', label: 'Categories', icon: Tag },
   { id: 'pricing', label: 'Pricing', icon: DollarSign },
   { id: 'customers', label: 'Customers', icon: Users },
+  { id: 'importer', label: 'Product Importer', icon: Database },
   { id: 'scraper', label: 'Data Scraper', icon: Database, path: 'Scraper' },
   { id: 'marketing', label: 'Marketing', icon: Tag },
   { id: 'reports', label: 'Reports & Tax', icon: BarChart3 },
@@ -448,6 +449,13 @@ export default function Admin() {
         return (
           <div className="bg-white rounded-xl shadow-sm border p-6">
             <CustomersTable users={[]} orders={orders} />
+          </div>
+        );
+
+      case 'importer':
+        return (
+          <div className="bg-white rounded-xl shadow-sm border p-6">
+            <ProductImporter />
           </div>
         );
 
