@@ -5,6 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { 
   Plus, Search, Edit, Trash2, Image, DollarSign,
   Star, Eye, EyeOff, Loader2, MoreVertical, CheckSquare, Square, GripVertical,
@@ -121,6 +131,7 @@ export default function ProductsManager() {
   const [showBulkEditor, setShowBulkEditor] = useState(false);
   const [selectedCategorySlug, setSelectedCategorySlug] = useState('all-products');
   const [localProducts, setLocalProducts] = useState([]);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
 
   // Fetch products from Supabase
   const { data: products = [], isLoading } = useQuery({
@@ -206,6 +217,25 @@ export default function ProductsManager() {
     },
     onError: (error) => {
       toast.error('Failed to delete product: ' + error.message);
+    }
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids) => {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .in('id', ids);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      setSelectedIds([]);
+      setShowBulkDeleteConfirm(false);
+      toast.success('Products deleted successfully');
+    },
+    onError: (error) => {
+      toast.error('Failed to delete products: ' + error.message);
     }
   });
 
@@ -375,10 +405,20 @@ export default function ProductsManager() {
                 </Badge>
               )}
               {selectedIds.length > 0 && (
-                <Button variant="outline" onClick={() => setShowBulkEditor(true)}>
-                  <DollarSign className="w-4 h-4 mr-2" />
-                  Edit Prices ({selectedIds.length})
-                </Button>
+                <>
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => setShowBulkDeleteConfirm(true)}
+                    disabled={bulkDeleteMutation.isPending}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete ({selectedIds.length})
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowBulkEditor(true)}>
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Edit Prices ({selectedIds.length})
+                  </Button>
+                </>
               )}
               <Button onClick={() => { setEditingProduct({}); setShowDialog(true); }}>
                 <Plus className="w-4 h-4 mr-2" />
@@ -607,6 +647,33 @@ export default function ProductsManager() {
           }}
         />
       )}
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.length} Products?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the selected 
+              products and remove all associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => bulkDeleteMutation.mutate(selectedIds)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {bulkDeleteMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4 mr-2" />
+              )}
+              Delete {selectedIds.length} Products
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
