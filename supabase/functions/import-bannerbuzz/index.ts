@@ -95,63 +95,56 @@ function extractProductName(html: string, markdown: string, url: string): string
   return 'Unknown Product';
 }
 
-// Extract images from HTML/markdown
+// Extract images from HTML/markdown - ONLY gallery carousel images
 function extractImages(html: string, markdown: string): { mainImage: string; gallery: string[] } {
   const images: string[] = [];
   const seen = new Set<string>();
 
-  // Extract og:image for main product image (highest priority)
+  // Get og:image for main product image (most reliable)
   const ogImageMatch = html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]+)"/i) ||
                        html.match(/<meta[^>]*content="([^"]+)"[^>]*property="og:image"/i);
   
   let mainImage = '';
   if (ogImageMatch) {
-    mainImage = ogImageMatch[1];
+    mainImage = ogImageMatch[1].split('?')[0];
     seen.add(mainImage);
     images.push(mainImage);
   }
 
-  // Find all cdn.bannerbuzz.com catalog product images
-  const cdnPatterns = [
-    /https:\/\/cdn\.bannerbuzz\.com\/media\/catalog\/product[^"'\s)>]+\.(jpg|jpeg|png|webp)/gi,
-    /https:\/\/cdn\.bannerbuzz\.com\/media\/wysiwyg[^"'\s)>]+\.(jpg|jpeg|png|webp)/gi,
-  ];
-
-  for (const pattern of cdnPatterns) {
-    const matches = [...html.matchAll(pattern), ...markdown.matchAll(pattern)];
-    for (const match of matches) {
-      let imgUrl = match[0];
-      
-      // Skip thumbnails, small images, and option images
-      if (imgUrl.includes('/resize/78/') || 
-          imgUrl.includes('/resize/50/') ||
-          imgUrl.includes('/optionvalue/') ||
-          imgUrl.includes('/thumbnail/') ||
-          imgUrl.includes('_thumb') ||
-          imgUrl.includes('-thumb')) {
-        continue;
-      }
-
-      // Normalize URL
-      imgUrl = imgUrl.split('?')[0];
-      
-      if (!seen.has(imgUrl)) {
-        seen.add(imgUrl);
-        images.push(imgUrl);
-      }
+  // IMPROVED: Only extract gallery carousel images using data-full attribute
+  // BannerBuzz uses Fotorama gallery with data-full for full-size images
+  const dataFullPattern = /data-full="(https:\/\/cdn\.bannerbuzz\.com\/media\/catalog\/product[^"]+)"/gi;
+  let match;
+  while ((match = dataFullPattern.exec(html)) !== null) {
+    let imgUrl = match[1].split('?')[0];
+    // Filter out unwanted images
+    if (!isUnwantedImage(imgUrl) && !seen.has(imgUrl)) {
+      seen.add(imgUrl);
+      images.push(imgUrl);
     }
   }
 
-  // Also try to extract from img tags with src attributes
-  const imgTagPattern = /<img[^>]+src="(https:\/\/cdn\.bannerbuzz\.com[^"]+)"/gi;
-  const imgMatches = html.matchAll(imgTagPattern);
-  for (const match of imgMatches) {
+  // Also try data-img attribute (alternative gallery format)
+  const dataImgPattern = /data-img="(https:\/\/cdn\.bannerbuzz\.com\/media\/catalog\/product[^"]+)"/gi;
+  while ((match = dataImgPattern.exec(html)) !== null) {
     let imgUrl = match[1].split('?')[0];
-    if (!imgUrl.includes('/resize/78/') && 
-        !imgUrl.includes('/optionvalue/') &&
-        !seen.has(imgUrl)) {
+    if (!isUnwantedImage(imgUrl) && !seen.has(imgUrl)) {
       seen.add(imgUrl);
       images.push(imgUrl);
+    }
+  }
+
+  // Look for fotorama gallery container and extract its images
+  const fotoramaMatch = html.match(/<div[^>]*class="[^"]*fotorama[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/i);
+  if (fotoramaMatch) {
+    const galleryHtml = fotoramaMatch[0];
+    const galleryImgPattern = /(?:href|src)="(https:\/\/cdn\.bannerbuzz\.com\/media\/catalog\/product[^"]+)"/gi;
+    while ((match = galleryImgPattern.exec(galleryHtml)) !== null) {
+      let imgUrl = match[1].split('?')[0];
+      if (!isUnwantedImage(imgUrl) && !seen.has(imgUrl)) {
+        seen.add(imgUrl);
+        images.push(imgUrl);
+      }
     }
   }
 
@@ -162,8 +155,32 @@ function extractImages(html: string, markdown: string): { mainImage: string; gal
 
   return {
     mainImage,
-    gallery: images.slice(0, 12), // Limit to 12 images
+    gallery: images.slice(0, 10), // Limit to 10 images
   };
+}
+
+// Helper to filter out unwanted images (icons, badges, option swatches, etc.)
+function isUnwantedImage(url: string): boolean {
+  const excludePatterns = [
+    '/optionvalue/',      // Product option swatches
+    '/banner-additional/', // Upsell/feature images
+    '/icon',              // Icon images
+    '/badge',             // Badge/certification images
+    '/wysiwyg/',          // CMS content images
+    '/resize/78/',        // Small thumbnails
+    '/resize/50/',        // Tiny thumbnails
+    '/resize/100/',       // Small thumbnails
+    '_thumb',             // Thumbnail suffix
+    '-thumb',             // Thumbnail suffix
+    '/thumbnail/',        // Thumbnail folder
+    'free-shipping',      // Shipping icons
+    'premium-quality',    // Quality badges
+    'single-sided',       // Option icons
+    'double-sided',       // Option icons
+  ];
+
+  const lowerUrl = url.toLowerCase();
+  return excludePatterns.some(pattern => lowerUrl.includes(pattern.toLowerCase()));
 }
 
 // Extract product options from markdown
@@ -482,7 +499,7 @@ function extractProductData(html: string, markdown: string, sourceUrl: string): 
     image_url: mainImage,
     gallery_images: gallery,
     preset_sizes: sizes,
-    product_options: options,
+    product_options: [], // Always empty - don't import options
     source_url: sourceUrl,
     scrape_errors: errors.length > 0 ? errors : undefined,
   };
