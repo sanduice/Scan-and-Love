@@ -1,5 +1,3 @@
-import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -12,31 +10,14 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeSecretKey) {
-      return new Response(
-        JSON.stringify({ 
-          configured: false,
-          error: "Stripe not configured" 
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        }
-      );
-    }
+    const hasSecret = !!Deno.env.get("STRIPE_SECRET_KEY");
+    const publishableKey = Deno.env.get("STRIPE_PUBLISHABLE_KEY") || null;
 
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2023-10-16",
-    });
-
-    // Test the connection by retrieving account info
-    const account = await stripe.accounts.retrieve();
-    
+    // We avoid importing Stripe SDK here to prevent bundle-timeouts when CDN has issues.
     return new Response(
       JSON.stringify({
-        configured: true,
-        publishableKey: Deno.env.get("STRIPE_PUBLISHABLE_KEY") || null,
+        configured: hasSecret,
+        publishableKey,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -44,12 +25,12 @@ Deno.serve(async (req: Request) => {
       }
     );
   } catch (error: unknown) {
-    console.error("Error checking Stripe config:", error);
+    console.error("[get-stripe-config] Error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         configured: false,
-        error: errorMessage 
+        error: errorMessage,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
