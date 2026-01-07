@@ -1,5 +1,3 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -19,7 +17,7 @@ const STATE_TAX_RATES: Record<string, number> = {
   "VA": 0.043, "WA": 0.065, "WV": 0.06, "WI": 0.05, "WY": 0.04
 };
 
-serve(async (req) => {
+Deno.serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
