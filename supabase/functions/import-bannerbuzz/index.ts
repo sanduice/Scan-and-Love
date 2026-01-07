@@ -866,7 +866,7 @@ Deno.serve(async (req) => {
               preset_sizes: product.preset_sizes,
               product_options: product.product_options,
               price_per_sqft: pricePerSqft,
-              pricing_type: 'sqft',
+              pricing_type: 'per_sqft',
               size_unit: 'inches',
               allow_custom_size: true,
               has_design_tool: true,
