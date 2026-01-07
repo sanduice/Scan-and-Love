@@ -21,6 +21,9 @@ interface PresetSize {
   width: number;
   height: number;
   label: string;
+  price: number;
+  is_active: boolean;
+  image_url: string | null;
 }
 
 interface ProductData {
@@ -346,6 +349,12 @@ function extractProductOptions(markdown: string, html: string): ProductOption[] 
   return options;
 }
 
+// Calculate price for a size based on dimensions and price per sqft
+function calculateSizePrice(width: number, height: number, pricePerSqft: number = 4.5): number {
+  const sqFt = (width * height) / 144; // Convert sq inches to sq feet
+  return parseFloat((sqFt * pricePerSqft).toFixed(2));
+}
+
 // Extract preset sizes from markdown/html
 function extractPresetSizes(markdown: string, html: string): PresetSize[] {
   const sizes: PresetSize[] = [];
@@ -379,6 +388,9 @@ function extractPresetSizes(markdown: string, html: string): PresetSize[] {
           width: widthInches,
           height: heightInches,
           label: `${w}' x ${h}'`,
+          price: calculateSizePrice(widthInches, heightInches),
+          is_active: true,
+          image_url: null,
         });
       }
     }
@@ -400,6 +412,9 @@ function extractPresetSizes(markdown: string, html: string): PresetSize[] {
           width: w,
           height: h,
           label: `${w}" x ${h}"`,
+          price: calculateSizePrice(w, h),
+          is_active: true,
+          image_url: null,
         });
       }
     }
@@ -411,10 +426,10 @@ function extractPresetSizes(markdown: string, html: string): PresetSize[] {
   // Default sizes if none found
   if (sizes.length === 0) {
     return [
-      { width: 36, height: 24, label: "3' x 2'" },
-      { width: 48, height: 36, label: "4' x 3'" },
-      { width: 72, height: 48, label: "6' x 4'" },
-      { width: 96, height: 48, label: "8' x 4'" },
+      { width: 36, height: 24, label: "3' x 2'", price: calculateSizePrice(36, 24), is_active: true, image_url: null },
+      { width: 48, height: 36, label: "4' x 3'", price: calculateSizePrice(48, 36), is_active: true, image_url: null },
+      { width: 72, height: 48, label: "6' x 4'", price: calculateSizePrice(72, 48), is_active: true, image_url: null },
+      { width: 96, height: 48, label: "8' x 4'", price: calculateSizePrice(96, 48), is_active: true, image_url: null },
     ];
   }
 
