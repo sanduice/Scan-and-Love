@@ -1,10 +1,16 @@
-import Stripe from "https://esm.sh/stripe@14.21.0?target=deno";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0?target=deno";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+function toStripeFormBody(params: Record<string, string | number | boolean | null | undefined>): string {
+  const body = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === null) continue;
+    body.set(k, String(v));
+  }
+  return body.toString();
+}
 
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight requests
@@ -18,10 +24,6 @@ Deno.serve(async (req: Request) => {
       throw new Error("Stripe secret key not configured");
     }
 
-    const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2023-10-16",
-    });
-
     const { amount, currency = "usd", metadata = {} } = await req.json();
 
     if (!amount || amount <= 0) {
@@ -29,25 +31,44 @@ Deno.serve(async (req: Request) => {
     }
 
     // Convert to cents for Stripe
-    const amountInCents = Math.round(amount * 100);
+    const amountInCents = Math.round(Number(amount) * 100);
 
-    console.log(`Creating payment intent for ${amountInCents} cents`);
+    console.log(`[create-payment-intent] Creating payment intent for ${amountInCents} cents`);
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amountInCents,
-      currency,
-      automatic_payment_methods: {
-        enabled: true,
+    // Create PaymentIntent via Stripe REST API (avoids Stripe SDK dependency)
+    const form = new URLSearchParams();
+    form.set("amount", String(amountInCents));
+    form.set("currency", String(currency));
+    form.set("automatic_payment_methods[enabled]", "true");
+
+    if (metadata && typeof metadata === "object") {
+      for (const [key, value] of Object.entries(metadata)) {
+        if (value === undefined || value === null) continue;
+        form.set(`metadata[${key}]`, String(value));
+      }
+    }
+
+    const res = await fetch("https://api.stripe.com/v1/payment_intents", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${stripeSecretKey}`,
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      metadata,
+      body: form.toString(),
     });
 
-    console.log(`Payment intent created: ${paymentIntent.id}`);
+    const payload = await res.json();
+    if (!res.ok) {
+      const msg = payload?.error?.message || `Stripe error (${res.status})`;
+      throw new Error(msg);
+    }
+
+    console.log(`[create-payment-intent] Payment intent created: ${payload.id}`);
 
     return new Response(
       JSON.stringify({
-        clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id,
+        clientSecret: payload.client_secret,
+        paymentIntentId: payload.id,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -55,14 +76,11 @@ Deno.serve(async (req: Request) => {
       }
     );
   } catch (error: unknown) {
-    console.error("Error creating payment intent:", error);
+    console.error("[create-payment-intent] Error:", error);
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      }
-    );
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400,
+    });
   }
 });
