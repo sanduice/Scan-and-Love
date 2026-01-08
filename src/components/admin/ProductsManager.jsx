@@ -603,7 +603,15 @@ export default function ProductsManager() {
                               <div className="mt-2">
                                 <span className="text-sm text-muted-foreground">Starts at: </span>
                                 <span className="text-lg font-bold text-green-600">
-                                  ${(product.preset_sizes?.[0]?.price || product.base_price)?.toFixed(2) || '0.00'}
+                                  ${(() => {
+                                    const firstSize = product.preset_sizes?.[0];
+                                    if (firstSize?.price > 0) return firstSize.price.toFixed(2);
+                                    if (firstSize?.width && firstSize?.height) {
+                                      return ((firstSize.width * firstSize.height) / 144 * 4.5).toFixed(2);
+                                    }
+                                    if (product.base_price > 0) return product.base_price.toFixed(2);
+                                    return '0.00';
+                                  })()}
                                 </span>
                               </div>
                             </div>
