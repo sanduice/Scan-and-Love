@@ -236,7 +236,7 @@ export default function PresetSizesManager({
               <div 
                 key={idx} 
                 className={`grid grid-cols-11 gap-3 items-start p-3 rounded-xl border transition-colors ${
-                  size.is_active 
+                  size.is_active !== false 
                     ? 'bg-white border-slate-200 hover:border-blue-300' 
                     : 'bg-slate-100 border-slate-200 opacity-60'
                 }`}
