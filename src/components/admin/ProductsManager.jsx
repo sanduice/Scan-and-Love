@@ -18,13 +18,14 @@ import {
 import { 
   Plus, Search, Edit, Trash2, Image, DollarSign,
   Star, Eye, EyeOff, Loader2, MoreVertical, CheckSquare, Square, GripVertical,
-  ChevronDown, ChevronRight, Copy
+  ChevronDown, ChevronRight, Copy, Ruler
 } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import ProductEditor from './ProductEditor';
 import BulkPriceEditor from './BulkPriceEditor';
+import BulkSizeEditor from './BulkSizeEditor';
 import { toast } from 'sonner';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -129,6 +130,7 @@ export default function ProductsManager() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
   const [showBulkEditor, setShowBulkEditor] = useState(false);
+  const [showBulkSizeEditor, setShowBulkSizeEditor] = useState(false);
   const [selectedCategorySlug, setSelectedCategorySlug] = useState('all-products');
   const [localProducts, setLocalProducts] = useState([]);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
@@ -418,6 +420,10 @@ export default function ProductsManager() {
                     <DollarSign className="w-4 h-4 mr-2" />
                     Edit Prices ({selectedIds.length})
                   </Button>
+                  <Button variant="outline" onClick={() => setShowBulkSizeEditor(true)}>
+                    <Ruler className="w-4 h-4 mr-2" />
+                    Bulk Size ({selectedIds.length})
+                  </Button>
                 </>
               )}
               <Button onClick={() => { setEditingProduct({}); setShowDialog(true); }}>
@@ -682,6 +688,18 @@ export default function ProductsManager() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {showBulkSizeEditor && (
+        <BulkSizeEditor
+          selectedProducts={products.filter(p => selectedIds.includes(p.id))}
+          onClose={() => setShowBulkSizeEditor(false)}
+          onSuccess={() => {
+            setShowBulkSizeEditor(false);
+            setSelectedIds([]);
+            queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+          }}
+        />
+      )}
     </div>
   );
 }
