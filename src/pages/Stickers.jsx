@@ -118,7 +118,7 @@ export default function Stickers() {
                   Create Die Cut Stickers
                 </Button>
               </Link>
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+              <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
                 See All Products
               </Button>
             </div>
