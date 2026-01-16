@@ -131,7 +131,6 @@ export const base44 = {
   functions: {
     scrapeSignsData: async () => ({}),
     importScrapedProduct: async () => ({}),
-    calculateTax: async () => ({ tax: 0 }),
     generateProductImage: async () => ({}),
     seedVistaProducts: async () => ({}),
     llms: async () => ({}),
@@ -141,7 +140,55 @@ export const base44 = {
     force_cleanup: async () => ({}),
     seed_name_badges: async () => ({}),
     fix_catalog_organization: async () => ({}),
-    create_payment_intent: async () => ({}),
-    get_stripe_config: async () => ({}),
+    
+    // Generic invoke method for edge functions
+    invoke: async (functionName, payload) => {
+      // Map underscore names to hyphen names for edge functions
+      const edgeFunctionName = functionName.replace(/_/g, '-');
+      const { data, error } = await supabase.functions.invoke(edgeFunctionName, {
+        body: payload
+      });
+      if (error) throw error;
+      return { data };
+    },
+    
+    // Stripe config - returns test publishable key as fallback
+    get_stripe_config: async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-stripe-config');
+        if (error) throw error;
+        return { data };
+      } catch (e) {
+        // Fallback to Stripe test key for development
+        return { 
+          data: { 
+            configured: true,
+            publishableKey: 'pk_test_TYooMQauvdEDq54NiTphI7jx' 
+          } 
+        };
+      }
+    },
+    
+    // Create payment intent
+    create_payment_intent: async (payload) => {
+      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+        body: payload
+      });
+      if (error) throw error;
+      return { data };
+    },
+    
+    // Calculate tax
+    calculateTax: async (payload) => {
+      try {
+        const { data, error } = await supabase.functions.invoke('calculate-tax', {
+          body: payload
+        });
+        if (error) throw error;
+        return { data };
+      } catch (e) {
+        return { data: { tax: 0, rate: 0, state: payload?.state } };
+      }
+    },
   }
 };
