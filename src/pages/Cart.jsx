@@ -16,6 +16,7 @@ import { calculateNameBadgePrice } from '@/components/namebadge/utils';
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import CheckoutForm from '@/components/checkout/CheckoutForm';
+import ManualPaymentForm from '@/components/checkout/ManualPaymentForm';
 
 // Badge Names List Component with inline editing
 function BadgeNamesList({ item, expanded, onToggle, queryClient }) {
@@ -178,6 +179,8 @@ export default function Cart() {
   const [taxSource, setTaxSource] = useState(null);
   const [clientSecret, setClientSecret] = useState("");
   const [stripePromise, setStripePromise] = useState(null);
+  const [paymentMode, setPaymentMode] = useState("stripe"); // "stripe" | "bypass"
+  const [checkoutError, setCheckoutError] = useState("");
 
   // Get user/session info
   useEffect(() => {
@@ -341,25 +344,33 @@ export default function Cart() {
   }, [shippingInfo.state, shippingInfo.zip, subtotal, shipping, ownerInfo]);
 
   const handleProceedToPayment = async () => {
+    setCheckoutError("");
+    
     // Require login
     const isAuth = await base44.auth.isAuthenticated();
     if (!isAuth) {
       toast.info('Please sign in to complete your order');
+      setShowCheckout(false);
       base44.auth.redirectToLogin(window.location.href);
       return;
     }
 
     if (!shippingInfo.name || !shippingInfo.street || !shippingInfo.city || !shippingInfo.state || !shippingInfo.zip) {
+      setCheckoutError('Please fill in all shipping information');
       toast.error('Please fill in all shipping information');
       return;
     }
 
+    setIsProcessing(true);
+    
+    // If Stripe is not available, go to bypass mode immediately
     if (!stripePromise) {
-        toast.error("Stripe is not configured properly. Please contact support.");
-        return;
+      console.log('Stripe not available, using bypass payment mode');
+      setPaymentMode("bypass");
+      setIsProcessing(false);
+      return;
     }
 
-    setIsProcessing(true);
     try {
         // Create PaymentIntent on backend
         const { data } = await base44.functions.create_payment_intent({
@@ -376,17 +387,22 @@ export default function Cart() {
 
         if (data.error) throw new Error(data.error);
         
+        setPaymentMode("stripe");
         setClientSecret(data.clientSecret);
     } catch (err) {
-        console.error('Payment setup failed:', err);
-        toast.error('Failed to initialize payment: ' + (err.message || 'Unknown error'));
+        console.error('Payment setup failed, falling back to bypass mode:', err);
+        // Fallback to bypass mode if Stripe fails
+        setPaymentMode("bypass");
+        toast.info('Using test payment mode');
     } finally {
         setIsProcessing(false);
     }
   };
 
-  const handlePaymentSuccess = async (paymentIntent) => {
+  const handlePaymentSuccess = async (paymentResult) => {
     setIsProcessing(true);
+    const isBypass = paymentMode === "bypass";
+    
     try {
       // Create order items
       const orderItems = cartItems.map(item => {
@@ -434,10 +450,14 @@ export default function Cart() {
 
       const orderNumber = 'ORD-' + Date.now().toString(36).toUpperCase();
 
+      // Set order status based on payment mode
+      const orderStatus = isBypass ? 'pending_payment' : 'paid';
+      const paymentStatus = isBypass ? 'unpaid' : 'paid';
+
       await base44.entities.Order.create({
         order_number: orderNumber,
-        status: 'paid',
-        payment_status: 'paid',
+        status: orderStatus,
+        payment_status: paymentStatus,
         items_json: JSON.stringify(orderItems),
         subtotal: subtotal,
         shipping_cost: shipping,
@@ -447,7 +467,7 @@ export default function Cart() {
         customer_email: shippingInfo.email || (ownerInfo?.email || ''),
         customer_phone: shippingInfo.phone || '',
         shipping_method: shipping === 0 ? 'Free Shipping' : 'Standard Shipping',
-        payment_intent_id: paymentIntent.id
+        payment_intent_id: paymentResult.paymentIntentId || paymentResult.id
       });
 
       // Cleanup cart
@@ -460,9 +480,11 @@ export default function Cart() {
       }
 
       queryClient.invalidateQueries({ queryKey: ['cart-items'] });
-      toast.success('Order placed successfully!');
+      toast.success(isBypass ? 'Test order placed successfully!' : 'Order placed successfully!');
       setShowCheckout(false);
       setClientSecret("");
+      setPaymentMode("stripe");
+      setCheckoutError("");
       navigate(createPageUrl('Account'));
     } catch (err) {
       console.error('Order creation failed:', err);
@@ -828,34 +850,50 @@ export default function Cart() {
               </div>
             </div>
 
-            {!clientSecret ? (
-                <Button 
-                  className="w-full bg-[#8BC34A] hover:bg-[#7CB342] text-white h-12"
-                  onClick={handleProceedToPayment}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="w-5 h-5 mr-2" />
-                      Proceed to Payment - ${total.toFixed(2)}
-                    </>
-                  )}
-                </Button>
+            {checkoutError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {checkoutError}
+              </div>
+            )}
+
+            {/* Show appropriate payment UI based on state */}
+            {paymentMode === "bypass" ? (
+              <ManualPaymentForm 
+                amount={total}
+                onSuccess={handlePaymentSuccess}
+                onCancel={() => {
+                  setPaymentMode("stripe");
+                  setClientSecret("");
+                }}
+              />
+            ) : clientSecret ? (
+              <div className="mt-4">
+                <Elements options={{ clientSecret, appearance: { theme: 'stripe' } }} stripe={stripePromise}>
+                  <CheckoutForm 
+                    amount={total} 
+                    onSuccess={handlePaymentSuccess} 
+                    onCancel={() => setClientSecret("")}
+                  />
+                </Elements>
+              </div>
             ) : (
-                <div className="mt-4">
-                    <Elements options={{ clientSecret, appearance: { theme: 'stripe' } }} stripe={stripePromise}>
-                        <CheckoutForm 
-                            amount={total} 
-                            onSuccess={handlePaymentSuccess} 
-                            onCancel={() => setClientSecret("")}
-                        />
-                    </Elements>
-                </div>
+              <Button 
+                className="w-full bg-[#8BC34A] hover:bg-[#7CB342] text-white h-12"
+                onClick={handleProceedToPayment}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="w-5 h-5 mr-2" />
+                    Proceed to Payment - ${total.toFixed(2)}
+                  </>
+                )}
+              </Button>
             )}
           </div>
         </DialogContent>
