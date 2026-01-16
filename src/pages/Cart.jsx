@@ -362,10 +362,16 @@ export default function Cart() {
     setIsProcessing(true);
     try {
         // Create PaymentIntent on backend
-        const { data } = await base44.functions.invoke('create_payment_intent', {
-            items: cartItems,
-            shipping_info: shippingInfo,
-            customer_email: ownerInfo?.email
+        const { data } = await base44.functions.create_payment_intent({
+            amount: total,
+            currency: 'usd',
+            metadata: {
+              customer_email: ownerInfo?.email,
+              items_count: cartItems.length,
+              shipping_name: shippingInfo.name,
+              shipping_city: shippingInfo.city,
+              shipping_state: shippingInfo.state,
+            }
         });
 
         if (data.error) throw new Error(data.error);
