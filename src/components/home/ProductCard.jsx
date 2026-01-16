@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Star } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import ImageWithFallback from '@/components/ImageWithFallback';
 
-export default function ProductCard({ product, displayName, linkTo }) {
+export default function ProductCard({ product, displayName, linkTo, showRating = false }) {
   // Calculate starting price from preset_sizes or base_price
   const getStartingPrice = () => {
     if (product.preset_sizes && product.preset_sizes.length > 0) {
@@ -41,8 +42,17 @@ export default function ProductCard({ product, displayName, linkTo }) {
         <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2 mb-1">
           {displayName || product.name}
         </h3>
+        {showRating && (
+          <div className="flex items-center gap-1 mt-1">
+            <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+            <span className="text-sm font-medium text-foreground">{product.rating || 4.5}</span>
+            <span className="text-sm text-muted-foreground">
+              Stars ({product.review_count || 0})
+            </span>
+          </div>
+        )}
         {price && (
-          <p className="text-sm text-muted-foreground mt-auto">
+          <p className="text-sm text-muted-foreground mt-auto pt-2">
             Starting at <span className="font-medium text-foreground">${price}</span>
           </p>
         )}

@@ -645,6 +645,8 @@ export type Database = {
           pricing_tiers: Json | null
           pricing_type: string | null
           product_options: Json | null
+          rating: number | null
+          review_count: number | null
           sale_percentage: number | null
           sale_price: number | null
           short_description: string | null
@@ -694,6 +696,8 @@ export type Database = {
           pricing_tiers?: Json | null
           pricing_type?: string | null
           product_options?: Json | null
+          rating?: number | null
+          review_count?: number | null
           sale_percentage?: number | null
           sale_price?: number | null
           short_description?: string | null
@@ -743,6 +747,8 @@ export type Database = {
           pricing_tiers?: Json | null
           pricing_type?: string | null
           product_options?: Json | null
+          rating?: number | null
+          review_count?: number | null
           sale_percentage?: number | null
           sale_price?: number | null
           short_description?: string | null
