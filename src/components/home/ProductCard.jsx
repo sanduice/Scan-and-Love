@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import ImageWithFallback from '@/components/ImageWithFallback';
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, displayName, linkTo }) {
   // Calculate starting price from preset_sizes or base_price
   const getStartingPrice = () => {
     if (product.preset_sizes && product.preset_sizes.length > 0) {
@@ -26,7 +26,7 @@ export default function ProductCard({ product }) {
 
   return (
     <Link 
-      to={createPageUrl('ProductDetail') + `?slug=${product.slug}`}
+      to={linkTo || createPageUrl('ProductDetail') + `?slug=${product.slug}`}
       className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col"
     >
       <div className="aspect-[4/3] bg-muted overflow-hidden relative">
@@ -39,7 +39,7 @@ export default function ProductCard({ product }) {
       </div>
       <div className="p-4 flex-1 flex flex-col">
         <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2 mb-1">
-          {product.name}
+          {displayName || product.name}
         </h3>
         {price && (
           <p className="text-sm text-muted-foreground mt-auto">

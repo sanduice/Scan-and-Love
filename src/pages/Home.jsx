@@ -69,12 +69,15 @@ export default function Home() {
     return categories.filter(cat => productsByCategory[cat.id]?.length > 0);
   }, [categories, productsByCategory]);
 
-  // One product from each category for "Shop by Categories"
+  // One product from each category for "Shop by Categories" with category info
   const shopByCategoryProducts = useMemo(() => {
     return categoriesWithProducts
       .slice(0, 10)
-      .map(cat => productsByCategory[cat.id]?.[0])
-      .filter(Boolean);
+      .map(cat => ({
+        product: productsByCategory[cat.id]?.[0],
+        category: cat
+      }))
+      .filter(item => item.product);
   }, [categoriesWithProducts, productsByCategory]);
 
   // Loading skeleton
@@ -197,8 +200,13 @@ export default function Home() {
               </Link>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-              {shopByCategoryProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+              {shopByCategoryProducts.map(({ product, category }) => (
+                <ProductCard 
+                  key={product.id} 
+                  product={product} 
+                  displayName={category.name}
+                  linkTo={createPageUrl('Products') + `?category=${category.slug}`}
+                />
               ))}
             </div>
           </div>
