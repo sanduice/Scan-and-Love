@@ -62,7 +62,7 @@ export default function HeroSection({ categories }) {
                 </Button>
               </Link>
               <Link to={createPageUrl('Products')}>
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 px-8 text-lg">
+                <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10 px-8 text-lg">
                   Shop All Products
                 </Button>
               </Link>
