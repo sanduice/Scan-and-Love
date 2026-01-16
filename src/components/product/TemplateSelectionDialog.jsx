@@ -212,7 +212,7 @@ const TemplateSelectionDialog = ({
 
                   <Button
                     size="sm"
-                    className="w-full h-8 text-xs"
+                    className="w-full h-8 text-xs bg-white hover:bg-gray-100 text-[#8BC34A] border border-[#8BC34A]"
                     onClick={() => handleSelectTemplate(template)}
                   >
                     Use Template
