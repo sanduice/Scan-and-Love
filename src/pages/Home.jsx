@@ -89,7 +89,7 @@ export default function Home() {
         
         {/* Features Skeleton */}
         <div className="bg-white border-b py-6">
-          <div className="max-w-7xl mx-auto px-4">
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[...Array(4)].map((_, i) => (
                 <div key={i} className="flex items-center gap-3">
@@ -106,7 +106,7 @@ export default function Home() {
 
         {/* Products Skeleton */}
         <div className="py-16 bg-muted/30">
-          <div className="max-w-7xl mx-auto px-4">
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <Skeleton className="h-8 w-64 mx-auto mb-8" />
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
               {[...Array(10)].map((_, i) => (
@@ -132,7 +132,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920')] opacity-10 bg-cover bg-center" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
+        <div className="relative max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
           <div className="max-w-3xl">
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
               Custom Signs & Banners
@@ -169,7 +169,7 @@ export default function Home() {
 
       {/* Features Bar */}
       <section className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {FEATURES.map((feature) => (
               <div key={feature.title} className="flex items-center gap-3">
@@ -189,7 +189,7 @@ export default function Home() {
       {/* Shop by Categories - One product from each category */}
       {shopByCategoryProducts.length > 0 && (
         <section className="py-16 bg-muted/30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl md:text-3xl font-bold text-foreground">Shop by Categories</h2>
               <Link 
@@ -219,7 +219,7 @@ export default function Home() {
           key={category.id} 
           className={`py-12 ${index % 2 === 0 ? 'bg-white' : 'bg-muted/30'}`}
         >
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl md:text-2xl font-bold text-foreground">{category.name}</h2>
               <Link 
@@ -229,8 +229,8 @@ export default function Home() {
                 See All <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {productsByCategory[category.id]?.slice(0, 8).map((product) => (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+              {productsByCategory[category.id]?.slice(0, 5).map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
@@ -240,7 +240,7 @@ export default function Home() {
 
       {/* Why Choose Us */}
       <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Why Choose Us?</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -263,7 +263,7 @@ export default function Home() {
 
       {/* Proud To Serve Our Customers */}
       <section className="py-16 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8">Proud To Serve Our Customers</h2>
           <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">
             {CUSTOMER_LOGOS.map((name) => (
@@ -280,7 +280,7 @@ export default function Home() {
 
       {/* How It Works */}
       <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">How It Works</h2>
             <p className="text-muted-foreground text-lg">Get your custom signs in 3 easy steps</p>
@@ -305,7 +305,7 @@ export default function Home() {
 
       {/* Reviews */}
       <section className="py-16 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <div className="flex items-center justify-center gap-1 mb-4">
               {[1,2,3,4,5].map(i => <Star key={i} className="w-6 h-6 fill-yellow-400 text-yellow-400" />)}
@@ -333,7 +333,7 @@ export default function Home() {
 
       {/* CTA */}
       <section className="py-16 bg-primary">
-        <div className="max-w-4xl mx-auto px-4 text-center">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4">Ready to Get Started?</h2>
           <p className="text-xl text-primary-foreground/80 mb-8">Create your custom sign in minutes with our free design tool</p>
           <Link to={createPageUrl('ProductDetail') + '?slug=vinyl-banner'}>
