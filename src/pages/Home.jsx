@@ -231,7 +231,7 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
               {productsByCategory[category.id]?.slice(0, 5).map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} showRating={true} />
               ))}
             </div>
           </div>
