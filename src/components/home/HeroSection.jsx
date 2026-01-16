@@ -57,7 +57,7 @@ export default function HeroSection({ categories }) {
             
             <div className="flex flex-wrap gap-4">
               <Link to={createPageUrl('BannerBuilder')}>
-                <Button size="lg" className="bg-[#8BC34A] hover:bg-[#7CB342] text-black px-8 text-lg">
+                <Button size="lg" className="bg-white hover:bg-gray-100 text-[#8BC34A] px-8 text-lg shadow-lg">
                   Build Your Banner
                 </Button>
               </Link>
@@ -136,7 +136,7 @@ export default function HeroSection({ categories }) {
                   <button className="text-sm text-[#2196F3] hover:underline">Buy More, Save More!</button>
                 </div>
                 <Link to={createPageUrl('ProductDetail') + `?slug=${selectedProduct}`}>
-                  <Button className="bg-[#8BC34A] hover:bg-[#7CB342] text-black px-8 h-12 text-lg">
+                  <Button className="bg-white hover:bg-gray-100 text-[#8BC34A] px-8 h-12 text-lg border border-[#8BC34A]">
                     Get Started
                   </Button>
                 </Link>

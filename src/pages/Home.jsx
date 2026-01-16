@@ -143,7 +143,7 @@ export default function Home() {
             </p>
             <div className="flex flex-wrap gap-4">
               <Link to={createPageUrl('ProductDetail') + '?slug=vinyl-banner'}>
-                <Button size="lg" className="bg-[#8BC34A] hover:bg-[#7CB342] text-black text-lg px-8 h-14">
+                <Button size="lg" className="bg-white hover:bg-gray-100 text-[#8BC34A] text-lg px-8 h-14 shadow-lg border border-gray-200">
                   <Palette className="w-5 h-5 mr-2" />
                   Start Designing
                 </Button>
