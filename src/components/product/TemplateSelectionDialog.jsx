@@ -27,12 +27,33 @@ const TemplateSelectionDialog = ({
   const [loading, setLoading] = useState(true);
   const [selectedTemplateSizes, setSelectedTemplateSizes] = useState({});
 
+  // Helper function to check if a template size matches the selected size
+  const matchesSize = (templateSize, targetWidth, targetHeight) => {
+    if (!templateSize || targetWidth == null || targetHeight == null) return false;
+    
+    const tw = parseFloat(templateSize.width);
+    const th = parseFloat(templateSize.height);
+    const sw = parseFloat(targetWidth);
+    const sh = parseFloat(targetHeight);
+    
+    // Allow small tolerance for floating point
+    const TOLERANCE = 0.1;
+    
+    // Exact match (72x36 = 72x36)
+    const exactMatch = Math.abs(tw - sw) <= TOLERANCE && Math.abs(th - sh) <= TOLERANCE;
+    
+    // Rotated match (72x36 = 36x72) - same template, different orientation
+    const rotatedMatch = Math.abs(tw - sh) <= TOLERANCE && Math.abs(th - sw) <= TOLERANCE;
+    
+    return exactMatch || rotatedMatch;
+  };
+
   // Fetch templates when dialog opens
   useEffect(() => {
     if (open && product?.category_id) {
       fetchTemplates();
     }
-  }, [open, product?.category_id]);
+  }, [open, product?.category_id, selectedSize?.width, selectedSize?.height]);
 
   const fetchTemplates = async () => {
     setLoading(true);
@@ -58,13 +79,30 @@ const TemplateSelectionDialog = ({
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      setTemplates(data || []);
       
-      // Initialize size selections for templates with multiple sizes
+      // Filter templates to only those with matching size
+      const matchingTemplates = (data || []).filter(template => {
+        if (!template.sizes || template.sizes.length === 0) {
+          return false; // Skip templates with no sizes defined
+        }
+        
+        // Check if ANY size variant matches the selected size
+        return template.sizes.some(size => 
+          matchesSize(size, selectedSize?.width, selectedSize?.height)
+        );
+      });
+
+      setTemplates(matchingTemplates);
+      
+      // Initialize size selections - pre-select the matching size variant
       const initialSizes = {};
-      (data || []).forEach(t => {
+      matchingTemplates.forEach(t => {
         if (t.sizes?.length > 0) {
-          initialSizes[t.id] = 0; // Default to first size
+          // Find the index of the matching size
+          const matchingIndex = t.sizes.findIndex(size => 
+            matchesSize(size, selectedSize?.width, selectedSize?.height)
+          );
+          initialSizes[t.id] = matchingIndex >= 0 ? matchingIndex : 0;
         }
       });
       setSelectedTemplateSizes(initialSizes);
@@ -185,30 +223,41 @@ const TemplateSelectionDialog = ({
                     {template.name}
                   </h4>
 
-                  {/* Size Selector or Single Size */}
-                  {template.sizes?.length > 1 ? (
-                    <Select
-                      value={String(selectedTemplateSizes[template.id] || 0)}
-                      onValueChange={(v) => handleTemplateSizeChange(template.id, v)}
-                    >
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {template.sizes.map((size, idx) => (
-                          <SelectItem key={idx} value={String(idx)}>
-                            {size.label || `${size.width}" × ${size.height}"`}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : template.sizes?.length === 1 ? (
-                    <p className="text-xs text-muted-foreground">
-                      {template.sizes[0].label || `${template.sizes[0].width}" × ${template.sizes[0].height}"`}
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">Flexible size</p>
-                  )}
+                  {/* Size Selector - only show if multiple sizes match */}
+                  {(() => {
+                    const matchingSizes = template.sizes?.filter(s => 
+                      matchesSize(s, selectedSize?.width, selectedSize?.height)
+                    ) || [];
+                    
+                    if (matchingSizes.length > 1) {
+                      return (
+                        <Select
+                          value={String(selectedTemplateSizes[template.id] || 0)}
+                          onValueChange={(v) => handleTemplateSizeChange(template.id, v)}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {template.sizes.map((size, idx) => {
+                              if (!matchesSize(size, selectedSize?.width, selectedSize?.height)) return null;
+                              return (
+                                <SelectItem key={idx} value={String(idx)}>
+                                  {size.label || `${size.width}" × ${size.height}"`}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                      );
+                    } else {
+                      return (
+                        <p className="text-xs text-muted-foreground">
+                          {selectedSize?.width}" × {selectedSize?.height}"
+                        </p>
+                      );
+                    }
+                  })()}
 
                   <Button
                     size="sm"
@@ -225,8 +274,8 @@ const TemplateSelectionDialog = ({
             {!loading && templates.length === 0 && (
               <div className="col-span-full py-8 text-center text-muted-foreground">
                 <FileImage className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No templates available for this category yet.</p>
-                <p className="text-sm mt-1">Start with a blank canvas!</p>
+                <p>No templates available for {selectedSize?.width}" × {selectedSize?.height}"</p>
+                <p className="text-sm mt-1">Start with a blank canvas and create your own design!</p>
               </div>
             )}
           </div>
