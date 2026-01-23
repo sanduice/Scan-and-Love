@@ -377,6 +377,8 @@ export async function generatePNG(elements, width, height, dpi = 150) {
   
   return new Promise((resolve, reject) => {
     const img = new Image();
+    img.crossOrigin = 'anonymous'; // Handle CORS for embedded images
+    
     const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(svgBlob);
     
@@ -385,19 +387,32 @@ export async function generatePNG(elements, width, height, dpi = 150) {
       canvas.width = widthPx;
       canvas.height = heightPx;
       const ctx = canvas.getContext('2d');
+      
+      // Fill white background FIRST
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, widthPx, heightPx);
-      ctx.drawImage(img, 0, 0);
+      
+      try {
+        ctx.drawImage(img, 0, 0, widthPx, heightPx);
+      } catch (e) {
+        console.error('Failed to draw SVG to canvas:', e);
+      }
+      
       URL.revokeObjectURL(url);
       
       canvas.toBlob((blob) => {
-        resolve(blob);
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('Canvas toBlob returned null'));
+        }
       }, 'image/png');
     };
     
-    img.onerror = () => {
+    img.onerror = (e) => {
+      console.error('Image load error:', e);
       URL.revokeObjectURL(url);
-      reject(new Error('Failed to generate PNG'));
+      reject(new Error('Failed to load SVG as image'));
     };
     
     img.src = url;
@@ -437,7 +452,18 @@ export async function generateArtworkDataURL(elements, width, height, dpi = 150)
 // Download as PDF using jsPDF
 export async function downloadPDF(elements, width, height, dpi = 150, filename = 'design.pdf') {
   try {
+    console.log('downloadPDF called with elements:', elements?.length, 'width:', width, 'height:', height);
+    
+    if (!elements || elements.length === 0) {
+      throw new Error('No design elements provided for PDF generation');
+    }
+    
     const blob = await generatePNG(elements, width, height, dpi);
+    
+    if (!blob) {
+      throw new Error('PNG generation returned null blob');
+    }
+    
     const base64 = await blobToBase64(blob);
 
     // Create PDF with custom dimensions (in inches)
@@ -455,6 +481,34 @@ export async function downloadPDF(elements, width, height, dpi = 150, filename =
     return true;
   } catch (err) {
     console.error('PDF generation failed:', err);
+    throw err;
+  }
+}
+
+// Download PDF directly from an image URL (fallback when no elements available)
+export async function downloadPDFFromImageURL(imageUrl, width, height, dpi = 150, filename = 'design.pdf') {
+  try {
+    console.log('downloadPDFFromImageURL called with:', imageUrl);
+    
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.status}`);
+    }
+    
+    const blob = await response.blob();
+    const base64 = await blobToBase64(blob);
+
+    const pdf = new jsPDF({
+      orientation: width > height ? 'landscape' : 'portrait',
+      unit: 'in',
+      format: [width, height]
+    });
+
+    pdf.addImage(base64, 'PNG', 0, 0, width, height);
+    pdf.save(filename);
+    return true;
+  } catch (err) {
+    console.error('PDF from image URL failed:', err);
     throw err;
   }
 }

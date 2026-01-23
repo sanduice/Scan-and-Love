@@ -15,7 +15,7 @@ import {
   Send, Eye, ZoomIn, X, Loader2, FileDown, Image as ImageIcon,
   MessageSquare, Check, XCircle, Upload, ChevronDown
 } from 'lucide-react';
-import { downloadPDF } from '@/components/designer/CanvasExporter';
+import { downloadPDF, downloadPDFFromImageURL } from '@/components/designer/CanvasExporter';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -253,6 +253,7 @@ export default function OrderDetailPanel({ order, onUpdate, onClose }) {
     const width = item.width || 3;
     const height = item.height || 1.5;
     
+    console.log('generatePDFFile called for item:', item);
     toast.info('Generating PDF print file...');
     
     try {
@@ -262,17 +263,20 @@ export default function OrderDetailPanel({ order, onUpdate, onClose }) {
       if (item.elements_json) {
         try {
           elements = JSON.parse(item.elements_json);
+          console.log('Parsed elements from elements_json:', elements.length);
         } catch (e) { console.error('Error parsing item elements', e); }
       }
       
       // If no elements and it's a badge order (or has a design_id), fetch from NameBadgeDesign
       if (elements.length === 0 && item.design_id) {
         try {
+          console.log('Fetching design with ID:', item.design_id);
           const designs = await base44.entities.NameBadgeDesign.filter({ id: item.design_id });
           if (designs && designs.length > 0) {
             const design = designs[0];
             if (design.elements_json) {
               elements = JSON.parse(design.elements_json);
+              console.log('Fetched elements from design:', elements.length);
             }
           }
         } catch (err) {
@@ -280,18 +284,29 @@ export default function OrderDetailPanel({ order, onUpdate, onClose }) {
         }
       }
 
-      if (elements.length === 0 && !item.artwork_url) {
-        toast.error('No design elements found for PDF generation.');
+      console.log('Final elements count:', elements.length, 'artwork_url:', item.artwork_url);
+      
+      const filename = `${order.order_number}_item${index + 1}_${width}x${height}_${DPI}dpi.pdf`;
+
+      // If no elements but artwork_url exists, generate PDF from image
+      if (elements.length === 0 && item.artwork_url) {
+        console.log('Using artwork_url fallback for PDF generation');
+        await downloadPDFFromImageURL(item.artwork_url, width, height, DPI, filename);
+        toast.success(`Downloaded PDF for Item ${index + 1}`);
+        return;
+      }
+
+      if (elements.length === 0) {
+        toast.error('No design elements or artwork found for PDF generation.');
         return;
       }
       
-      const filename = `${order.order_number}_item${index + 1}_${width}x${height}_${DPI}dpi.pdf`;
       await downloadPDF(elements, width, height, DPI, filename);
       
       toast.success(`Downloaded PDF for Item ${index + 1}`);
     } catch (e) {
       console.error('Error generating PDF:', e);
-      toast.error('Failed to generate PDF. Check console for details.');
+      toast.error('Failed to generate PDF: ' + e.message);
     }
   };
 
