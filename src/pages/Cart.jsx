@@ -469,15 +469,17 @@ export default function Cart() {
         order_number: orderNumber,
         status: 'pending',
         payment_status: 'test_skip',
-        items_json: JSON.stringify(orderItems),
+        items: orderItems,
         subtotal: subtotal,
-        shipping_cost: shipping,
+        shipping: shipping,
         tax: tax,
         total: total,
-        shipping_address_json: JSON.stringify(shippingInfo),
-        customer_email: shippingInfo.email || (ownerInfo?.email || ''),
-        customer_phone: shippingInfo.phone || '',
-        shipping_method: shipping === 0 ? 'Free Shipping' : 'Standard Shipping',
+        shipping_address: {
+          ...shippingInfo,
+          email: shippingInfo.email || ownerInfo?.email || '',
+          phone: shippingInfo.phone || '',
+          shipping_method: shipping === 0 ? 'Free Shipping' : 'Standard Shipping'
+        },
         payment_intent_id: `test_skip_${Date.now()}`,
         notes: 'TEST ORDER - Payment skipped for testing purposes'
       });
@@ -561,15 +563,17 @@ export default function Cart() {
         order_number: orderNumber,
         status: orderStatus,
         payment_status: paymentStatus,
-        items_json: JSON.stringify(orderItems),
+        items: orderItems,
         subtotal: subtotal,
-        shipping_cost: shipping,
+        shipping: shipping,
         tax: tax,
         total: total,
-        shipping_address_json: JSON.stringify(shippingInfo),
-        customer_email: shippingInfo.email || (ownerInfo?.email || ''),
-        customer_phone: shippingInfo.phone || '',
-        shipping_method: shipping === 0 ? 'Free Shipping' : 'Standard Shipping',
+        shipping_address: {
+          ...shippingInfo,
+          email: shippingInfo.email || ownerInfo?.email || '',
+          phone: shippingInfo.phone || '',
+          shipping_method: shipping === 0 ? 'Free Shipping' : 'Standard Shipping'
+        },
         payment_intent_id: paymentResult.paymentIntentId || paymentResult.id
       });
 
