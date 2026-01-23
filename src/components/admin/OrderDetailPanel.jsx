@@ -13,11 +13,12 @@ import {
   Package, Truck, Download, Printer, FileImage, Clock, CheckCircle,
   MapPin, Phone, Mail, AlertCircle, ExternalLink, Copy, Ship,
   Send, Eye, ZoomIn, X, Loader2, FileDown, Image as ImageIcon,
-  MessageSquare, Check, XCircle, Upload, ChevronDown
+  MessageSquare, Check, XCircle, Upload, ChevronDown, Archive
 } from 'lucide-react';
-import { downloadPDF, downloadPDFFromImageURL } from '@/components/designer/CanvasExporter';
+import { downloadPDF, downloadPDFFromImageURL, generatePNG } from '@/components/designer/CanvasExporter';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import JSZip from 'jszip';
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -245,6 +246,243 @@ export default function OrderDetailPanel({ order, onUpdate, onClose }) {
       }, i * 500);
     });
     toast.success(`Downloading ${items.length} ${format.toUpperCase()} files...`);
+  };
+
+  // Generate SVG content for an item (returns SVG string)
+  const generateSVGContent = async (item, index) => {
+    const DPI = 150;
+    const width = item.width || 3;
+    const height = item.height || 1.5;
+    const widthPx = width * DPI;
+    const heightPx = height * DPI;
+    
+    let elements = [];
+    
+    if (item.elements_json) {
+      try {
+        elements = JSON.parse(item.elements_json);
+      } catch (e) { console.error('Error parsing item elements', e); }
+    }
+    
+    if (elements.length === 0 && item.design_id) {
+      try {
+        const designs = await base44.entities.NameBadgeDesign.filter({ id: item.design_id });
+        if (designs && designs.length > 0 && designs[0].elements_json) {
+          elements = JSON.parse(designs[0].elements_json);
+        }
+      } catch (err) {
+        console.error('Failed to fetch badge design:', err);
+      }
+    }
+
+    if (elements.length === 0 && !item.artwork_url) {
+      return null;
+    }
+    
+    const elementsWithBase64 = await Promise.all(
+      elements.map(async (el) => {
+        if ((el.type === 'image' || el.type === 'clipart') && el.src) {
+          const base64Src = await imageUrlToBase64(el.src);
+          return { ...el, base64Src };
+        }
+        return el;
+      })
+    );
+
+    const elementsContent = elementsWithBase64.map(el => {
+      const x = el.x * DPI;
+      const y = el.y * DPI;
+      const w = el.width * DPI;
+      const h = el.height * DPI;
+      const rotation = el.rotation || 0;
+      const transform = rotation ? `transform="rotate(${rotation} ${x + w/2} ${y + h/2})"` : '';
+      
+      if (el.type === 'shape') {
+        const fill = el.fill || '#3B82F6';
+        if (el.shape === 'circle') {
+          return `<ellipse cx="${x + w/2}" cy="${y + h/2}" rx="${w/2}" ry="${h/2}" fill="${fill}" ${transform} />`;
+        }
+        return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" rx="${el.shape === 'rounded-rect' ? 12 : 0}" ${transform} />`;
+      } else if (el.type === 'text') {
+        const fontSize = (el.fontSize || 4) * DPI;
+        const fontWeight = el.fontWeight || 'bold';
+        const fontFamily = el.fontFamily || 'Arial';
+        const textColor = el.color || '#000000';
+        const textAlign = el.textAlign || 'center';
+        
+        let textAnchor = 'middle';
+        let textX = x + w / 2;
+        if (textAlign === 'left') {
+          textAnchor = 'start';
+          textX = x + 4;
+        } else if (textAlign === 'right') {
+          textAnchor = 'end';
+          textX = x + w - 4;
+        }
+        
+        const escapedText = (el.text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return `<text x="${textX}" y="${y + h/2}" fill="${textColor}" font-size="${fontSize}" font-family="${fontFamily}" font-weight="${fontWeight}" text-anchor="${textAnchor}" dominant-baseline="middle" ${transform}>${escapedText}</text>`;
+      } else if (el.type === 'image' || el.type === 'clipart') {
+        const src = el.base64Src || el.src;
+        if (src) {
+          return `<image xlink:href="${src}" href="${src}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="none" ${transform} />`;
+        }
+      }
+      return '';
+    }).filter(Boolean).join('\n  ');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+     width="${widthPx}" height="${heightPx}" viewBox="0 0 ${widthPx} ${heightPx}">
+  <title>Order ${order.order_number} - Item ${index + 1}</title>
+  <desc>Print-ready artwork at ${DPI} DPI - ${width}" x ${height}"</desc>
+  <rect width="100%" height="100%" fill="white"/>
+  ${elementsContent}
+</svg>`;
+  };
+
+  // Generate PDF blob for an item
+  const generatePDFBlob = async (item, index) => {
+    const DPI = 150;
+    const width = item.width || 3;
+    const height = item.height || 1.5;
+    
+    let elements = [];
+    
+    if (item.elements_json) {
+      try {
+        elements = JSON.parse(item.elements_json);
+      } catch (e) { console.error('Error parsing item elements', e); }
+    }
+    
+    if (elements.length === 0 && item.design_id) {
+      try {
+        const designs = await base44.entities.NameBadgeDesign.filter({ id: item.design_id });
+        if (designs && designs.length > 0 && designs[0].elements_json) {
+          elements = JSON.parse(designs[0].elements_json);
+        }
+      } catch (err) {
+        console.error('Failed to fetch badge design:', err);
+      }
+    }
+
+    // If no elements but artwork_url exists, fetch and convert to PDF
+    if (elements.length === 0 && item.artwork_url) {
+      try {
+        const response = await fetch(item.artwork_url);
+        const blob = await response.blob();
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        
+        const { jsPDF } = await import('jspdf');
+        const pdf = new jsPDF({
+          orientation: width > height ? 'landscape' : 'portrait',
+          unit: 'in',
+          format: [width, height]
+        });
+        pdf.addImage(base64, 'PNG', 0, 0, width, height);
+        return pdf.output('blob');
+      } catch (err) {
+        console.error('Failed to generate PDF from artwork URL:', err);
+        return null;
+      }
+    }
+
+    if (elements.length === 0) {
+      return null;
+    }
+    
+    try {
+      const pngBlob = await generatePNG(elements, width, height, DPI);
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(pngBlob);
+      });
+      
+      const { jsPDF } = await import('jspdf');
+      const pdf = new jsPDF({
+        orientation: width > height ? 'landscape' : 'portrait',
+        unit: 'in',
+        format: [width, height]
+      });
+      pdf.addImage(base64, 'PNG', 0, 0, width, height);
+      return pdf.output('blob');
+    } catch (err) {
+      console.error('Failed to generate PDF blob:', err);
+      return null;
+    }
+  };
+
+  // Download all artwork as ZIP
+  const downloadAllAsZip = async () => {
+    toast.info('Generating ZIP archive with all artwork files...');
+    
+    const zip = new JSZip();
+    const artworkFolder = zip.folder(`Order_${order.order_number}_Artwork`);
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const baseFilename = `item${i + 1}_${item.width || 3}x${item.height || 1.5}_150dpi`;
+      
+      // Generate SVG
+      try {
+        const svgContent = await generateSVGContent(item, i);
+        if (svgContent) {
+          artworkFolder.file(`${baseFilename}.svg`, svgContent);
+          successCount++;
+        }
+      } catch (err) {
+        console.error(`Failed to generate SVG for item ${i + 1}:`, err);
+        failCount++;
+      }
+      
+      // Generate PDF
+      try {
+        const pdfBlob = await generatePDFBlob(item, i);
+        if (pdfBlob) {
+          artworkFolder.file(`${baseFilename}.pdf`, pdfBlob);
+          successCount++;
+        }
+      } catch (err) {
+        console.error(`Failed to generate PDF for item ${i + 1}:`, err);
+        failCount++;
+      }
+    }
+    
+    if (successCount === 0) {
+      toast.error('No artwork files could be generated for this order.');
+      return;
+    }
+    
+    try {
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Order_${order.order_number}_Artwork.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      if (failCount > 0) {
+        toast.success(`ZIP downloaded! (${successCount} files, ${failCount} failed)`);
+      } else {
+        toast.success(`ZIP downloaded with ${successCount} files!`);
+      }
+    } catch (err) {
+      console.error('Failed to generate ZIP:', err);
+      toast.error('Failed to generate ZIP archive');
+    }
   };
 
   // Generate PDF print file using CanvasExporter
@@ -502,6 +740,10 @@ NetravePrint Production Team
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => downloadAllArtwork('pdf')}>
                 Download All as PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={downloadAllAsZip}>
+                <Archive className="w-4 h-4 mr-2" />
+                Download All as ZIP
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
