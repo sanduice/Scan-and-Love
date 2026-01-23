@@ -2,9 +2,11 @@ import React from 'react'
 import './App.css'
 import Pages from "@/pages/index.jsx"
 import { Toaster } from "@/components/ui/toaster"
+import { Toaster as SonnerToaster } from 'sonner'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from '@/contexts/AuthContext'
 
+// Create query client instance outside component to prevent recreation on re-renders
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -20,6 +22,7 @@ function App() {
       <AuthProvider>
         <Pages />
         <Toaster />
+        <SonnerToaster position="top-right" richColors />
       </AuthProvider>
     </QueryClientProvider>
   )
