@@ -8,12 +8,14 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { 
   Package, Truck, Download, Printer, FileImage, Clock, CheckCircle,
   MapPin, Phone, Mail, AlertCircle, ExternalLink, Copy, Ship,
   Send, Eye, ZoomIn, X, Loader2, FileDown, Image as ImageIcon,
-  MessageSquare, Check, XCircle, Upload
+  MessageSquare, Check, XCircle, Upload, ChevronDown
 } from 'lucide-react';
+import { downloadPDF } from '@/components/designer/CanvasExporter';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -232,11 +234,65 @@ export default function OrderDetailPanel({ order, onUpdate, onClose }) {
     }
   };
 
-  const downloadAllArtwork = () => {
+  const downloadAllArtwork = (format = 'svg') => {
     items.forEach((item, i) => {
-      setTimeout(() => generatePrintFile(item, i), i * 500);
+      setTimeout(() => {
+        if (format === 'pdf') {
+          generatePDFFile(item, i);
+        } else {
+          generatePrintFile(item, i);
+        }
+      }, i * 500);
     });
-    toast.success(`Downloading ${items.length} artwork files...`);
+    toast.success(`Downloading ${items.length} ${format.toUpperCase()} files...`);
+  };
+
+  // Generate PDF print file using CanvasExporter
+  const generatePDFFile = async (item, index) => {
+    const DPI = 150;
+    const width = item.width || 3;
+    const height = item.height || 1.5;
+    
+    toast.info('Generating PDF print file...');
+    
+    try {
+      let elements = [];
+      
+      // Try to get elements from the item directly
+      if (item.elements_json) {
+        try {
+          elements = JSON.parse(item.elements_json);
+        } catch (e) { console.error('Error parsing item elements', e); }
+      }
+      
+      // If no elements and it's a badge order (or has a design_id), fetch from NameBadgeDesign
+      if (elements.length === 0 && item.design_id) {
+        try {
+          const designs = await base44.entities.NameBadgeDesign.filter({ id: item.design_id });
+          if (designs && designs.length > 0) {
+            const design = designs[0];
+            if (design.elements_json) {
+              elements = JSON.parse(design.elements_json);
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch badge design:', err);
+        }
+      }
+
+      if (elements.length === 0 && !item.artwork_url) {
+        toast.error('No design elements found for PDF generation.');
+        return;
+      }
+      
+      const filename = `${order.order_number}_item${index + 1}_${width}x${height}_${DPI}dpi.pdf`;
+      await downloadPDF(elements, width, height, DPI, filename);
+      
+      toast.success(`Downloaded PDF for Item ${index + 1}`);
+    } catch (e) {
+      console.error('Error generating PDF:', e);
+      toast.error('Failed to generate PDF. Check console for details.');
+    }
   };
 
   const copyToClipboard = (text) => {
@@ -417,10 +473,23 @@ NetravePrint Production Team
             <Printer className="w-4 h-4 mr-2" />
             Packing Slip
           </Button>
-          <Button variant="outline" size="sm" onClick={downloadAllArtwork}>
-            <Download className="w-4 h-4 mr-2" />
-            All Artwork
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="w-4 h-4 mr-2" />
+                All Artwork
+                <ChevronDown className="w-4 h-4 ml-2" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => downloadAllArtwork('svg')}>
+                Download All as SVG
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => downloadAllArtwork('pdf')}>
+                Download All as PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -742,14 +811,26 @@ NetravePrint Production Team
                     </div>
                     
                     <div className="flex gap-2">
-                      <Button 
-                        className="flex-1 bg-green-600 hover:bg-green-700"
-                        onClick={() => generatePrintFile(item, i)}
-                        disabled={!hasArtwork}
-                      >
-                        <FileDown className="w-4 h-4 mr-2" />
-                        Download SVG
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button 
+                            className="flex-1 bg-green-600 hover:bg-green-700"
+                            disabled={!hasArtwork}
+                          >
+                            <FileDown className="w-4 h-4 mr-2" />
+                            Download
+                            <ChevronDown className="w-4 h-4 ml-2" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem onClick={() => generatePrintFile(item, i)}>
+                            Download as SVG
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => generatePDFFile(item, i)}>
+                            Download as PDF
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <Button 
                         variant="outline"
                         onClick={() => setViewingArtwork({ item, index: i })}
