@@ -249,7 +249,7 @@ export default function OrderDetailPanel({ order, onUpdate, onClose }) {
 PACKING SLIP
 ============
 Order: ${order.order_number}
-Date: ${format(new Date(order.created_date), 'MMM d, yyyy')}
+Date: ${order.created_at ? format(new Date(order.created_at), 'MMM d, yyyy') : 'N/A'}
 
 SHIP TO:
 ${shippingAddress.name || ''}
@@ -409,7 +409,7 @@ NetravePrint Production Team
             )}
           </div>
           <p className="text-sm text-gray-500 mt-1">
-            {format(new Date(order.created_date), "MMMM d, yyyy 'at' h:mm a")}
+            {order.created_at ? format(new Date(order.created_at), "MMMM d, yyyy 'at' h:mm a") : 'Date unavailable'}
           </p>
         </div>
         <div className="flex gap-2">

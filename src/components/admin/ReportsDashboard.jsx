@@ -46,7 +46,7 @@ export default function ReportsDashboard() {
     // Aggregate Sales Over Time
     const byTime = {};
     filteredOrders.forEach(order => {
-      const date = format(new Date(order.created_date), 'MMM dd');
+      const date = order.created_at ? format(new Date(order.created_at), 'MMM dd') : 'Unknown';
       if (!byTime[date]) byTime[date] = { date, sales: 0, tax: 0 };
       byTime[date].sales += (order.subtotal || 0);
       byTime[date].tax += (order.tax || 0);
