@@ -484,21 +484,30 @@ export default function Cart() {
         notes: 'TEST ORDER - Payment skipped for testing purposes'
       });
 
-      for (const item of cartItems) {
-        if (item.itemType === 'badge') {
-          await base44.entities.NameBadgeOrder.update(item.id, { is_in_cart: false });
-        } else {
-          await base44.entities.SavedDesign.update(item.id, { is_in_cart: false, is_ordered: true });
+      // Order created successfully - close dialog and navigate immediately
+      toast.success('Test order created successfully!');
+      setShowCheckout(false);
+      
+      // Clear cart items (non-blocking - don't let cleanup failures block navigation)
+      try {
+        for (const item of cartItems) {
+          if (item.itemType === 'badge') {
+            await base44.entities.NameBadgeOrder.update(item.id, { is_in_cart: false });
+          } else {
+            await base44.entities.SavedDesign.update(item.id, { is_in_cart: false });
+          }
         }
+      } catch (cleanupError) {
+        console.warn('Cart cleanup warning:', cleanupError);
       }
 
       queryClient.invalidateQueries({ queryKey: ['cart-items'] });
-      toast.success('Test order created successfully!');
-      setShowCheckout(false);
+      queryClient.invalidateQueries({ queryKey: ['saved-designs'] });
       navigate(createPageUrl('Account'));
     } catch (err) {
       console.error('Test order creation failed:', err);
       toast.error('Failed to create test order: ' + err.message);
+      setCheckoutError(err.message);
     } finally {
       setIsProcessing(false);
     }
@@ -577,21 +586,28 @@ export default function Cart() {
         payment_intent_id: paymentResult.paymentIntentId || paymentResult.id
       });
 
-      // Cleanup cart
-      for (const item of cartItems) {
-        if (item.itemType === 'badge') {
-          await base44.entities.NameBadgeOrder.update(item.id, { is_in_cart: false });
-        } else {
-          await base44.entities.SavedDesign.update(item.id, { is_in_cart: false, is_ordered: true });
-        }
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['cart-items'] });
+      // Order created successfully - close dialog and navigate immediately
       toast.success(isBypass ? 'Test order placed successfully!' : 'Order placed successfully!');
       setShowCheckout(false);
       setClientSecret("");
       setPaymentMode("stripe");
       setCheckoutError("");
+      
+      // Cleanup cart (non-blocking - don't let cleanup failures block navigation)
+      try {
+        for (const item of cartItems) {
+          if (item.itemType === 'badge') {
+            await base44.entities.NameBadgeOrder.update(item.id, { is_in_cart: false });
+          } else {
+            await base44.entities.SavedDesign.update(item.id, { is_in_cart: false });
+          }
+        }
+      } catch (cleanupError) {
+        console.warn('Cart cleanup warning:', cleanupError);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['cart-items'] });
+      queryClient.invalidateQueries({ queryKey: ['saved-designs'] });
       navigate(createPageUrl('Account'));
     } catch (err) {
       console.error('Order creation failed:', err);
