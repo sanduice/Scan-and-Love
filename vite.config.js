@@ -27,8 +27,8 @@ export default defineConfig(({ mode }) => ({
     extensions: ['.mjs', '.js', '.jsx', '.ts', '.tsx', '.json']
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime', '@tanstack/react-query'],
-    force: true,
+    // IMPORTANT: do NOT prebundle react/react-dom (can produce a second React copy -> invalid hook call)
+    exclude: ['react', 'react-dom', 'react/jsx-runtime', 'react/jsx-dev-runtime'],
     esbuildOptions: {
       loader: {
         '.js': 'jsx',
