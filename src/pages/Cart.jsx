@@ -6,7 +6,7 @@ import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ShoppingCart, ArrowLeft, Trash2, Plus, Minus, Edit, Loader2, CreditCard, CheckCircle, Download, ChevronDown, ChevronUp, Users, FileText } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Trash2, Plus, Minus, Edit, Loader2, CreditCard, CheckCircle, Download, ChevronDown, ChevronUp, Users, FileText, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -396,6 +396,109 @@ export default function Cart() {
         toast.info('Using test payment mode');
     } finally {
         setIsProcessing(false);
+    }
+  };
+
+  // Skip payment for testing - creates order without payment
+  const handleSkipPayment = async () => {
+    setCheckoutError("");
+    
+    const isAuth = await base44.auth.isAuthenticated();
+    if (!isAuth) {
+      toast.info('Please sign in to complete your order');
+      setShowCheckout(false);
+      base44.auth.redirectToLogin(window.location.href);
+      return;
+    }
+
+    if (!shippingInfo.name || !shippingInfo.street || !shippingInfo.city || !shippingInfo.state || !shippingInfo.zip) {
+      setCheckoutError('Please fill in all shipping information');
+      toast.error('Please fill in all shipping information');
+      return;
+    }
+
+    setIsProcessing(true);
+    
+    try {
+      const orderItems = cartItems.map(item => {
+        if (item.itemType === 'badge') {
+          return {
+            item_type: 'badge',
+            badge_order_id: item.id,
+            design_id: item.design_id,
+            product_name: 'Custom Name Badges',
+            size_shape: item.size_shape,
+            fastener: item.fastener,
+            border: item.border,
+            dome: item.dome,
+            quantity: item.quantity || 1,
+            unit_price: item.unit_price || 0,
+            line_total: item.total_price || 0,
+            thumbnail_url: item.thumbnail_url || '',
+            names_csv_url: item.names_csv_url || '',
+            names_data_json: item.names_data_json || '',
+          };
+        }
+        return {
+          item_type: 'design',
+          saved_design_id: item.id,
+          product_type: item.product_type,
+          product_name: item.name || item.product_type?.replace('-', ' '),
+          width: item.width,
+          height: item.height,
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || 0,
+          line_total: (item.unit_price || 0) * (item.quantity || 1),
+          thumbnail_url: item.thumbnail_url || '',
+          artwork_url: item.artwork_url || '',
+          elements_json: item.elements_json || '',
+          options_json: item.options_json || '',
+          material: item.material || '',
+          finish: item.finish || '',
+          snapshot_json: JSON.stringify({
+            elements: item.elements_json,
+            options: item.options_json,
+            artwork: item.artwork_url
+          })
+        };
+      });
+
+      const orderNumber = 'TEST-' + Date.now().toString(36).toUpperCase();
+
+      await base44.entities.Order.create({
+        order_number: orderNumber,
+        status: 'pending',
+        payment_status: 'test_skip',
+        items_json: JSON.stringify(orderItems),
+        subtotal: subtotal,
+        shipping_cost: shipping,
+        tax: tax,
+        total: total,
+        shipping_address_json: JSON.stringify(shippingInfo),
+        customer_email: shippingInfo.email || (ownerInfo?.email || ''),
+        customer_phone: shippingInfo.phone || '',
+        shipping_method: shipping === 0 ? 'Free Shipping' : 'Standard Shipping',
+        payment_intent_id: `test_skip_${Date.now()}`,
+        notes: 'TEST ORDER - Payment skipped for testing purposes'
+      });
+
+      for (const item of cartItems) {
+        if (item.itemType === 'badge') {
+          await base44.entities.NameBadgeOrder.update(item.id, { is_in_cart: false });
+        } else {
+          await base44.entities.SavedDesign.update(item.id, { is_in_cart: false, is_ordered: true });
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['cart-items'] });
+      toast.success('Test order created successfully!');
+      setShowCheckout(false);
+      navigate(createPageUrl('Account'));
+    } catch (err) {
+      console.error('Test order creation failed:', err);
+      toast.error('Failed to create test order: ' + err.message);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -893,6 +996,19 @@ export default function Cart() {
                     Proceed to Payment - ${total.toFixed(2)}
                   </>
                 )}
+              </Button>
+            )}
+            
+            {/* Skip Payment - Test Mode Button */}
+            {!clientSecret && (
+              <Button 
+                variant="outline"
+                className="w-full mt-3 border-orange-400 text-orange-600 hover:bg-orange-50"
+                onClick={handleSkipPayment}
+                disabled={isProcessing}
+              >
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                Skip Payment (Test Mode)
               </Button>
             )}
           </div>
