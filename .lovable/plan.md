@@ -1,142 +1,142 @@
 
-## Goal
-Fix the “blink to Checkout then back to an empty Cart page” behavior when clicking **Proceed to Checkout**. Users should reliably land on the Checkout page, and the Cart should never incorrectly show empty while the app is still figuring out who the “owner” is (logged-in user vs anonymous session).
+
+## Add Product Thumbnails to Order History
+
+### Goal
+Display product thumbnails for each item in the Order History list on the Account page, so users can visually identify their past orders.
 
 ---
 
-## What’s actually happening (root cause)
-Both **Cart** and **Checkout** depend on `ownerInfo`, which is fetched asynchronously:
+### Current State
+- The Order History displays each order as a card showing:
+  - Order number
+  - Date
+  - Status badge
+  - Total price
+  - View Details / Reorder buttons
+- **No product thumbnails are shown**
 
-- `ownerInfo` starts as `null`
-- `getUserOrSession()` runs in a `useEffect` and resolves shortly after
-
-But the React Query cart queries are configured with:
-- `enabled: !!ownerInfo`
-
-When `ownerInfo` is still `null`, those queries do **not** run, and importantly React Query sets `isLoading` to **false** when a query is disabled.
-
-### Result
-- On **Checkout.jsx**:
-  - `ownerInfo` is `null`
-  - queries are disabled → `isLoading === false`
-  - `cartItems` is `[]`
-  - the redirect effect runs:
-    ```js
-    if (!isLoading && cartItems.length === 0) navigate(createPageUrl('Cart'));
-    ```
-  - so it immediately redirects back to `/Cart` (this is the “blink”)
-
-- On **Cart.jsx** after redirect:
-  - same situation: queries disabled → `isLoading === false`
-  - `cartItems` is `[]`
-  - the component renders the **empty cart** screen (even though the cart may actually have items)
-
-So this is not primarily a database problem anymore—it’s a **frontend loading-state problem** caused by treating “queries disabled” as “finished loading”.
+### Data Available
+Each order has an `items` JSONB array containing order line items with the following thumbnail-related fields:
+- `thumbnail_url` - URL to the design/product thumbnail image
+- `product_name` - Name of the product
+- `item_type` - Either `'badge'` or `'design'`
 
 ---
 
-## Fix strategy (high level)
-1. Introduce an explicit “owner is still loading” state:
-   - `const isOwnerLoading = ownerInfo === null`
-2. Treat the page as loading while `ownerInfo` is not ready:
-   - `const isLoading = isOwnerLoading || loadingSavedDesigns || loadingBadgeOrders`
-3. Only show “empty cart” UI and only redirect **after** owner info is resolved and queries have actually run.
+### Implementation
 
-This prevents:
-- Checkout from redirecting before it even knows who to query for
-- Cart from showing “empty” while owner resolution is still pending
+#### Changes to `src/pages/Account.jsx`
 
----
+**1. Import ImageWithFallback component**
+Add import at the top of the file to use the existing fallback-capable image component.
 
-## Implementation steps (code changes)
-
-### 1) Update `src/pages/Checkout.jsx`
-**A. Fix loading computation**
-- Add:
-  - `const isOwnerLoading = !ownerInfo;`
-- Change:
-  - `const isLoading = loadingSavedDesigns || loadingBadgeOrders;`
-- To:
-  - `const isLoading = isOwnerLoading || loadingSavedDesigns || loadingBadgeOrders;`
-
-**B. Guard the “empty cart redirect” effect**
-Current:
-```js
-useEffect(() => {
-  if (!isLoading && cartItems.length === 0) {
-    navigate(createPageUrl('Cart'));
-  }
-}, [isLoading, cartItems.length, navigate]);
+**2. Create helper function to extract thumbnails from order items**
+```javascript
+const getOrderThumbnails = (order) => {
+  const items = order.items || [];
+  return items.slice(0, 4).map(item => ({
+    thumbnail_url: item.thumbnail_url,
+    product_name: item.product_name,
+    item_type: item.item_type
+  }));
+};
 ```
 
-Update to:
-- Don’t redirect until `ownerInfo` is known (and thus queries are allowed to run)
-- Also include `ownerInfo` in dependencies
+**3. Update the order card layout to include thumbnails**
 
-Example logic:
-```js
-useEffect(() => {
-  if (!ownerInfo) return;              // wait for user/session resolution
-  if (isLoading) return;               // wait for data
-  if (cartItems.length === 0) navigate(createPageUrl('Cart'));
-}, [ownerInfo, isLoading, cartItems.length, navigate]);
+Before the order number/date header, add a horizontal strip of product thumbnails:
+
+```text
++-------------------------------------------------------+
+| [img] [img] [img] (+2 more)                           |
+|                                                       |
+| Order #ABC123                   Jan 28, 2026   [Paid] |
+|-------------------------------------------------------|
+| $125.00          [View Details]  [Reorder]            |
++-------------------------------------------------------+
 ```
 
-**C. Ensure the “cart is empty” page doesn’t show during owner resolution**
-This is automatically solved if you use the new `isLoading` definition before the `cartItems.length === 0` conditional renders.
+**Layout details:**
+- Show up to 4 thumbnails in a horizontal row
+- Each thumbnail is a small square (48x48px or similar)
+- If more than 4 items exist, show a "+N more" indicator
+- Use `ImageWithFallback` component for graceful fallback when image is missing
+- Badge items get a small "badge" label overlay
+- Design items show the design thumbnail
 
 ---
 
-### 2) Update `src/pages/Cart.jsx`
-Cart has the same issue: when `ownerInfo` is null, queries are disabled and `isLoading` becomes false → shows empty cart prematurely.
+### Code Changes Summary
 
-**A. Fix loading computation**
-- Add:
-  - `const isOwnerLoading = !ownerInfo;`
-- Change:
-  - `const isLoading = loadingSavedDesigns || loadingBadgeOrders;`
-- To:
-  - `const isLoading = isOwnerLoading || loadingSavedDesigns || loadingBadgeOrders;`
-
-**B. Ensure empty-cart UI only appears when owner is resolved**
-This is automatically solved if the `isLoading` check happens before the empty check (it already does), once `isLoading` includes `isOwnerLoading`.
+| File | Change |
+|------|--------|
+| `src/pages/Account.jsx` | Add ImageWithFallback import |
+| `src/pages/Account.jsx` | Add `getOrderThumbnails` helper function |
+| `src/pages/Account.jsx` | Update order card JSX to include thumbnail row |
 
 ---
 
-### 3) Optional but recommended: add a small debug log while stabilizing
-To confirm we fixed the real cause quickly, add temporary `console.log` (and remove once verified):
-- In Cart and Checkout, log:
-  - `ownerInfo`, `isLoading`, `savedDesigns.length`, `badgeOrders.length`, `cartItems.length`
+### Visual Design
 
-This will immediately show whether the “empty” state was due to ownerInfo not being ready.
+Each order card will be updated:
+
+**Current structure (lines 250-271):**
+```jsx
+<div key={order.id} className="border rounded-xl p-4 ...">
+  <div className="flex items-center justify-between mb-3">
+    {/* Order number, date, status */}
+  </div>
+  <div className="flex items-center justify-between mt-4 pt-4 border-t">
+    {/* Total and buttons */}
+  </div>
+</div>
+```
+
+**New structure:**
+```jsx
+<div key={order.id} className="border rounded-xl p-4 ...">
+  {/* NEW: Thumbnail row */}
+  <div className="flex items-center gap-2 mb-3">
+    {thumbnails.map((item, idx) => (
+      <div key={idx} className="w-12 h-12 rounded border ...">
+        <ImageWithFallback ... />
+      </div>
+    ))}
+    {order.items?.length > 4 && (
+      <span className="text-sm text-muted-foreground">
+        +{order.items.length - 4} more
+      </span>
+    )}
+  </div>
+  
+  {/* Existing: Order header */}
+  <div className="flex items-center justify-between mb-3">
+    {/* Order number, date, status */}
+  </div>
+  
+  {/* Existing: Footer with total and buttons */}
+  <div className="flex items-center justify-between mt-4 pt-4 border-t">
+    {/* Total and buttons */}
+  </div>
+</div>
+```
 
 ---
 
-## Acceptance criteria (how we’ll confirm it’s fixed)
-1. Go to `/Cart` with at least 1 saved_design in cart.
-2. Click **Proceed to Checkout**.
-3. Expected:
-   - It navigates to `/Checkout` and stays there (no blink back).
-   - Order summary shows the cart item(s).
-4. Refresh directly on `/Checkout` (hard refresh).
-   - It should still load cart items correctly (no redirect loop).
+### Edge Cases Handled
+
+1. **No items in order**: Thumbnail row is hidden or shows placeholder
+2. **Missing thumbnail_url**: `ImageWithFallback` displays a graceful fallback icon
+3. **Many items**: Only show first 4 thumbnails + "+N more" count
+4. **Empty items array**: Safely handle with `items || []`
 
 ---
 
-## Notes / related follow-ups (not required for this fix)
-- `Checkout.jsx` uses `ownerInfo?.email` but `getUserOrSession()` returns `{ user }` not `{ email }`. If you want email, use `ownerInfo.user.email` or map it when setting ownerInfo. This does not cause the redirect bug, but may affect tax/payment metadata.
-- `Cart.jsx` tries to `delete` name badge orders, but your database currently blocks DELETE for `name_badge_orders`. That’s a separate UX issue (remove will fail for badge items) and can be addressed after checkout navigation is stable.
+### Testing Checklist
+- Go to Account > Orders with at least one order
+- Verify thumbnails appear for orders with items containing `thumbnail_url`
+- Verify fallback icon appears for items without thumbnails
+- Verify "+N more" indicator shows for orders with more than 4 items
+- Verify styling is consistent with the rest of the page
 
----
-
-## Files to change
-- `src/pages/Checkout.jsx`
-- `src/pages/Cart.jsx`
-
----
-
-## Testing checklist (end-to-end)
-- Add item → Cart shows it
-- Cart → Proceed to Checkout → Checkout loads items (no blink)
-- Refresh Checkout page → still loads items
-- If cart truly empty → Checkout redirects back to Cart (still desired behavior)
