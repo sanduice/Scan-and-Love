@@ -365,41 +365,77 @@ export type Database = {
       }
       name_badge_orders: {
         Row: {
+          background: string | null
+          badge_type: string | null
+          border: string | null
           created_at: string
           design_id: string | null
+          dome: string | null
+          fastener: string | null
           id: string
+          is_in_cart: boolean | null
           names: Json | null
+          names_csv_url: string | null
+          names_data_json: string | null
           options: Json | null
           quantity: number | null
           session_id: string | null
+          size_shape: string | null
           status: string | null
+          thumbnail_url: string | null
           total: number | null
+          total_price: number | null
+          unit_price: number | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          background?: string | null
+          badge_type?: string | null
+          border?: string | null
           created_at?: string
           design_id?: string | null
+          dome?: string | null
+          fastener?: string | null
           id?: string
+          is_in_cart?: boolean | null
           names?: Json | null
+          names_csv_url?: string | null
+          names_data_json?: string | null
           options?: Json | null
           quantity?: number | null
           session_id?: string | null
+          size_shape?: string | null
           status?: string | null
+          thumbnail_url?: string | null
           total?: number | null
+          total_price?: number | null
+          unit_price?: number | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          background?: string | null
+          badge_type?: string | null
+          border?: string | null
           created_at?: string
           design_id?: string | null
+          dome?: string | null
+          fastener?: string | null
           id?: string
+          is_in_cart?: boolean | null
           names?: Json | null
+          names_csv_url?: string | null
+          names_data_json?: string | null
           options?: Json | null
           quantity?: number | null
           session_id?: string | null
+          size_shape?: string | null
           status?: string | null
+          thumbnail_url?: string | null
           total?: number | null
+          total_price?: number | null
+          unit_price?: number | null
           updated_at?: string
           user_id?: string | null
         }
