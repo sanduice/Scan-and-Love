@@ -4,19 +4,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ShoppingCart, ArrowLeft, Trash2, Plus, Minus, Edit, Loader2, CreditCard, CheckCircle, Download, ChevronDown, ChevronUp, Users, FileText, AlertTriangle } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Trash2, Plus, Minus, Edit, Loader2, CreditCard, Download, ChevronDown, ChevronUp, Users, FileText } from 'lucide-react';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { getSessionId, getUserOrSession } from '@/components/SessionManager';
 import ImageWithFallback from '@/components/ImageWithFallback';
 import { calculateNameBadgePrice } from '@/components/namebadge/utils';
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements } from "@stripe/react-stripe-js";
-import CheckoutForm from '@/components/checkout/CheckoutForm';
-import ManualPaymentForm from '@/components/checkout/ManualPaymentForm';
 
 // Badge Names List Component with inline editing
 function BadgeNamesList({ item, expanded, onToggle, queryClient }) {
@@ -162,25 +155,8 @@ function BadgeNamesList({ item, expanded, onToggle, queryClient }) {
 export default function Cart() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [expandedBadges, setExpandedBadges] = useState({});
   const [ownerInfo, setOwnerInfo] = useState(null);
-  const [shippingInfo, setShippingInfo] = useState({
-    name: '',
-    street: '',
-    city: '',
-    state: '',
-    zip: '',
-    phone: '',
-  });
-  const [tax, setTax] = useState(0);
-  const [taxLoading, setTaxLoading] = useState(false);
-  const [taxSource, setTaxSource] = useState(null);
-  const [clientSecret, setClientSecret] = useState("");
-  const [stripePromise, setStripePromise] = useState(null);
-  const [paymentMode, setPaymentMode] = useState("stripe"); // "stripe" | "bypass"
-  const [checkoutError, setCheckoutError] = useState("");
 
   // Get user/session info
   useEffect(() => {
@@ -222,21 +198,14 @@ export default function Cart() {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => base44.entities.SavedDesign.update(id, data),
     onMutate: async ({ id, data }) => {
-      // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['cart-items'] });
-      
-      // Snapshot the previous value for rollback
       const previousItems = queryClient.getQueryData(['cart-items']);
-      
-      // Optimistically update the cache immediately
       queryClient.setQueryData(['cart-items'], (old) => 
         old?.map(item => item.id === id ? { ...item, ...data } : item)
       );
-      
       return { previousItems };
     },
     onError: (err, variables, context) => {
-      // Rollback to previous value on error
       if (context?.previousItems) {
         queryClient.setQueryData(['cart-items'], context.previousItems);
       }
@@ -258,9 +227,6 @@ export default function Cart() {
 
   const updateQuantity = (item, newQty) => {
     if (newQty < 1) return;
-    
-    // Only update quantity - unit_price was already correctly calculated 
-    // when the item was added to cart (includes preset prices, options, etc.)
     updateMutation.mutate({
       id: item.id,
       data: { quantity: newQty },
@@ -295,327 +261,7 @@ export default function Cart() {
 
   const subtotal = calculateSubtotal();
   const shipping = subtotal >= 99 ? 0 : 12.95;
-  const total = subtotal + shipping + tax;
-
-  // Initialize Stripe
-  useEffect(() => {
-    const initStripe = async () => {
-        try {
-            const { data } = await base44.functions.invoke('get_stripe_config');
-            if (data.publishableKey) {
-                setStripePromise(loadStripe(data.publishableKey));
-            }
-        } catch (e) {
-            console.error("Failed to load stripe config", e);
-        }
-    };
-    initStripe();
-  }, []);
-
-  // Calculate Tax Effect
-  useEffect(() => {
-    const fetchTax = async () => {
-      if (!shippingInfo.state || !shippingInfo.zip) {
-        setTax(0);
-        return;
-      }
-      
-      setTaxLoading(true);
-      try {
-        let customer_email = ownerInfo?.email;
-        const { data } = await base44.functions.invoke('calculateTax', {
-          subtotal,
-          shipping,
-          address: shippingInfo,
-          customer_email
-        });
-
-        setTax(data.tax_amount || 0);
-        setTaxSource(data.tax_source);
-      } catch (error) {
-        console.error("Tax calculation failed", error);
-      } finally {
-        setTaxLoading(false);
-      }
-    };
-
-    const timeoutId = setTimeout(fetchTax, 800); 
-    return () => clearTimeout(timeoutId);
-  }, [shippingInfo.state, shippingInfo.zip, subtotal, shipping, ownerInfo]);
-
-  const handleProceedToPayment = async () => {
-    setCheckoutError("");
-    
-    // Require login
-    const isAuth = await base44.auth.isAuthenticated();
-    if (!isAuth) {
-      toast.info('Please sign in to complete your order');
-      setShowCheckout(false);
-      base44.auth.redirectToLogin(window.location.href);
-      return;
-    }
-
-    if (!shippingInfo.name || !shippingInfo.street || !shippingInfo.city || !shippingInfo.state || !shippingInfo.zip) {
-      setCheckoutError('Please fill in all shipping information');
-      toast.error('Please fill in all shipping information');
-      return;
-    }
-
-    setIsProcessing(true);
-    
-    // If Stripe is not available, go to bypass mode immediately
-    if (!stripePromise) {
-      console.log('Stripe not available, using bypass payment mode');
-      setPaymentMode("bypass");
-      setIsProcessing(false);
-      return;
-    }
-
-    try {
-        // Create PaymentIntent on backend
-        const { data } = await base44.functions.create_payment_intent({
-            amount: total,
-            currency: 'usd',
-            metadata: {
-              customer_email: ownerInfo?.email,
-              items_count: cartItems.length,
-              shipping_name: shippingInfo.name,
-              shipping_city: shippingInfo.city,
-              shipping_state: shippingInfo.state,
-            }
-        });
-
-        if (data.error) throw new Error(data.error);
-        
-        setPaymentMode("stripe");
-        setClientSecret(data.clientSecret);
-    } catch (err) {
-        console.error('Payment setup failed, falling back to bypass mode:', err);
-        // Fallback to bypass mode if Stripe fails
-        setPaymentMode("bypass");
-        toast.info('Using test payment mode');
-    } finally {
-        setIsProcessing(false);
-    }
-  };
-
-  // Skip payment for testing - creates order without payment
-  const handleSkipPayment = async () => {
-    setCheckoutError("");
-    
-    const isAuth = await base44.auth.isAuthenticated();
-    if (!isAuth) {
-      toast.info('Please sign in to complete your order');
-      setShowCheckout(false);
-      base44.auth.redirectToLogin(window.location.href);
-      return;
-    }
-
-    if (!shippingInfo.name || !shippingInfo.street || !shippingInfo.city || !shippingInfo.state || !shippingInfo.zip) {
-      setCheckoutError('Please fill in all shipping information');
-      toast.error('Please fill in all shipping information');
-      return;
-    }
-
-    setIsProcessing(true);
-    
-    try {
-      const orderItems = cartItems.map(item => {
-        if (item.itemType === 'badge') {
-          return {
-            item_type: 'badge',
-            badge_order_id: item.id,
-            design_id: item.design_id,
-            product_name: 'Custom Name Badges',
-            size_shape: item.size_shape,
-            fastener: item.fastener,
-            border: item.border,
-            dome: item.dome,
-            quantity: item.quantity || 1,
-            unit_price: item.unit_price || 0,
-            line_total: item.total_price || 0,
-            thumbnail_url: item.thumbnail_url || '',
-            names_csv_url: item.names_csv_url || '',
-            names_data_json: item.names_data_json || '',
-          };
-        }
-        return {
-          item_type: 'design',
-          saved_design_id: item.id,
-          product_type: item.product_type,
-          product_name: item.name || item.product_type?.replace('-', ' '),
-          width: item.width,
-          height: item.height,
-          quantity: item.quantity || 1,
-          unit_price: item.unit_price || 0,
-          line_total: (item.unit_price || 0) * (item.quantity || 1),
-          thumbnail_url: item.thumbnail_url || '',
-          artwork_url: item.artwork_url || '',
-          elements_json: item.elements_json || '',
-          options_json: item.options_json || '',
-          material: item.material || '',
-          finish: item.finish || '',
-          snapshot_json: JSON.stringify({
-            elements: item.elements_json,
-            options: item.options_json,
-            artwork: item.artwork_url
-          })
-        };
-      });
-
-      const orderNumber = 'TEST-' + Date.now().toString(36).toUpperCase();
-
-      await base44.entities.Order.create({
-        order_number: orderNumber,
-        status: 'pending',
-        payment_status: 'test_skip',
-        items: orderItems,
-        subtotal: subtotal,
-        shipping: shipping,
-        tax: tax,
-        total: total,
-        shipping_address: {
-          ...shippingInfo,
-          email: shippingInfo.email || ownerInfo?.email || '',
-          phone: shippingInfo.phone || '',
-          shipping_method: shipping === 0 ? 'Free Shipping' : 'Standard Shipping'
-        },
-        payment_intent_id: `test_skip_${Date.now()}`,
-        notes: 'TEST ORDER - Payment skipped for testing purposes'
-      });
-
-      // Order created successfully - close dialog and navigate immediately
-      toast.success('Test order created successfully!');
-      setShowCheckout(false);
-      
-      // Clear cart items (non-blocking - don't let cleanup failures block navigation)
-      try {
-        for (const item of cartItems) {
-          if (item.itemType === 'badge') {
-            await base44.entities.NameBadgeOrder.update(item.id, { is_in_cart: false });
-          } else {
-            await base44.entities.SavedDesign.update(item.id, { is_in_cart: false });
-          }
-        }
-      } catch (cleanupError) {
-        console.warn('Cart cleanup warning:', cleanupError);
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['cart-items'] });
-      queryClient.invalidateQueries({ queryKey: ['saved-designs'] });
-      navigate(createPageUrl('Account'));
-    } catch (err) {
-      console.error('Test order creation failed:', err);
-      toast.error('Failed to create test order: ' + err.message);
-      setCheckoutError(err.message);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handlePaymentSuccess = async (paymentResult) => {
-    setIsProcessing(true);
-    const isBypass = paymentMode === "bypass";
-    
-    try {
-      // Create order items
-      const orderItems = cartItems.map(item => {
-        if (item.itemType === 'badge') {
-          return {
-            item_type: 'badge',
-            badge_order_id: item.id,
-            design_id: item.design_id,
-            product_name: 'Custom Name Badges',
-            size_shape: item.size_shape,
-            fastener: item.fastener,
-            border: item.border,
-            dome: item.dome,
-            quantity: item.quantity || 1,
-            unit_price: item.unit_price || 0,
-            line_total: item.total_price || 0,
-            thumbnail_url: item.thumbnail_url || '',
-            names_csv_url: item.names_csv_url || '',
-            names_data_json: item.names_data_json || '',
-          };
-        }
-        return {
-          item_type: 'design',
-          saved_design_id: item.id,
-          product_type: item.product_type,
-          product_name: item.name || item.product_type?.replace('-', ' '),
-          width: item.width,
-          height: item.height,
-          quantity: item.quantity || 1,
-          unit_price: item.unit_price || 0,
-          line_total: (item.unit_price || 0) * (item.quantity || 1),
-          thumbnail_url: item.thumbnail_url || '',
-          artwork_url: item.artwork_url || '',
-          elements_json: item.elements_json || '',
-          options_json: item.options_json || '',
-          material: item.material || '',
-          finish: item.finish || '',
-          snapshot_json: JSON.stringify({
-            elements: item.elements_json,
-            options: item.options_json,
-            artwork: item.artwork_url
-          })
-        };
-      });
-
-      const orderNumber = 'ORD-' + Date.now().toString(36).toUpperCase();
-
-      // Set order status based on payment mode
-      const orderStatus = isBypass ? 'pending_payment' : 'paid';
-      const paymentStatus = isBypass ? 'unpaid' : 'paid';
-
-      await base44.entities.Order.create({
-        order_number: orderNumber,
-        status: orderStatus,
-        payment_status: paymentStatus,
-        items: orderItems,
-        subtotal: subtotal,
-        shipping: shipping,
-        tax: tax,
-        total: total,
-        shipping_address: {
-          ...shippingInfo,
-          email: shippingInfo.email || ownerInfo?.email || '',
-          phone: shippingInfo.phone || '',
-          shipping_method: shipping === 0 ? 'Free Shipping' : 'Standard Shipping'
-        },
-        payment_intent_id: paymentResult.paymentIntentId || paymentResult.id
-      });
-
-      // Order created successfully - close dialog and navigate immediately
-      toast.success(isBypass ? 'Test order placed successfully!' : 'Order placed successfully!');
-      setShowCheckout(false);
-      setClientSecret("");
-      setPaymentMode("stripe");
-      setCheckoutError("");
-      
-      // Cleanup cart (non-blocking - don't let cleanup failures block navigation)
-      try {
-        for (const item of cartItems) {
-          if (item.itemType === 'badge') {
-            await base44.entities.NameBadgeOrder.update(item.id, { is_in_cart: false });
-          } else {
-            await base44.entities.SavedDesign.update(item.id, { is_in_cart: false });
-          }
-        }
-      } catch (cleanupError) {
-        console.warn('Cart cleanup warning:', cleanupError);
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['cart-items'] });
-      queryClient.invalidateQueries({ queryKey: ['saved-designs'] });
-      navigate(createPageUrl('Account'));
-    } catch (err) {
-      console.error('Order creation failed:', err);
-      toast.error('Payment successful but order creation failed. Please contact support.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  const total = subtotal + shipping;
 
   if (isLoading) {
     return (
@@ -858,7 +504,7 @@ export default function Cart() {
 
               <Button 
                 className="w-full mt-6 bg-[#8BC34A] hover:bg-[#7CB342] text-white h-12 text-lg"
-                onClick={() => setShowCheckout(true)}
+                onClick={() => navigate(createPageUrl('Checkout'))}
               >
                 <CreditCard className="w-5 h-5 mr-2" />
                 Proceed to Checkout
@@ -890,150 +536,6 @@ export default function Cart() {
         </div>
       </div>
 
-      {/* Checkout Dialog */}
-      <Dialog open={showCheckout} onOpenChange={setShowCheckout}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Checkout</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <div className="flex justify-between text-sm mb-2">
-                <span>Subtotal ({cartItems.length} items)</span>
-                <span>${subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-sm mb-2">
-              <span>Shipping</span>
-              <span>{shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}</span>
-              </div>
-              <div className="flex justify-between text-sm mb-2">
-              <span>Tax {taxLoading && <Loader2 className="inline w-3 h-3 animate-spin" />}</span>
-              <span>${tax.toFixed(2)}</span>
-              </div>
-              {taxSource === 'exempt' && <div className="text-xs text-green-600 mb-2">Tax Exempt Applied</div>}
-              <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                <span>Total</span>
-                <span className="text-[#8BC34A]">${total.toFixed(2)}</span>
-              </div>
-            </div>
-
-            <h3 className="font-medium">Shipping Information</h3>
-            <div className="space-y-3">
-              <div>
-                <Label>Full Name *</Label>
-                <Input 
-                  value={shippingInfo.name}
-                  onChange={(e) => setShippingInfo({ ...shippingInfo, name: e.target.value })}
-                  placeholder="John Doe"
-                />
-              </div>
-              <div>
-                <Label>Street Address *</Label>
-                <Input 
-                  value={shippingInfo.street}
-                  onChange={(e) => setShippingInfo({ ...shippingInfo, street: e.target.value })}
-                  placeholder="123 Main St"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>City *</Label>
-                  <Input 
-                    value={shippingInfo.city}
-                    onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
-                    placeholder="New York"
-                  />
-                </div>
-                <div>
-                  <Label>State *</Label>
-                  <Input 
-                    value={shippingInfo.state}
-                    onChange={(e) => setShippingInfo({ ...shippingInfo, state: e.target.value })}
-                    placeholder="NY"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>ZIP Code *</Label>
-                  <Input 
-                    value={shippingInfo.zip}
-                    onChange={(e) => setShippingInfo({ ...shippingInfo, zip: e.target.value })}
-                    placeholder="10001"
-                  />
-                </div>
-                <div>
-                  <Label>Phone</Label>
-                  <Input 
-                    value={shippingInfo.phone}
-                    onChange={(e) => setShippingInfo({ ...shippingInfo, phone: e.target.value })}
-                    placeholder="(555) 123-4567"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {checkoutError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {checkoutError}
-              </div>
-            )}
-
-            {/* Show appropriate payment UI based on state */}
-            {paymentMode === "bypass" ? (
-              <ManualPaymentForm 
-                amount={total}
-                onSuccess={handlePaymentSuccess}
-                onCancel={() => {
-                  setPaymentMode("stripe");
-                  setClientSecret("");
-                }}
-              />
-            ) : clientSecret ? (
-              <div className="mt-4">
-                <Elements options={{ clientSecret, appearance: { theme: 'stripe' } }} stripe={stripePromise}>
-                  <CheckoutForm 
-                    amount={total} 
-                    onSuccess={handlePaymentSuccess} 
-                    onCancel={() => setClientSecret("")}
-                  />
-                </Elements>
-              </div>
-            ) : (
-              <Button 
-                className="w-full bg-[#8BC34A] hover:bg-[#7CB342] text-white h-12"
-                onClick={handleProceedToPayment}
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="w-5 h-5 mr-2" />
-                    Proceed to Payment - ${total.toFixed(2)}
-                  </>
-                )}
-              </Button>
-            )}
-            
-            {/* Skip Payment - Test Mode Button */}
-            {!clientSecret && (
-              <Button 
-                variant="outline"
-                className="w-full mt-3 border-orange-400 text-orange-600 hover:bg-orange-50"
-                onClick={handleSkipPayment}
-                disabled={isProcessing}
-              >
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                Skip Payment (Test Mode)
-              </Button>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

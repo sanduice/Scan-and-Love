@@ -25,6 +25,7 @@ import NameBadgeDesigner from "./NameBadgeDesigner";
 import CleanupDuplicates from "./CleanupDuplicates";
 import RequestSamples from "./RequestSamples";
 import Auth from "./Auth";
+import Checkout from "./Checkout";
 
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
@@ -53,6 +54,7 @@ const PAGES = {
     CleanupDuplicates: CleanupDuplicates,
     RequestSamples: RequestSamples,
     Auth: Auth,
+    Checkout: Checkout,
 }
 
 function _getCurrentPage(url) {
@@ -127,6 +129,7 @@ function PagesContent() {
                 <Route path="/CleanupDuplicates" element={<CleanupDuplicates />} />
                 <Route path="/RequestSamples" element={<RequestSamples />} />
                 <Route path="/Auth" element={<Auth />} />
+                <Route path="/Checkout" element={<Checkout />} />
             </Routes>
         </Layout>
     );
