@@ -1,100 +1,142 @@
 
+## Goal
+Fix the “blink to Checkout then back to an empty Cart page” behavior when clicking **Proceed to Checkout**. Users should reliably land on the Checkout page, and the Cart should never incorrectly show empty while the app is still figuring out who the “owner” is (logged-in user vs anonymous session).
 
-## Fix: Checkout Page Redirecting Back to Cart
+---
 
-### Problem Identified
+## What’s actually happening (root cause)
+Both **Cart** and **Checkout** depend on `ownerInfo`, which is fetched asynchronously:
 
-When clicking "Proceed to Checkout", the user briefly sees the Checkout page, then gets redirected back to an empty Cart page. This happens because:
+- `ownerInfo` starts as `null`
+- `getUserOrSession()` runs in a `useEffect` and resolves shortly after
 
-1. **Database column missing**: The `name_badge_orders` table lacks an `is_in_cart` column
-2. **Query fails silently**: Both Cart.jsx and Checkout.jsx try to filter by `is_in_cart: true` on `name_badge_orders`
-3. **Error causes empty cart**: The failed query returns an empty array (due to error handling in base44Client.js returning `[]` on error)
-4. **Redirect triggers**: Checkout.jsx has a useEffect that redirects to Cart if `cartItems.length === 0`:
-   ```javascript
-   useEffect(() => {
-     if (!isLoading && cartItems.length === 0) {
-       navigate(createPageUrl('Cart'));
-     }
-   }, [isLoading, cartItems.length, navigate]);
-   ```
+But the React Query cart queries are configured with:
+- `enabled: !!ownerInfo`
 
-### Console Error Evidence
-```
-"column name_badge_orders.is_in_cart does not exist"
-```
+When `ownerInfo` is still `null`, those queries do **not** run, and importantly React Query sets `isLoading` to **false** when a query is disabled.
 
-### Current `name_badge_orders` Schema
-| Column | Type |
-|--------|------|
-| id | uuid |
-| user_id | uuid |
-| session_id | text |
-| design_id | uuid |
-| names | jsonb |
-| quantity | integer |
-| options | jsonb |
-| status | text |
-| total | numeric |
-| created_at | timestamp |
-| updated_at | timestamp |
+### Result
+- On **Checkout.jsx**:
+  - `ownerInfo` is `null`
+  - queries are disabled → `isLoading === false`
+  - `cartItems` is `[]`
+  - the redirect effect runs:
+    ```js
+    if (!isLoading && cartItems.length === 0) navigate(createPageUrl('Cart'));
+    ```
+  - so it immediately redirects back to `/Cart` (this is the “blink”)
 
-**Missing**: `is_in_cart` (boolean)
+- On **Cart.jsx** after redirect:
+  - same situation: queries disabled → `isLoading === false`
+  - `cartItems` is `[]`
+  - the component renders the **empty cart** screen (even though the cart may actually have items)
 
-### Solution
+So this is not primarily a database problem anymore—it’s a **frontend loading-state problem** caused by treating “queries disabled” as “finished loading”.
 
-Add the missing `is_in_cart` column to the `name_badge_orders` table with a default value of `true` (so existing records are considered in-cart).
+---
 
-### Database Migration Required
+## Fix strategy (high level)
+1. Introduce an explicit “owner is still loading” state:
+   - `const isOwnerLoading = ownerInfo === null`
+2. Treat the page as loading while `ownerInfo` is not ready:
+   - `const isLoading = isOwnerLoading || loadingSavedDesigns || loadingBadgeOrders`
+3. Only show “empty cart” UI and only redirect **after** owner info is resolved and queries have actually run.
 
-```sql
-ALTER TABLE name_badge_orders 
-ADD COLUMN is_in_cart boolean DEFAULT true;
-```
+This prevents:
+- Checkout from redirecting before it even knows who to query for
+- Cart from showing “empty” while owner resolution is still pending
 
-### Additional Columns to Add
+---
 
-Looking at the Checkout.jsx code, it also references these columns on `name_badge_orders` that may be missing:
-- `unit_price` - Used for pricing display
-- `total_price` - Used for totals calculation  
-- `thumbnail_url` - For item preview images
-- `names_csv_url` - For CSV download
-- `names_data_json` - For badge names data
-- `badge_type` - For display (executive/premium/custom)
-- `size_shape` - Badge size/shape info
-- `fastener` - Fastener type
-- `border` - Border style
-- `dome` - Dome option
-- `background` - Background style
+## Implementation steps (code changes)
 
-### Complete Migration
+### 1) Update `src/pages/Checkout.jsx`
+**A. Fix loading computation**
+- Add:
+  - `const isOwnerLoading = !ownerInfo;`
+- Change:
+  - `const isLoading = loadingSavedDesigns || loadingBadgeOrders;`
+- To:
+  - `const isLoading = isOwnerLoading || loadingSavedDesigns || loadingBadgeOrders;`
 
-```sql
-ALTER TABLE name_badge_orders 
-ADD COLUMN IF NOT EXISTS is_in_cart boolean DEFAULT true,
-ADD COLUMN IF NOT EXISTS unit_price numeric DEFAULT 0,
-ADD COLUMN IF NOT EXISTS total_price numeric DEFAULT 0,
-ADD COLUMN IF NOT EXISTS thumbnail_url text,
-ADD COLUMN IF NOT EXISTS names_csv_url text,
-ADD COLUMN IF NOT EXISTS names_data_json text,
-ADD COLUMN IF NOT EXISTS badge_type text DEFAULT 'custom',
-ADD COLUMN IF NOT EXISTS size_shape text,
-ADD COLUMN IF NOT EXISTS fastener text,
-ADD COLUMN IF NOT EXISTS border text,
-ADD COLUMN IF NOT EXISTS dome text,
-ADD COLUMN IF NOT EXISTS background text;
+**B. Guard the “empty cart redirect” effect**
+Current:
+```js
+useEffect(() => {
+  if (!isLoading && cartItems.length === 0) {
+    navigate(createPageUrl('Cart'));
+  }
+}, [isLoading, cartItems.length, navigate]);
 ```
 
-### Files to Modify
+Update to:
+- Don’t redirect until `ownerInfo` is known (and thus queries are allowed to run)
+- Also include `ownerInfo` in dependencies
 
-| File | Action | Description |
-|------|--------|-------------|
-| Database | Migration | Add missing columns to `name_badge_orders` table |
+Example logic:
+```js
+useEffect(() => {
+  if (!ownerInfo) return;              // wait for user/session resolution
+  if (isLoading) return;               // wait for data
+  if (cartItems.length === 0) navigate(createPageUrl('Cart'));
+}, [ownerInfo, isLoading, cartItems.length, navigate]);
+```
 
-### Expected Result
+**C. Ensure the “cart is empty” page doesn’t show during owner resolution**
+This is automatically solved if you use the new `isLoading` definition before the `cartItems.length === 0` conditional renders.
 
-After the migration:
-1. The query `base44.entities.NameBadgeOrder.filter({ is_in_cart: true, ... })` will succeed
-2. Cart items will load correctly
-3. Checkout page will display properly without redirecting
-4. Users can complete checkout flow
+---
 
+### 2) Update `src/pages/Cart.jsx`
+Cart has the same issue: when `ownerInfo` is null, queries are disabled and `isLoading` becomes false → shows empty cart prematurely.
+
+**A. Fix loading computation**
+- Add:
+  - `const isOwnerLoading = !ownerInfo;`
+- Change:
+  - `const isLoading = loadingSavedDesigns || loadingBadgeOrders;`
+- To:
+  - `const isLoading = isOwnerLoading || loadingSavedDesigns || loadingBadgeOrders;`
+
+**B. Ensure empty-cart UI only appears when owner is resolved**
+This is automatically solved if the `isLoading` check happens before the empty check (it already does), once `isLoading` includes `isOwnerLoading`.
+
+---
+
+### 3) Optional but recommended: add a small debug log while stabilizing
+To confirm we fixed the real cause quickly, add temporary `console.log` (and remove once verified):
+- In Cart and Checkout, log:
+  - `ownerInfo`, `isLoading`, `savedDesigns.length`, `badgeOrders.length`, `cartItems.length`
+
+This will immediately show whether the “empty” state was due to ownerInfo not being ready.
+
+---
+
+## Acceptance criteria (how we’ll confirm it’s fixed)
+1. Go to `/Cart` with at least 1 saved_design in cart.
+2. Click **Proceed to Checkout**.
+3. Expected:
+   - It navigates to `/Checkout` and stays there (no blink back).
+   - Order summary shows the cart item(s).
+4. Refresh directly on `/Checkout` (hard refresh).
+   - It should still load cart items correctly (no redirect loop).
+
+---
+
+## Notes / related follow-ups (not required for this fix)
+- `Checkout.jsx` uses `ownerInfo?.email` but `getUserOrSession()` returns `{ user }` not `{ email }`. If you want email, use `ownerInfo.user.email` or map it when setting ownerInfo. This does not cause the redirect bug, but may affect tax/payment metadata.
+- `Cart.jsx` tries to `delete` name badge orders, but your database currently blocks DELETE for `name_badge_orders`. That’s a separate UX issue (remove will fail for badge items) and can be addressed after checkout navigation is stable.
+
+---
+
+## Files to change
+- `src/pages/Checkout.jsx`
+- `src/pages/Cart.jsx`
+
+---
+
+## Testing checklist (end-to-end)
+- Add item → Cart shows it
+- Cart → Proceed to Checkout → Checkout loads items (no blink)
+- Refresh Checkout page → still loads items
+- If cart truly empty → Checkout redirects back to Cart (still desired behavior)
