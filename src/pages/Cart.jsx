@@ -187,7 +187,9 @@ export default function Cart() {
     enabled: !!ownerInfo,
   });
 
-  const isLoading = loadingSavedDesigns || loadingBadgeOrders;
+  // Include owner loading state - queries are disabled when ownerInfo is null
+  const isOwnerLoading = !ownerInfo;
+  const isLoading = isOwnerLoading || loadingSavedDesigns || loadingBadgeOrders;
 
   // Combine cart items
   const cartItems = [

@@ -83,7 +83,9 @@ export default function Checkout() {
     enabled: !!ownerInfo,
   });
 
-  const isLoading = loadingSavedDesigns || loadingBadgeOrders;
+  // Include owner loading state - queries are disabled when ownerInfo is null
+  const isOwnerLoading = !ownerInfo;
+  const isLoading = isOwnerLoading || loadingSavedDesigns || loadingBadgeOrders;
 
   // Combine cart items
   const cartItems = [
@@ -155,12 +157,14 @@ export default function Checkout() {
     }
   }, [sameAsShipping, shippingAddress]);
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty - only after owner info is resolved
   useEffect(() => {
-    if (!isLoading && cartItems.length === 0) {
+    if (!ownerInfo) return; // Wait for user/session resolution
+    if (isLoading) return;  // Wait for data to load
+    if (cartItems.length === 0) {
       navigate(createPageUrl('Cart'));
     }
-  }, [isLoading, cartItems.length, navigate]);
+  }, [ownerInfo, isLoading, cartItems.length, navigate]);
 
   const validateAddresses = () => {
     if (!shippingAddress.name || !shippingAddress.street || !shippingAddress.city || !shippingAddress.state || !shippingAddress.zip) {
