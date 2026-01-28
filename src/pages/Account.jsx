@@ -16,6 +16,17 @@ import {
   Plus, Edit, Loader2, Eye, Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import ImageWithFallback from '@/components/ImageWithFallback';
+
+// Helper function to extract thumbnails from order items
+const getOrderThumbnails = (order) => {
+  const items = order.items || [];
+  return items.slice(0, 4).map(item => ({
+    thumbnail_url: item.thumbnail_url,
+    product_name: item.product_name,
+    item_type: item.item_type
+  }));
+};
 
 export default function Account() {
   const navigate = useNavigate();
@@ -246,30 +257,64 @@ export default function Account() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {orders.map((order) => (
-                        <div key={order.id} className="border rounded-xl p-4 hover:shadow-md transition-shadow">
-                          <div className="flex items-center justify-between mb-3">
-                            <div>
-                              <span className="font-semibold text-foreground">Order #{order.order_number}</span>
-                              <span className="text-muted-foreground text-sm ml-3">
-                                {new Date(order.created_at).toLocaleDateString()}
-                              </span>
+                      {orders.map((order) => {
+                        const thumbnails = getOrderThumbnails(order);
+                        const itemCount = order.items?.length || 0;
+                        
+                        return (
+                          <div key={order.id} className="border rounded-xl p-4 hover:shadow-md transition-shadow">
+                            {/* Thumbnail row */}
+                            {itemCount > 0 && (
+                              <div className="flex items-center gap-2 mb-3 pb-3 border-b">
+                                {thumbnails.map((item, idx) => (
+                                  <div 
+                                    key={idx} 
+                                    className="w-12 h-12 rounded-lg border bg-muted overflow-hidden flex-shrink-0 relative"
+                                    title={item.product_name || 'Product'}
+                                  >
+                                    <ImageWithFallback 
+                                      src={item.thumbnail_url}
+                                      alt={item.product_name || 'Product'}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    {item.item_type === 'badge' && (
+                                      <span className="absolute bottom-0 left-0 right-0 bg-green-600 text-white text-[8px] text-center py-0.5">
+                                        Badge
+                                      </span>
+                                    )}
+                                  </div>
+                                ))}
+                                {itemCount > 4 && (
+                                  <span className="text-sm text-muted-foreground">
+                                    +{itemCount - 4} more
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <span className="font-semibold text-foreground">Order #{order.order_number}</span>
+                                <span className="text-muted-foreground text-sm ml-3">
+                                  {new Date(order.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                              {getStatusBadge(order.status)}
                             </div>
-                            {getStatusBadge(order.status)}
-                          </div>
-                          <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                            <div className="text-lg font-bold text-foreground">${order.total?.toFixed(2)}</div>
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="sm">
-                                <Eye className="w-4 h-4 mr-1" /> View Details
-                              </Button>
-                              <Button variant="outline" size="sm" onClick={() => handleReorder(order)}>
-                                <Repeat className="w-4 h-4 mr-1" /> Reorder
-                              </Button>
+                            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                              <div className="text-lg font-bold text-foreground">${order.total?.toFixed(2)}</div>
+                              <div className="flex gap-2">
+                                <Button variant="outline" size="sm">
+                                  <Eye className="w-4 h-4 mr-1" /> View Details
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => handleReorder(order)}>
+                                  <Repeat className="w-4 h-4 mr-1" /> Reorder
+                                </Button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
