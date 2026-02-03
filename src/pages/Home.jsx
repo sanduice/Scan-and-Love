@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import Seeder from '@/components/Seeder';
 import ProductCard from '@/components/home/ProductCard';
+import { ShopifyProductGrid } from '@/components/shopify';
 
 const FEATURES = [
   { icon: Clock, title: 'Fast Production', desc: 'Same-day & next-day options' },
@@ -237,6 +238,13 @@ export default function Home() {
           </div>
         </section>
       ))}
+
+      {/* Shopify Products Section */}
+      <section className="py-16 bg-muted/30">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ShopifyProductGrid limit={8} title="Shop Our Products" />
+        </div>
+      </section>
 
       {/* Why Choose Us */}
       <section className="py-16 bg-white">

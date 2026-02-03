@@ -26,6 +26,8 @@ import CleanupDuplicates from "./CleanupDuplicates";
 import RequestSamples from "./RequestSamples";
 import Auth from "./Auth";
 import Checkout from "./Checkout";
+import ShopifyProductDetail from "./ShopifyProductDetail";
+import { useShopifyCartSync } from '@/hooks/useShopifyCartSync';
 
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
@@ -55,6 +57,7 @@ const PAGES = {
     RequestSamples: RequestSamples,
     Auth: Auth,
     Checkout: Checkout,
+    ShopifyProductDetail: ShopifyProductDetail,
 }
 
 function _getCurrentPage(url) {
@@ -74,6 +77,9 @@ function _getCurrentPage(url) {
 function PagesContent() {
     const location = useLocation();
     const currentPage = _getCurrentPage(location.pathname);
+    
+    // Sync Shopify cart on visibility change
+    useShopifyCartSync();
     
     // Auth, Admin, and design pages don't use Layout
     if (currentPage === 'Auth') {
@@ -130,6 +136,7 @@ function PagesContent() {
                 <Route path="/RequestSamples" element={<RequestSamples />} />
                 <Route path="/Auth" element={<Auth />} />
                 <Route path="/Checkout" element={<Checkout />} />
+                <Route path="/shopify-product/:handle" element={<ShopifyProductDetail />} />
             </Routes>
         </Layout>
     );
