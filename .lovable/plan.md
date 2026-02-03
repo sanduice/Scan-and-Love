@@ -1,253 +1,88 @@
+# Shopify Integration - Implementation Status
 
+## ✅ Completed
 
-## Comprehensive Shopify Integration Plan
+### Phase 1: Shopify Connection
+- [x] Enabled Shopify integration with sandbox store
+- [x] Store: netraveprint-k8rq3.myshopify.com
+- [x] Storefront token configured
 
-### Current Architecture Analysis
+### Phase 2: Core Infrastructure
+- [x] `src/lib/shopify/config.ts` - Store credentials and API config
+- [x] `src/lib/shopify/api.ts` - Storefront API client with GraphQL queries
+- [x] `src/lib/shopify/types.ts` - TypeScript interfaces
+- [x] `src/lib/shopify/cart.ts` - Cart mutation functions
+- [x] `src/stores/shopifyCartStore.ts` - Zustand cart state management
+- [x] `src/hooks/useShopifyProducts.ts` - Products fetching hook
+- [x] `src/hooks/useShopifyCartSync.ts` - Cart sync on visibility change
 
-Your project is a custom print e-commerce platform with:
+### Phase 3: UI Components
+- [x] `src/components/shopify/ShopifyCartDrawer.jsx` - Slide-out cart with Shopify checkout
+- [x] `src/components/shopify/ShopifyProductCard.tsx` - Product card with add-to-cart
+- [x] `src/components/shopify/ShopifyProductGrid.tsx` - Grid display with loading states
+- [x] `src/pages/ShopifyProductDetail.tsx` - Product detail page with variants
 
-| Component | Current Implementation |
-|-----------|----------------------|
-| **Frontend** | React + Vite + TailwindCSS |
-| **Database** | Lovable Cloud (Supabase) |
-| **Products** | `products` table with categories, pricing tiers, preset sizes |
-| **Cart** | `cart_items`, `saved_designs`, `name_badge_orders` tables |
-| **Orders** | `orders` table with JSONB items |
-| **Payments** | Stripe integration (existing) |
-| **Auth** | Supabase Auth with session-based anonymous tracking |
-| **Admin** | Full admin panel at `/Admin` |
-
-### Shopify Integration Approach
-
-Since your Lovable account email doesn't match your existing Shopify store owner email, there are two paths:
-
-**Option A: Create New Shopify Development Store**
-- Create a fresh Shopify store through Lovable
-- Sync your existing products to Shopify
-- Use Shopify for checkout and fulfillment
-- Free during development, 30-day trial when you claim it
-
-**Option B: Connect Existing Shopify Store**
-- Requires matching email or contacting Shopify store admin
-- Would sync with your existing Shopify inventory and orders
+### Phase 4: Integration
+- [x] Added Shopify cart drawer to Layout header
+- [x] Added Shopify product route `/shopify-product/:handle`
+- [x] Added ShopifyProductGrid to Home page
+- [x] Integrated cart sync in main PagesContent component
 
 ---
 
-### Integration Architecture
-
-```text
-+------------------+       +-------------------+       +------------------+
-|   Your React     |       |   Edge Functions  |       |    Shopify       |
-|   Frontend       |<----->|   (API Layer)     |<----->|    Storefront    |
-|                  |       |                   |       |    API           |
-+------------------+       +-------------------+       +------------------+
-        |                          |
-        v                          v
-+------------------+       +-------------------+
-|   Lovable Cloud  |       |   Shopify Admin   |
-|   Database       |       |   API             |
-|   (Supabase)     |       |   (Products,      |
-|                  |       |    Orders,        |
-|                  |       |    Inventory)     |
-+------------------+       +-------------------+
-```
-
----
-
-### Phase 1: Enable Shopify Connection
-
-| Task | Description |
-|------|-------------|
-| Resolve email mismatch | Either use matching Lovable account or create new dev store |
-| Enable Shopify connector | This unlocks Shopify tools and SDK access |
-| Configure store settings | Set store name, currency, shipping zones |
-
----
-
-### Phase 2: Product Sync Strategy
-
-Your current `products` table has 15+ columns including:
-- `name`, `slug`, `description`, `image_url`
-- `base_price`, `sale_price`, `pricing_tiers` (JSONB)
-- `preset_sizes` (JSONB), `product_options` (JSONB)
-- `material_options`, `finish_options`
-
-**Sync Approach:**
-
-| Direction | What Gets Synced |
-|-----------|-----------------|
-| Supabase to Shopify | Products, categories, images, pricing |
-| Shopify to Supabase | Orders, inventory levels, fulfillment status |
-| Bidirectional | Customer data, order status updates |
-
-**Edge Function: Product Sync**
-
-Create edge functions to:
-1. `shopify-sync-products` - Push products from Supabase to Shopify
-2. `shopify-webhook-orders` - Receive order webhooks from Shopify
-3. `shopify-sync-inventory` - Sync inventory levels
-
----
-
-### Phase 3: Checkout Flow Integration
-
-**Current Flow:**
-```text
-Cart.jsx -> Checkout.jsx -> Stripe Payment -> Order Created
-```
-
-**Shopify-Integrated Flow:**
-```text
-Cart.jsx -> Shopify Checkout -> Shopify Payment -> Webhook -> Order Synced
-```
-
-**Option: Hybrid Approach (Recommended)**
-
-Keep your custom product configurator (design tools, name badges) but use Shopify for:
-- Standard product checkout
-- Payment processing
-- Fulfillment and shipping
-- Customer accounts
+## Hybrid Checkout Architecture
 
 | Cart Item Type | Checkout Path |
 |---------------|---------------|
-| Standard Products | Shopify Checkout |
-| Custom Designs (banners, signs) | Your existing Stripe checkout |
-| Name Badges (with names CSV) | Your existing Stripe checkout |
+| Shopify Products | Shopify Checkout (via ShopifyCartDrawer) |
+| Custom Designs | Internal Stripe checkout |
+| Name Badges | Internal Stripe checkout |
 
 ---
 
-### Phase 4: Edge Functions to Create
+## 🔜 Next Steps (When Ready)
 
-| Function Name | Purpose |
-|--------------|---------|
-| `shopify-create-checkout` | Create Shopify checkout session from cart |
-| `shopify-sync-products` | Sync products to Shopify catalog |
-| `shopify-webhook-orders` | Handle order creation webhooks |
-| `shopify-get-products` | Fetch Shopify products for display |
-| `shopify-sync-inventory` | Real-time inventory sync |
+### Add Products to Shopify
+The store currently has no products. To add products:
+- Tell the AI what products to create with names, descriptions, and prices
+- Use Shopify admin for bulk product management
 
----
-
-### Phase 5: Frontend Components
-
-**New Components to Create:**
-
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| `ShopifyProductCard` | `src/components/shopify/` | Display Shopify products |
-| `ShopifyCheckoutButton` | `src/components/shopify/` | Redirect to Shopify checkout |
-| `ShopifyOrderTracker` | `src/components/shopify/` | Display Shopify order status |
-
-**Existing Components to Modify:**
-
-| Component | Modification |
-|-----------|-------------|
-| `Cart.jsx` | Add Shopify checkout option |
-| `Account.jsx` | Show Shopify orders alongside internal orders |
-| `Admin.jsx` | Add Shopify orders/products management tab |
+### Optional Enhancements
+- [ ] Product sync: Push Supabase products to Shopify
+- [ ] Order webhooks: Sync Shopify orders back to Supabase
+- [ ] Inventory sync between systems
+- [ ] Shopify admin panel section
 
 ---
 
-### Phase 6: Database Schema Updates
+## Files Created
 
-**New Tables (if needed):**
+```
+src/lib/shopify/
+├── config.ts       # Store credentials
+├── api.ts          # Storefront API client
+├── types.ts        # TypeScript interfaces
+└── cart.ts         # Cart mutations
 
-```sql
--- Track Shopify product mappings
-CREATE TABLE shopify_product_mappings (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  supabase_product_id UUID REFERENCES products(id),
-  shopify_product_id TEXT NOT NULL,
-  shopify_variant_ids JSONB DEFAULT '[]',
-  last_synced_at TIMESTAMPTZ DEFAULT now(),
-  sync_status TEXT DEFAULT 'pending'
-);
+src/stores/
+└── shopifyCartStore.ts  # Zustand cart state
 
--- Track Shopify orders
-CREATE TABLE shopify_orders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  shopify_order_id TEXT UNIQUE NOT NULL,
-  shopify_order_number TEXT,
-  internal_order_id UUID REFERENCES orders(id),
-  customer_email TEXT,
-  total NUMERIC,
-  fulfillment_status TEXT,
-  financial_status TEXT,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  raw_data JSONB
-);
+src/hooks/
+├── useShopifyProducts.ts   # Products hook
+└── useShopifyCartSync.ts   # Cart sync hook
+
+src/components/shopify/
+├── index.ts                 # Exports
+├── ShopifyCartDrawer.jsx    # Cart drawer
+├── ShopifyProductCard.tsx   # Product card
+└── ShopifyProductGrid.tsx   # Product grid
+
+src/pages/
+└── ShopifyProductDetail.tsx  # Product detail page
 ```
 
----
+## Files Modified
 
-### Phase 7: Admin Panel Enhancements
-
-Add new sections to `Admin.jsx`:
-
-| Section | Features |
-|---------|----------|
-| Shopify Products | View/sync products with Shopify |
-| Shopify Orders | View orders from Shopify store |
-| Inventory Sync | Real-time inventory management |
-| Shopify Settings | Store configuration, webhooks |
-
----
-
-### Implementation Order
-
-| Step | Priority | Description |
-|------|----------|-------------|
-| 1 | High | Resolve email mismatch and enable Shopify |
-| 2 | High | Create product sync edge functions |
-| 3 | High | Add Shopify checkout button to Cart |
-| 4 | Medium | Create order webhook handler |
-| 5 | Medium | Add Shopify orders to Account page |
-| 6 | Medium | Add Shopify admin section |
-| 7 | Low | Implement inventory sync |
-| 8 | Low | Add fulfillment tracking |
-
----
-
-### Files to Create/Modify
-
-**New Files:**
-
-| File | Purpose |
-|------|---------|
-| `supabase/functions/shopify-create-checkout/index.ts` | Create Shopify checkout |
-| `supabase/functions/shopify-sync-products/index.ts` | Sync products |
-| `supabase/functions/shopify-webhook-orders/index.ts` | Handle order webhooks |
-| `src/components/shopify/ShopifyCheckoutButton.jsx` | Checkout button component |
-| `src/components/shopify/ShopifyProductCard.jsx` | Product display component |
-| `src/lib/api/shopify.ts` | Shopify API client wrapper |
-| `src/hooks/useShopifyProducts.js` | Hook for Shopify products |
-
-**Existing Files to Modify:**
-
-| File | Changes |
-|------|---------|
-| `src/pages/Cart.jsx` | Add Shopify checkout option |
-| `src/pages/Account.jsx` | Display Shopify orders |
-| `src/pages/Admin.jsx` | Add Shopify management tab |
-| `src/pages/Home.jsx` | Optionally display Shopify products |
-
----
-
-### Next Steps
-
-To proceed with this integration, you need to:
-
-1. **Resolve the email mismatch** - Either:
-   - Log into Lovable with an account matching `services@namebadge.com`
-   - Create a new Shopify development store through Lovable
-   - Update your existing Shopify store's owner email
-
-2. **Once connected**, I'll have access to Shopify-specific tools and can implement:
-   - Product sync between your database and Shopify
-   - Shopify checkout integration
-   - Order webhook handling
-   - Admin panel Shopify management
-
-Would you like me to proceed with creating a new Shopify development store, or would you prefer to resolve the email mismatch with your existing store?
-
+- `src/pages/index.jsx` - Added route and cart sync
+- `src/pages/Layout.jsx` - Added ShopifyCartDrawer to header
+- `src/pages/Home.jsx` - Added ShopifyProductGrid section

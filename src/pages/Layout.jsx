@@ -24,6 +24,7 @@ import {
 import MobileMenu from '@/components/navigation/MobileMenu';
 import NetworkBar from '@/components/navigation/NetworkBar';
 import MegaMenu from '@/components/navigation/MegaMenu';
+import ShopifyCartDrawer from '@/components/shopify/ShopifyCartDrawer';
 import nbLogo from '@/assets/nb_logo.svg';
 
 export default function Layout({ children, currentPageName }) {
@@ -195,7 +196,10 @@ export default function Layout({ children, currentPageName }) {
                 </Button>
               )}
 
-              {/* Cart */}
+              {/* Shopify Cart Drawer */}
+              <ShopifyCartDrawer />
+
+              {/* Internal Cart */}
               <Link to={createPageUrl('Cart')}>
                 <Button variant="ghost" size="sm" className="relative rounded-full flex items-center gap-2">
                   <div className="relative">
@@ -206,7 +210,7 @@ export default function Layout({ children, currentPageName }) {
                       </span>
                     )}
                   </div>
-                  <span className="hidden md:inline font-medium">Cart</span>
+                  <span className="hidden md:inline font-medium">Designs</span>
                 </Button>
               </Link>
 
