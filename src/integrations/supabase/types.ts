@@ -1097,6 +1097,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_session_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1105,6 +1106,18 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      validate_coupon: {
+        Args: { coupon_code: string }
+        Returns: {
+          code: string
+          id: string
+          max_discount: number
+          min_order: number
+          type: string
+          valid_until: string
+          value: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
