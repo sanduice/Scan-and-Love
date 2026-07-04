@@ -15,8 +15,8 @@ import {
   CloudUpload, LayoutGrid, Check, ArrowUpRight, Calculator, Ruler
 } from 'lucide-react';
 import { toast } from 'sonner';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import PresetSizesManager from './PresetSizesManager';
 import ProductOptionsConfigurator from './ProductOptionsConfigurator';
