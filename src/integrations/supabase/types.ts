@@ -1106,6 +1106,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_owner: {
+        Args: { _session_id: string; _user_id: string }
+        Returns: boolean
+      }
       validate_coupon: {
         Args: { coupon_code: string }
         Returns: {
